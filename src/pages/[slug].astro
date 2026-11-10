@@ -1,0 +1,19 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../layouts/Base.astro';
+import PageContent from '../components/PageContent.astro';
+import { getPages, HOME_ID } from '../lib/content';
+
+export const getStaticPaths = (async () => {
+  const pages = await getPages();
+  return pages
+    .filter((page) => page.id !== HOME_ID)
+    .map((page) => ({ params: { slug: page.id }, props: { page } }));
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<Base title={page.data.title} description={page.data.description}>
+  <PageContent page={page} />
+</Base>

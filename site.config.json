@@ -1,0 +1,9 @@
+{
+  "slug": "template",
+  "pagesProject": "template",
+  "domain": null,
+  "repo": "Walter-Co-AB/template",
+  "branch": "main",
+  "cmsAuthUrl": "https://sveltia-cms-auth.walterco.workers.dev",
+  "locale": "sv"
+}

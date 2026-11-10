@@ -1,0 +1,68 @@
+---
+interface Props {
+  name: string;
+  menu: { label: string; href: string }[];
+}
+
+const { name, menu } = Astro.props;
+const current = Astro.url.pathname.replace(/\/?$/, '/');
+---
+
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" href="/">
+      {name}
+    </a>
+    {menu.length > 0 && (
+      <nav aria-label="Huvudmeny">
+        <ul>
+          {menu.map((item) => (
+            <li>
+              <a href={item.href} aria-current={item.href === current ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+  </div>
+</header>
+
+<style>
+  .header {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .header-inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    padding-block: 1.25rem;
+  }
+  .brand {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: inherit;
+    text-decoration: none;
+  }
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  nav a {
+    color: inherit;
+    text-decoration: none;
+  }
+  nav a:hover,
+  nav a[aria-current='page'] {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+</style>

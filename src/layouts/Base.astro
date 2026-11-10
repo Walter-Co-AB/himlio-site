@@ -1,0 +1,51 @@
+---
+import '@fontsource-variable/inter';
+import '../styles/global.css';
+import config from '../../site.config.json';
+import { isPreview } from '../lib/site-url.mjs';
+import { getMenu, getSettings } from '../lib/content';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const settings = await getSettings();
+const menu = await getMenu();
+const fullTitle = title === settings.name ? title : `${title} | ${settings.name}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const { primary, background, text } = settings.colors;
+const theme = `--color-primary:${primary};--color-bg:${background};--color-text:${text};`;
+---
+
+<!doctype html>
+<html lang={config.locale} style={theme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={settings.name} />
+    <meta property="og:type" content="website" />
+    {isPreview && <meta name="robots" content="noindex" />}
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      Hoppa till innehållet
+    </a>
+    <Header name={settings.name} menu={menu} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer settings={settings} />
+  </body>
+</html>
