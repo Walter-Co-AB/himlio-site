@@ -51,6 +51,22 @@ working on this site. The site is hosted by Walter & Co on Cloudflare Pages.
 10. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework, a UI
     library or a new dependency.
 
+## Bindings and environment
+
+Set by Walter & Co on the Pages project, for both production and previews. They only exist
+when the feature is turned on for this site; check before relying on one.
+
+| Name                        | Kind                | When               | Notes                                                                                                                |
+| --------------------------- | ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `env.DB`                    | D1                  | database turned on | Previews use a separate preview database, never production data.                                                     |
+| `env.API`                   | Service binding     | forms turned on    | The Walter & Co API. Call it with `env.API.fetch(...)`; it has no public URL.                                        |
+| `env.API_KEY`               | Secret              | forms turned on    | Send as `Authorization: Bearer <key>` to `env.API`. The API derives the site from the key; never send a customer id. |
+| `env.TURNSTILE_SECRET`      | Secret              | forms turned on    | Server-side Turnstile check.                                                                                         |
+| `PUBLIC_TURNSTILE_SITE_KEY` | Build-time variable | forms turned on    | `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY` in Astro, for the widget.                                                |
+
+Previews (`*.<project>.pages.dev`) may be behind Cloudflare Access, so requests from outside
+the browser (curl, webhooks, tests) to a preview need an Access login or service token.
+
 ## Commands
 
 ```sh

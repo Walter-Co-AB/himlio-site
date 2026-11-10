@@ -7,6 +7,16 @@
 //   env.DB               D1 database binding
 //   env.TURNSTILE_SECRET Turnstile secret key
 // Rate limiting is configured as a Cloudflare rule on /api/*.
+// The widget on the page uses import.meta.env.PUBLIC_TURNSTILE_SITE_KEY.
+//
+// To have the Walter & Co API email the message instead of (or as well as) storing it,
+// call it through the service binding with the site's key (the endpoint paths are not
+// final yet; ask Walter & Co):
+//   await env.API.fetch('https://api/forms/contact', {
+//     method: 'POST',
+//     headers: { Authorization: `Bearer ${env.API_KEY}`, 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ name, email, message }),
+//   });
 
 interface Env {
   DB: D1Database;
