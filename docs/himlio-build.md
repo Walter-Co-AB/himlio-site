@@ -25,6 +25,9 @@ copied from `docs/release.md` in `Walter-Co-AB/himlio-infrastructure`. The check
   which sends through the `EMAIL` (`send_email`) binding, with the site name as sender name
   and no Reply-To. Without it, the site has no email provider and invites give a
   link to share instead.
+- `himlio-platform.json` lists the platform-owned files (sha256), the strings site files must
+  keep (`hooks`) and the required `package.json` keys. `npm run platform:check` (in `verify`)
+  fails on any difference; a template sync overwrites those files whole.
 - `src/worker.ts` answers `POST /_himlio/cron` (scheduled publishing in EmDash and session
   cleanup). The work is safe to run twice or to skip.
 

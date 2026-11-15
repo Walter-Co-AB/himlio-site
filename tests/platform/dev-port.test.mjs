@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { devPort } from '../astro.config.mjs';
+import { devPort } from '../../himlio.config.mjs';
 
 test('dev ports: 4321 for the template, a stable 4400–4899 port per customer slug', () => {
   assert.equal(devPort('template'), 4321);
