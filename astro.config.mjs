@@ -19,6 +19,11 @@ const emailPlugins = himlio.email?.from
     ]
   : [];
 
+// The site's public URL from himlio.json: passkeys, OAuth, MCP and links in emails all use it.
+// Not in `astro dev`, where it would tie admin sign-in to the real domain instead of localhost.
+const isDev = process.argv.slice(2).includes('dev');
+const siteUrl = !isDev && himlio.url ? himlio.url : undefined;
+
 export default defineConfig({
   site: himlio.url ?? undefined,
   output: 'server',
@@ -36,6 +41,7 @@ export default defineConfig({
   integrations: [
     react(),
     emdash({
+      siteUrl,
       database: d1({ binding: 'DB', session: 'auto', coalesce: true }),
       storage: r2({ binding: 'MEDIA' }),
       plugins: emailPlugins,

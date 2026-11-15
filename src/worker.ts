@@ -4,6 +4,7 @@ import handler, {
   EmDashRoomSite,
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
+import { isOAuthScopePath, limitOAuthScopes } from './lib/oauth-scopes';
 import { deleteExpiredSessions } from './lib/session-d1';
 
 export { EmDashRoom, EmDashRoomSite, PluginBridge };
@@ -48,8 +49,15 @@ function himlio(request: Request, env: Env, ctx: ExecutionContext): Response {
 
 export default {
   ...handler,
-  fetch(request, env, ctx) {
-    if (new URL(request.url).pathname.startsWith('/_himlio/')) return himlio(request, env, ctx);
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith('/_himlio/')) return himlio(request, env, ctx);
+    if (isOAuthScopePath(url)) {
+      const limited = await limitOAuthScopes(request);
+      if (limited instanceof Response) return limited;
+      // Same request with rewritten scopes; it keeps the original's cf properties.
+      return handler.fetch!(limited as typeof request, env, ctx);
+    }
     return handler.fetch!(request, env, ctx);
   },
   scheduled,

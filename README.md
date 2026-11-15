@@ -16,7 +16,8 @@ template as `Walter-Co-AB/site-<slug>`.
 ```sh
 npm install
 npm run dev       # applies D1 migrations locally, then http://localhost:4321
-npm run verify    # what CI runs: format, type check, build, himlio-build artifact
+npm test          # unit tests (tests/*.test.mjs, Node's test runner)
+npm run verify    # what CI runs: format, type check, tests, build, himlio-build artifact
 ```
 
 The first visit to `/_emdash/admin` starts the setup, where you create the first
