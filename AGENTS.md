@@ -24,11 +24,11 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What the platform owns (don't edit)
 
-| File or rule               | Why                                                                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `himlio.json`              | Slug, name, description, locale, URL and contact details. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. |
-| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                      |
-| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                 |
+| File or rule               | Why                                                                                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `himlio.json`              | Slug, name, description, locale, URL, contact details and email sender. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. |
+| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                    |
+| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                               |
 
 ## Rules
 
@@ -37,7 +37,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 3. **No secrets in git.** Customers may have write access to this repo. Never write keys,
    tokens or passwords into code, config or `.env` files. `.dev.vars` is for local values and
    is ignored.
-4. **Only the bindings the platform provides.** `DB`, `MEDIA`, `HIMLIO_SLUG`, plus what the
+4. **Only the bindings the platform provides.** `DB`, `MEDIA`, `EMAIL`, `HIMLIO_SLUG`, plus what the
    build declares itself: assets, Durable Objects and plain-text vars. No KV, queues, service
    bindings or extra D1/R2; `scripts/himlio-build.mjs` fails on them. Ask Walter & Co if you
    need one.

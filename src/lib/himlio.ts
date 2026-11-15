@@ -16,6 +16,8 @@ export interface Himlio {
   locale: string;
   url?: string | null;
   contact: Contact;
+  /** Set by the platform when the EMAIL binding is available. */
+  email?: { from: string };
 }
 
 const raw = data as Partial<Himlio>;
@@ -27,6 +29,7 @@ export const himlio: Himlio = {
   locale: raw.locale || 'sv',
   url: raw.url ?? null,
   contact: raw.contact ?? {},
+  email: raw.email?.from ? { from: raw.email.from } : undefined,
 };
 
 /** A phone number as a tel: link, e.g. "08-123 456 78" → "tel:0812345678". */

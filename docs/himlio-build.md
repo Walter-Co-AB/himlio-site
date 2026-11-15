@@ -11,12 +11,16 @@ copied from `docs/release.md` in `Walter-Co-AB/himlio-infrastructure`. The check
 - `npm run himlio-build` runs `wrangler deploy --dry-run --outdir himlio-build/worker` and
   `scripts/himlio-build.mjs`, which writes `himlio-build.json` from the Worker config Astro
   generates from `wrangler.jsonc`, and copies `dist/client/` to `assets/` and `migrations/`.
-- `DB`, `MEDIA` and `HIMLIO_SLUG` in `wrangler.jsonc` are for local development and are left
-  out. Any other binding the platform can't provide (KV, services, queues, D1 or R2 under
+- `DB`, `MEDIA`, `EMAIL` and `HIMLIO_SLUG` in `wrangler.jsonc` are for local development and
+  are left out. Any other binding the platform can't provide (KV, services, queues, D1 or R2 under
   another name) fails the build.
 - Migrations 0001–0099 belong to the platform and this template (0001 creates the session
   table); a customer site's own migrations start at 0100. EmDash creates its own tables at
   runtime, not through `migrations/`.
+- Email: when `himlio.json` has `email.from`, the build adds EmDash's Cloudflare email provider,
+  which sends through the `EMAIL` (`send_email`) binding, with the site name as sender name and
+  `contact.email` as Reply-To. Without it, the site has no email provider and invites give a
+  link to share instead.
 - `src/worker.ts` answers `POST /_himlio/cron` (scheduled publishing in EmDash and session
   cleanup). The work is safe to run twice or to skip.
 

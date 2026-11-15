@@ -5,13 +5,13 @@
 //   himlio-build/assets/             copy of dist/client
 //   himlio-build/migrations/         copy of migrations/ (D1)
 //
-// Bindings the platform adds (DB, MEDIA, HIMLIO_SLUG) are left out. Any other binding the
+// Bindings the platform adds (DB, MEDIA, EMAIL, HIMLIO_SLUG) are left out. Any other binding the
 // platform can't provide fails the build, so it doesn't break at release time instead.
 import { cpSync, existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 
 const OUT = 'himlio-build';
 const BUILT_CONFIG = 'dist/server/wrangler.json';
-const RESERVED = new Set(['DB', 'MEDIA', 'HIMLIO_SLUG']);
+const RESERVED = new Set(['DB', 'MEDIA', 'EMAIL', 'HIMLIO_SLUG']);
 const BINDING = /^[A-Z][A-Z0-9_]{0,63}$/;
 const MIGRATION = /^\d{4}_[a-z0-9_]{1,80}\.sql$/;
 
@@ -73,6 +73,7 @@ const MAPPED = new Set([
   'vars',
   'd1_databases',
   'r2_buckets',
+  'send_email',
 ]);
 
 for (const [key, value] of Object.entries(config)) {
@@ -81,6 +82,8 @@ for (const [key, value] of Object.entries(config)) {
 }
 for (const db of config.d1_databases ?? [])
   if (db.binding !== 'DB') fail(`only the D1 binding DB is supported (got ${db.binding})`);
+for (const e of config.send_email ?? [])
+  if (e.name !== 'EMAIL') fail(`only the send_email binding EMAIL is supported (got ${e.name})`);
 for (const b of config.r2_buckets ?? [])
   if (b.binding !== 'MEDIA') fail(`only the R2 binding MEDIA is supported (got ${b.binding})`);
 
