@@ -15,8 +15,12 @@ copied from `docs/release.md` in `Walter-Co-AB/himlio-infrastructure`. The check
   are left out. Any other binding the platform can't provide (KV, services, queues, D1 or R2 under
   another name) fails the build.
 - Migrations 0001–0099 belong to the platform and this template (0001 creates the session
-  table); a customer site's own migrations start at 0100. EmDash creates its own tables at
+  table, 0002 the list of applied content-model migrations); a customer site's own migrations
+  start at 0100. EmDash creates its own tables at
   runtime, not through `migrations/`.
+- Content-model changes for existing sites are `seed/migrations/NNNN_name.json` (partial EmDash
+  seeds). The site applies pending ones itself on the first request after a deploy
+  (`src/middleware.ts`), in "skip" mode, and records them in D1. Nothing to do at release.
 - Email: when `himlio.json` has `email.from`, the build adds EmDash's Cloudflare email provider,
   which sends through the `EMAIL` (`send_email`) binding, with the site name as sender name
   and no Reply-To. Without it, the site has no email provider and invites give a

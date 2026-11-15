@@ -1,0 +1,66 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "0001_company",
+    "description": "Företagsuppgifter: the company collection and its one entry (contact details)."
+  },
+  "collections": [
+    {
+      "slug": "company",
+      "label": "Företagsuppgifter",
+      "labelSingular": "Företagsuppgifter",
+      "description": "Kontaktuppgifter som visas på webbplatsen. Fyll i den enda posten; tomma fält visas inte.",
+      "admin": {
+        "quickCreate": false
+      },
+      "supports": [],
+      "routable": false,
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Rubrik",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "phone",
+          "label": "Telefon",
+          "type": "string"
+        },
+        {
+          "slug": "email",
+          "label": "E-post",
+          "type": "string"
+        },
+        {
+          "slug": "address",
+          "label": "Adress",
+          "type": "text"
+        },
+        {
+          "slug": "org_number",
+          "label": "Organisationsnummer",
+          "type": "string"
+        },
+        {
+          "slug": "opening_hours",
+          "label": "Öppettider",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "content": {
+    "company": [
+      {
+        "id": "foretagsuppgifter",
+        "slug": "foretagsuppgifter",
+        "status": "published",
+        "data": {
+          "title": "Företagsuppgifter"
+        }
+      }
+    ]
+  }
+}

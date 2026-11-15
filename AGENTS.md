@@ -21,15 +21,15 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What you may change
 
-| What                        | Where                                                        |
-| --------------------------- | ------------------------------------------------------------ |
-| Content                     | In the admin. Pages are in the `pages` collection.           |
-| Site description            | In the admin: Settings → General → Tagline                   |
-| Contact details             | In the admin: the one entry in Företagsuppgifter (`company`) |
-| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/`  |
-| Pages and templates         | `src/pages/`                                                 |
-| Content model for new sites | `seed/seed.json` (applied once, when a site is set up)       |
-| Database tables of your own | New files in `migrations/`, numbered from 0100               |
+| What                        | Where                                                                                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Content                     | In the admin. Pages are in the `pages` collection.                                                                                      |
+| Site description            | In the admin: Settings → General → Tagline                                                                                              |
+| Contact details             | In the admin: the one entry in Företagsuppgifter (`company`)                                                                            |
+| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/`                                                                             |
+| Pages and templates         | `src/pages/`                                                                                                                            |
+| Content model               | Platform-owned for now: a change goes into `seed/seed.json` (new sites) **and** a new `seed/migrations/NNNN_name.json` (existing sites) |
+| Database tables of your own | New files in `migrations/`, numbered from 0100                                                                                          |
 
 ## What the platform owns (don't edit)
 
@@ -39,6 +39,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 | `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                                                                                                                                                                                                |
 | OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                                                                                                                                                                                                     |
 | The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                                                                                                                                                                                                           |
+| Content-model migrations   | `seed/migrations/`, `src/lib/model-migrations.ts`, `src/middleware.ts`.                                                                                                                                                                                                                                                                       |
 
 ## Rules
 
@@ -60,6 +61,9 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 7. **Migrations are append-only.** Add `migrations/NNNN_description.sql`; never edit one that
    has been applied. Numbers 0001–0099 belong to the platform and this template; a customer
    site's own migrations start at 0100. EmDash creates its own tables itself.
+   Content-model migrations (`seed/migrations/NNNN_name.json`) follow the same rule: partial
+   seeds with collections, fields and content only, applied once per site by the site itself
+   (first request after a deploy), and mirrored in `seed/seed.json`. Tests check both.
 8. **Every route needs a decision about access.** Public endpoints (forms) need input
    validation with length limits and abuse protection. Anything that shows or changes data
    that isn't public must check the EmDash session. Return generic error messages; log
