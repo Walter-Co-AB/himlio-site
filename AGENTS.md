@@ -11,8 +11,11 @@ working on this site. The site runs on Himlio, the website platform from Walter 
   (`MEDIA`), and co-editing rooms in a Durable Object (`EMDASH_ROOMS`).
 - The public URL is `url` in `himlio.json` (EmDash `siteUrl`, set for builds, not in `astro dev`).
   Passkeys, OAuth, MCP and links in emails use it.
-- OAuth clients (MCP connectors, the EmDash CLI) only get content scopes: `src/lib/oauth-scopes.ts`
-  limits them before EmDash sees the request. Don't widen the list without asking Walter & Co.
+- OAuth clients (MCP connectors, the EmDash CLI) get content work plus read-only schema and
+  settings (`content:read/write`, `media:read/write`, `taxonomies:manage`, `menus:manage`,
+  `schema:read`, `settings:read`): `src/lib/oauth-scopes.ts` limits them before EmDash sees the
+  request, and keeps OAuth tokens out of the 404 log (visitor IP addresses). No `schema:write` or
+  `settings:manage`. Don't widen the list without asking Walter & Co.
 - Swedish first: `sv` is the site language and the admin is in Swedish for Swedish browsers.
   Write interface text and starter content in Swedish.
 
@@ -38,7 +41,8 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 ## Rules
 
 1. **`npm run verify` must pass** before you commit (format, type check, tests, build, artifact).
-2. **Work on a branch.** Walter & Co merges to `main`; every push to `main` can be released.
+2. **Work on a branch.** Walter & Co merges to `main`; a push to `main` is released automatically
+   once CI is green.
 3. **No secrets in git.** Customers may have write access to this repo. Never write keys,
    tokens or passwords into code, config or `.env` files. `.dev.vars` is for local values and
    is ignored.

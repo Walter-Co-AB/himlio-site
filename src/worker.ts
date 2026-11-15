@@ -4,7 +4,7 @@ import handler, {
   EmDashRoomSite,
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
-import { isOAuthScopePath, limitOAuthScopes } from './lib/oauth-scopes';
+import { isOAuthScopePath, limitOAuthScopes, refusesOAuthToken } from './lib/oauth-scopes';
 import { deleteExpiredSessions } from './lib/session-d1';
 
 export { EmDashRoom, EmDashRoomSite, PluginBridge };
@@ -52,6 +52,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/_himlio/')) return himlio(request, env, ctx);
+    if (refusesOAuthToken(request)) return new Response('Forbidden', { status: 403 });
     if (isOAuthScopePath(url)) {
       const limited = await limitOAuthScopes(request);
       if (limited instanceof Response) return limited;

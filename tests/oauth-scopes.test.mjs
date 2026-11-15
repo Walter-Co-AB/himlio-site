@@ -6,6 +6,7 @@ import {
   filterScopes,
   isOAuthScopePath,
   limitOAuthScopes,
+  refusesOAuthToken,
 } from '../src/lib/oauth-scopes.ts';
 
 const ORIGIN = 'https://acme.himlio.app';
@@ -21,10 +22,26 @@ const post = (path, body) =>
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 
+test('the allowlist is content work plus reading schema and settings, nothing that writes them', () => {
+  assert.deepEqual([...ALLOWED_SCOPES].sort(), [
+    'content:read',
+    'content:write',
+    'media:read',
+    'media:write',
+    'menus:manage',
+    'schema:read',
+    'settings:read',
+    'taxonomies:manage',
+  ]);
+  for (const s of ['schema:write', 'settings:manage', 'admin', 'mcp:tools', 'transfer:export'])
+    assert.equal(ALLOWED_SCOPES.includes(s), false, s);
+});
+
 test('filterScopes keeps only allowed scopes, from a string or a list', () => {
-  assert.deepEqual(filterScopes(EVERYTHING), [...ALLOWED_SCOPES]);
+  assert.deepEqual(filterScopes(EVERYTHING).sort(), [...ALLOWED_SCOPES].sort());
   assert.deepEqual(filterScopes(['admin', 'content:read', 'content:read', 7]), ['content:read']);
-  assert.deepEqual(filterScopes('mcp:tools:forms settings:manage'), []);
+  assert.deepEqual(filterScopes('mcp:tools:forms settings:manage schema:write'), []);
+  assert.deepEqual(filterScopes('schema:read settings:read'), ['schema:read', 'settings:read']);
   assert.deepEqual(filterScopes(undefined), []);
 });
 
@@ -53,7 +70,7 @@ test('authorize: scope in the URL is limited, for GET and POST', async () => {
       })
     );
     const u = new URL(out.url);
-    assert.equal(u.searchParams.get('scope'), ALLOWED_SCOPES.join(' '));
+    assert.deepEqual(u.searchParams.get('scope').split(' ').sort(), [...ALLOWED_SCOPES].sort());
     assert.equal(u.searchParams.get('client_id'), 'c');
     assert.equal(out.method, method);
     if (method === 'POST') assert.equal(await out.text(), 'scope=admin'); // form body untouched
@@ -65,14 +82,18 @@ test('authorize: only disallowed scopes leaves an empty scope (EmDash refuses it
   assert.equal(new URL(out.url).searchParams.get('scope'), '');
 });
 
-test('device code: limited, defaulted without schema:read, refused when nothing is left', async () => {
+test('device code: limited, defaulted to the EmDash CLI scopes, refused when nothing is left', async () => {
   const path = '/_emdash/api/oauth/device/code';
   let out = await limitOAuthScopes(post(path, { client_id: 'cli', scope: EVERYTHING }));
-  assert.deepEqual(await out.json(), { client_id: 'cli', scope: ALLOWED_SCOPES.join(' ') });
+  const body = await out.json();
+  assert.equal(body.client_id, 'cli');
+  assert.deepEqual(body.scope.split(' ').sort(), [...ALLOWED_SCOPES].sort());
   assert.equal(out.headers.get('content-length'), null);
 
   out = await limitOAuthScopes(post(path, { client_id: 'cli' }));
   assert.deepEqual(await out.json(), { client_id: 'cli', scope: DEVICE_DEFAULT_SCOPES.join(' ') });
+  assert.ok(DEVICE_DEFAULT_SCOPES.includes('schema:read'));
+  for (const s of DEVICE_DEFAULT_SCOPES) assert.ok(ALLOWED_SCOPES.includes(s), s);
 
   out = await limitOAuthScopes(post(path, { client_id: 'cli', scope: 'admin schema:write' }));
   assert.ok(out instanceof Response);
@@ -85,7 +106,9 @@ test('register: scope limited or dropped, other fields kept', async () => {
   const base = { client_name: 'Claude', redirect_uris: ['https://claude.ai/cb'] };
 
   let out = await limitOAuthScopes(post(path, { ...base, scope: EVERYTHING }));
-  assert.deepEqual(await out.json(), { ...base, scope: ALLOWED_SCOPES.join(' ') });
+  const registered = await out.json();
+  assert.deepEqual(registered.scope.split(' ').sort(), [...ALLOWED_SCOPES].sort());
+  assert.deepEqual(registered.redirect_uris, base.redirect_uris);
 
   out = await limitOAuthScopes(post(path, { ...base, scope: ['admin', 'menus:manage'] }));
   assert.deepEqual(await out.json(), { ...base, scope: 'menus:manage' });
@@ -100,4 +123,22 @@ test('register: scope limited or dropped, other fields kept', async () => {
 test('invalid JSON is passed through for EmDash to answer', async () => {
   const req = post('/_emdash/api/oauth/register', '{not json');
   assert.equal(await limitOAuthScopes(req), req);
+});
+
+test('OAuth access tokens are refused on the 404 log (visitor IPs), nothing else', () => {
+  const req = (path, auth) =>
+    new Request(ORIGIN + path, { headers: auth ? { Authorization: auth } : {} });
+  for (const p of [
+    '/_emdash/api/redirects/404s',
+    '/_emdash/api/redirects/404s/summary',
+    '/_emdash/api/Redirects/404s/',
+    '/_emdash//api/redirects/%34%304s',
+  ])
+    assert.equal(refusesOAuthToken(req(p, 'Bearer ec_oat_abc')), true, p);
+  // Signed-in admins (no bearer) and personal API tokens keep access.
+  assert.equal(refusesOAuthToken(req('/_emdash/api/redirects/404s')), false);
+  assert.equal(refusesOAuthToken(req('/_emdash/api/redirects/404s', 'Bearer ec_pat_abc')), false);
+  // Other routes are left to EmDash's own scope checks.
+  for (const p of ['/_emdash/api/redirects', '/_emdash/api/settings', '/_emdash/api/mcp'])
+    assert.equal(refusesOAuthToken(req(p, 'Bearer ec_oat_abc')), false, p);
 });
