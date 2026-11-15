@@ -7,7 +7,7 @@ import {
   isOAuthScopePath,
   limitOAuthScopes,
   refusesOAuthToken,
-} from '../src/lib/oauth-scopes.ts';
+} from '../../src/lib/oauth-scopes.ts';
 
 const ORIGIN = 'https://acme.himlio.app';
 const EVERYTHING =

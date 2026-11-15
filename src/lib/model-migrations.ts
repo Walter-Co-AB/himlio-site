@@ -5,8 +5,8 @@
 // can safely run on a site that has it already (e.g. a new site, whose seed.json includes it).
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...). The
-// check runs once per Worker isolate, from src/middleware.ts. A failure is logged and retried
-// at most once a minute; it never breaks the page.
+// check runs once per Worker isolate, from himlioMiddleware (src/lib/himlio-middleware.ts).
+// A failure is logged and retried at most once a minute; it never breaks the page.
 //
 // Rules for migration files: append-only, never edit one that has been released, and add the
 // same change to seed/seed.json so new sites get it at setup (tests check both).

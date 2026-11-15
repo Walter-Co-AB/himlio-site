@@ -21,25 +21,41 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What you may change
 
-| What                        | Where                                                                                                                                   |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Content                     | In the admin. Pages are in the `pages` collection.                                                                                      |
-| Site description            | In the admin: Settings → General → Tagline                                                                                              |
-| Contact details             | In the admin: the one entry in Företagsuppgifter (`company`)                                                                            |
-| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/`                                                                             |
-| Pages and templates         | `src/pages/`                                                                                                                            |
-| Content model               | Platform-owned for now: a change goes into `seed/seed.json` (new sites) **and** a new `seed/migrations/NNNN_name.json` (existing sites) |
-| Database tables of your own | New files in `migrations/`, numbered from 0100                                                                                          |
+| What                        | Where                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| Content                     | In the admin. Pages are in the `pages` collection.                                        |
+| Site description            | In the admin: Settings → General → Tagline                                                |
+| Contact details             | In the admin: the one entry in Företagsuppgifter (`company`)                              |
+| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/`                               |
+| Pages and templates         | `src/pages/`                                                                              |
+| Astro config                | `astro.config.mjs`: your integrations and options, passed to `defineHimlioConfig()`       |
+| Middleware                  | `src/middleware.ts`: add yours after `himlioMiddleware` in `sequence(...)`                |
+| Dependencies and scripts    | `package.json`, except the keys listed under `package` in `himlio-platform.json`          |
+| Database tables of your own | New files in `migrations/`, numbered from 0100                                            |
+| Tests of your own           | `tests/` (not `tests/platform/`)                                                          |
+| Notes about this site       | `SITE.md`                                                                                 |
+| Formatting and TypeScript   | `.prettierrc`, `tsconfig.json`, `.gitignore`, `.prettierignore` (keep what `hooks` lists) |
 
 ## What the platform owns (don't edit)
 
-| File or rule               | Why                                                                                                                                                                                                                                                                                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `himlio.json`              | Slug, name, locale, URL and email sender: platform facts only. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. The description and contact details are the customer's and live in the admin: use `siteDescription()` (`src/lib/site-description.ts`) and `contactDetails()` (`src/lib/contact.ts`). |
-| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                                                                                                                                                                                                |
-| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                                                                                                                                                                                                     |
-| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                                                                                                                                                                                                           |
-| Content-model migrations   | `seed/migrations/`, `src/lib/model-migrations.ts`, `src/middleware.ts`.                                                                                                                                                                                                                                                                       |
+`himlio-platform.json` lists every platform-owned file with its sha256, the strings your own
+files must keep (`hooks`) and the `package.json` keys that must match (`package`).
+`npm run platform:check` (part of `npm run verify` and CI) fails if anything differs. These
+files are changed in `himlio-template` only, and a site repo gets them by syncing with a new
+template version, which overwrites them whole. Among them:
+
+- `AGENTS.md`, `CLAUDE.md`, `.github/workflows/ci.yml`, `wrangler.jsonc`, `himlio.config.mjs`
+- `src/worker.ts` (`/_himlio/cron`, OAuth scope limits), `src/lib/*` (himlio.json reader,
+  contact details, description, sessions, OAuth scopes, content-model migrations, middleware)
+- the content model: `seed/seed.json`, `seed/migrations/`, `emdash-env.d.ts`. A model change goes
+  into `seed/seed.json` (new sites) **and** a new `seed/migrations/NNNN_name.json` (existing
+  sites).
+- `migrations/0001`–`0099`, `scripts/`, `docs/himlio-build.md`, `tests/platform/`
+
+`himlio.json` is owned by `himlio-infrastructure`: slug, name, locale, URL and email sender, written
+by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. The description and
+contact details are the customer's and live in the admin: use `siteDescription()` and
+`contactDetails()`.
 
 ## Rules
 

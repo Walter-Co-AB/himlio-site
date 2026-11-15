@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
-const dir = new URL('../seed/migrations/', import.meta.url);
+const dir = new URL('../../seed/migrations/', import.meta.url);
 const read = (url) => JSON.parse(readFileSync(url, 'utf8'));
-const seed = read(new URL('../seed/seed.json', import.meta.url));
+const seed = read(new URL('../../seed/seed.json', import.meta.url));
 const files = readdirSync(dir)
   .filter((f) => f.endsWith('.json'))
   .sort();

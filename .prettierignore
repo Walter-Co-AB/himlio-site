@@ -6,3 +6,4 @@ package-lock.json
 emdash-env.d.ts
 worker-configuration.d.ts
 himlio.json
+himlio-platform.json
