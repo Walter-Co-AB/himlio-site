@@ -2,15 +2,18 @@
   "version": 1,
   "files": {
     ".github/workflows/ci.yml": "4293305a6300c8391bd9d1c0dba81dbaaa3b07a3b1ee13ecc7c4e6b139c4f15e",
-    "AGENTS.md": "f02914675e576f3ea0ff55693a9e6f38f9a27094a92d448e0afe105dd0109339",
+    ".github/workflows/screenshots.yml": "c3f58e6f3219d58fb60f2c3b1fc8a5bb7ab2a2a69f9ce3b9fb157e822287face",
+    "AGENTS.md": "482c8d2255fc4958308449f47fabb13d6e87b28c2bedcf7d51811fb4c04c77f5",
     "CLAUDE.md": "0a6b049ec4983722594ca3f2e8e82514d7833156bb6f4b3ba4ec28f5ccd8e080",
     "docs/himlio-build.md": "678e1f81a657f5b8084e157d221f0a33267a424e01e58502954397b6827c05b6",
     "emdash-env.d.ts": "df66991e812cc878fcf7134b716899e583375312132e9689d4e96d09125ea9cf",
     "himlio.config.mjs": "0ed0a9034ca98845b8225e1ad29fb2bb944a00e1527a3c82c70ac63150476e9a",
     "migrations/0001_himlio_sessions.sql": "0dae792463089dedf634f15f5898c1b0ca451b7e2317188bf0fc846b84866b6c",
     "migrations/0002_himlio_model_migrations.sql": "659a2e547916721c8b7f9ba44733da1199603d53534c40a064ebbb98d69868a3",
+    "scripts/dev-fixtures.mjs": "53e62e980837170a456c68fab772d4a179ad37b9c067240bbe288eefcd9d65e5",
     "scripts/himlio-build.mjs": "c600c68580f976055e899b72d9f2a46a6842821acdf195e8eed3b39a3595454d",
-    "scripts/platform-manifest.mjs": "ad005c1a6ecb7c091968408d7bff372cda37e4ec4880a6682939d82fbe27e2d5",
+    "scripts/platform-manifest.mjs": "086989eb51a32af7f577afce5d820141d968b7df392ad879c69e46c1c96a42c8",
+    "scripts/screenshots.mjs": "b37c3996da321ec9159b1a9a33db8c479e991c68232b0907057d7c72a0ce9d92",
     "seed/migrations/0001_company.json": "dd4c95b91915800505228549c0eff4d18223de4d6febbcd1f923a8233f0cdb40",
     "seed/seed.json": "f1260c755a8d1260ac12c1af7ae05ca233dcdbcd32e07099126f9fda3085711c",
     "src/lib/contact.ts": "3cf9c6c34fd87870cbb43bec72b4ac9744184d4fe4d68448182fe35e3f75873c",
@@ -45,6 +48,8 @@
   "package": {
     "scripts": {
       "dev": "wrangler d1 migrations apply DB --local && astro dev",
+      "dev:fixtures": "node scripts/dev-fixtures.mjs",
+      "screenshots": "node scripts/screenshots.mjs",
       "build": "astro build",
       "check": "astro check",
       "test": "node --test \"tests/**/*.test.mjs\"",
@@ -65,6 +70,7 @@
     "devDependencies": {
       "@astrojs/check": "^0.9.12",
       "@cloudflare/workers-types": "^5.20261115.1",
+      "playwright": "1.64.1",
       "prettier": "^3.10.1",
       "typescript": "^5.9.3",
       "wrangler": "^4.162.0"

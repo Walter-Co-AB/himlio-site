@@ -17,13 +17,16 @@ const MANIFEST = 'himlio-platform.json';
 /** Platform-owned files: exact paths, and directories whose matching files are all owned. */
 const FILES = [
   '.github/workflows/ci.yml',
+  '.github/workflows/screenshots.yml',
   'AGENTS.md',
   'CLAUDE.md',
   'docs/himlio-build.md',
   'emdash-env.d.ts',
   'himlio.config.mjs',
+  'scripts/dev-fixtures.mjs',
   'scripts/himlio-build.mjs',
   'scripts/platform-manifest.mjs',
+  'scripts/screenshots.mjs',
   'seed/seed.json',
   'src/lib/contact.ts',
   'src/lib/himlio-middleware.ts',
@@ -54,6 +57,8 @@ const HOOKS = {
 const PACKAGE = {
   scripts: [
     'dev',
+    'dev:fixtures',
+    'screenshots',
     'build',
     'check',
     'test',
@@ -74,6 +79,7 @@ const PACKAGE = {
   devDependencies: [
     '@astrojs/check',
     '@cloudflare/workers-types',
+    'playwright',
     'prettier',
     'typescript',
     'wrangler',
@@ -126,15 +132,19 @@ function check() {
       if (!text.includes(needle)) errors.push(`${path}: must contain "${needle}"`);
   }
 
+  // Same rules as the template sync: object values are compared entry by entry, so a site may
+  // add its own scripts, dependencies or allowScripts; null means the entry must be absent.
   const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
-  const want = manifest.package ?? {};
-  for (const section of ['scripts', 'dependencies', 'devDependencies'])
-    for (const [key, value] of Object.entries(want[section] ?? {}))
-      if ((pkg[section]?.[key] ?? null) !== value)
-        errors.push(`package.json ${section}.${key}: must be ${JSON.stringify(value)}`);
-  for (const key of PACKAGE.top)
-    if (key in want && JSON.stringify(pkg[key] ?? null) !== JSON.stringify(want[key]))
-      errors.push(`package.json ${key}: must be ${JSON.stringify(want[key])}`);
+  const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  for (const [key, value] of Object.entries(manifest.package ?? {})) {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [entry, want] of Object.entries(value))
+        if (!same(pkg[key]?.[entry], want))
+          errors.push(`package.json ${key}.${entry}: must be ${JSON.stringify(want)}`);
+    } else if (!same(pkg[key], value)) {
+      errors.push(`package.json ${key}: must be ${JSON.stringify(value)}`);
+    }
+  }
   return errors;
 }
 

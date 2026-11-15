@@ -16,3 +16,5 @@ data.db-*
 .idea/
 .vscode/
 .claude/settings.local.json
+screenshots/
+dev-server.log

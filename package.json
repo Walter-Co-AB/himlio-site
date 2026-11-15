@@ -20,7 +20,9 @@
     "verify": "npm run platform:check && npm run format:check && npm run check && npm test && npm run build && npm run himlio-build",
     "test": "node --test \"tests/**/*.test.mjs\"",
     "platform:manifest": "node scripts/platform-manifest.mjs",
-    "platform:check": "node scripts/platform-manifest.mjs --check"
+    "platform:check": "node scripts/platform-manifest.mjs --check",
+    "dev:fixtures": "node scripts/dev-fixtures.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.8",
@@ -35,6 +37,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@cloudflare/workers-types": "^5.20261115.1",
+    "playwright": "1.64.1",
     "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
     "typescript": "^5.9.3",

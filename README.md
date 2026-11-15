@@ -17,6 +17,8 @@ template as `Walter-Co-AB/site-<slug>`.
 npm install
 npm run dev       # applies D1 migrations locally, then the repo's own port (4321 for the template;
                   # customer sites 4400–4899 from the slug, see devPort() in astro.config.mjs)
+npm run dev:fixtures   # sample content on the dev server (-- --empty for the empty state)
+npm run screenshots    # screenshots of the dev server into screenshots/
 npm test          # unit tests (tests/*.test.mjs, Node's test runner)
 npm run verify    # what CI runs: format, type check, tests, build, himlio-build artifact
 ```
