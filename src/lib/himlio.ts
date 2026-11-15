@@ -12,6 +12,7 @@ export interface Contact {
 export interface Himlio {
   slug: string;
   name: string;
+  /** Starting value only; use siteDescription() from ./site-description, which prefers the admin. */
   description?: string;
   locale: string;
   url?: string | null;

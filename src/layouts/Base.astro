@@ -5,6 +5,7 @@ import { getMenuWithCacheHint } from 'emdash';
 import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from 'emdash/ui';
 import { createPublicPageContext } from 'emdash/page';
 import { himlio } from '../lib/himlio';
+import { siteDescription } from '../lib/site-description';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
@@ -34,7 +35,7 @@ const pageCtx = createPublicPageContext({
   pageType: 'website',
   title: fullTitle,
   pageTitle: pageTitle ?? title,
-  description: description ?? himlio.description,
+  description: description || (await siteDescription(Astro.cache)),
   canonical,
   image,
   content,

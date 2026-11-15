@@ -21,6 +21,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 | What                        | Where                                                       |
 | --------------------------- | ----------------------------------------------------------- |
 | Content                     | In the admin. Pages are in the `pages` collection.          |
+| Site description            | In the admin: Settings → General → Tagline                  |
 | Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/` |
 | Pages and templates         | `src/pages/`                                                |
 | Content model for new sites | `seed/seed.json` (applied once, when a site is set up)      |
@@ -28,12 +29,12 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What the platform owns (don't edit)
 
-| File or rule               | Why                                                                                                                                                               |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `himlio.json`              | Slug, name, description, locale, URL, contact details and email sender. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. |
-| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                    |
-| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                         |
-| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                               |
+| File or rule               | Why                                                                                                                                                                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `himlio.json`              | Slug, name, description, locale, URL, contact details and email sender. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. Its description is only the starting value: use `siteDescription()` (`src/lib/site-description.ts`), which prefers the Tagline set in the admin. |
+| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                                                                                                                                                                     |
+| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                                                                                                                                                                          |
+| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                                                                                                                                                                                |
 
 ## Rules
 
