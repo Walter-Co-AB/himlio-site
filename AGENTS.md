@@ -71,10 +71,36 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 11. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework, a UI
     library or a new dependency.
 
+## Working alongside other agents
+
+Several agents (and people) work on Himlio at once: one per site repo, one for this template and
+one for the infrastructure. These rules keep them out of each other's way.
+
+- **Your dev server, your port.** Each repo has a fixed port: 4321 for the template, 4400–4899
+  for a customer site, derived from the slug in `himlio.json` (`devPort()` in
+  `astro.config.mjs`). If it is taken, `npm run dev` fails instead of moving to another port.
+  Don't change the port; find out who holds it. Before sending a request to a local server,
+  check it is yours: `npx astro dev status` shows this repo's server (agents get one background
+  server per repo), or check the listener's working directory with
+  `lsof -a -p "$(lsof -nP -t -iTCP:<port> -sTCP:LISTEN)" -d cwd`. Never send requests,
+  especially writes, to a server you didn't start.
+- **Stay in your own checkout.** Run git commands only in your own repo's directory. To merge a
+  PR, use `gh pr merge <number> -R Walter-Co-AB/<repo> --squash`. Add `--delete-branch` only when
+  you run it from your own checkout of that repo: it also switches and pulls the local checkout.
+- **Who owns what.**
+  - Platform-owned files (see "What the platform owns") are written in `himlio-template`. Site
+    repos copy them unchanged from a named template commit and never edit them; a change goes
+    to the template first.
+  - `himlio.json` is written by `himlio-infrastructure` (Terraform). No one edits it in a repo.
+  - Everything else in a site repo (design, pages) belongs to that site. Content belongs in the
+    admin.
+- **Hand over with commit hashes.** When you ask another agent to sync or review, name the
+  commit and the files.
+
 ## Commands
 
 ```sh
 npm install
-npm run dev          # http://localhost:4321, admin at /_emdash/admin
+npm run dev          # this repo's port (4321 for the template), admin at /_emdash/admin
 npm run verify       # everything CI runs
 ```

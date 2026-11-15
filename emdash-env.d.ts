@@ -5,24 +5,6 @@
 
 import type { BylineSummary, ContentBylineCredit, TaxonomyTerm, PortableTextBlock } from "emdash";
 
-export interface Company {
-  id: string;
-  slug: string | null;
-  status: string;
-  title: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  org_number?: string;
-  opening_hours?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt: Date | null;
-  byline?: BylineSummary | null;
-  bylines?: ContentBylineCredit[];
-  terms?: Record<string, TaxonomyTerm[]>;
-}
-
 export interface Page {
   id: string;
   slug: string | null;
@@ -39,7 +21,6 @@ export interface Page {
 
 declare module "emdash" {
   interface EmDashCollections {
-    company: Company;
     pages: Page;
   }
 }
