@@ -1,12 +1,11 @@
-// The site's description: what the customer wrote in the admin, else the starting value from
-// himlio.json (written by the platform, overwritten on every apply, not editable by customers).
+// The site's description: the Tagline the customer sets in the admin (Settings → General; the
+// setup wizard also asks for it). Without one there is no site-wide description: pages show no
+// lead and leave out the meta description rather than repeat the site name. Per-page SEO
+// descriptions are set on each page and win over this one.
 //
-// In the admin it is the Tagline (Settings → General; the setup wizard also asks for it).
 // EmDash 1.5 has no separate site-wide SEO description: its SEO settings only hold the title
-// separator, default image, robots.txt and verification codes. Per-page SEO descriptions are
-// set on each page and win over this one.
+// separator, default image, robots.txt and verification codes.
 import { getSiteSettingsWithCacheHint } from 'emdash';
-import { himlio } from './himlio';
 
 type CacheHint = Awaited<ReturnType<typeof getSiteSettingsWithCacheHint>>['cacheHint'];
 
@@ -19,5 +18,5 @@ export async function siteDescription(cache?: {
 }): Promise<string | undefined> {
   const { data, cacheHint } = await getSiteSettingsWithCacheHint();
   if (cache?.enabled) cache.set(cacheHint);
-  return data.tagline?.trim() || himlio.description;
+  return data.tagline?.trim() || undefined;
 }

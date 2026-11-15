@@ -8,8 +8,8 @@ template as `Walter-Co-AB/site-<slug>`.
 - The site answers on `<slug>.himlio.app` and on the customer's own domains.
 - Content is edited in the admin at `/_emdash/admin`. Content and users are stored in the
   site's D1 database and media in its R2 bucket, both in the EU.
-- The site's name, description and contact details come from `himlio.json`, which the
-  platform writes.
+- The site's name, locale and URL come from `himlio.json`, which the platform writes. The
+  description (Tagline) and contact details are edited in the admin.
 
 ## Development
 

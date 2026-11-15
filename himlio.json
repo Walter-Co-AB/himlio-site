@@ -1,12 +1,6 @@
 {
   "slug": "template",
   "name": "Exempelföretaget AB",
-  "description": "En kort mening om vad företaget gör.",
   "locale": "sv",
-  "url": null,
-  "contact": {
-    "email": "info@example.com",
-    "phone": "08-123 456 78",
-    "org_number": "556000-0000"
-  }
+  "url": null
 }
