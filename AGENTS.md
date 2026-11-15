@@ -123,4 +123,10 @@ one for the infrastructure. These rules keep them out of each other's way.
 npm install
 npm run dev          # this repo's port (4321 for the template), admin at /_emdash/admin
 npm run verify       # everything CI runs
+npm run dev:fixtures # sample content on the local dev server (-- --empty for the empty state)
+npm run screenshots  # light, dark and mobile screenshots of the local dev server
 ```
+
+Every pull request gets a **Screenshots** workflow: it starts the dev server in CI, takes
+screenshots with the sample content and empty, and uploads them as the `screenshots` artifact.
+Look at them before merging a design change.
