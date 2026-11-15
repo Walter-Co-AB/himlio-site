@@ -25,7 +25,19 @@ const emailPlugins = himlio.email?.from
 const isDev = process.argv.slice(2).includes('dev');
 const siteUrl = !isDev && himlio.url ? himlio.url : undefined;
 
+// Every repo gets its own dev port, so agents and people working on several sites at once never
+// talk to another site's server: 4321 for the template, 4400–4899 for a customer site (from its
+// slug). strictPort: if the port is taken, `astro dev` fails instead of moving to the next one.
+export const devPort = (slug) => {
+  if (!slug || slug === 'template') return 4321;
+  let hash = 0x811c9dc5; // FNV-1a
+  for (const ch of slug) hash = Math.imul(hash ^ ch.charCodeAt(0), 0x01000193) >>> 0;
+  return 4400 + (hash % 500);
+};
+
 export default defineConfig({
+  server: { port: devPort(himlio.slug) },
+  vite: { server: { strictPort: true } },
   site: himlio.url ?? undefined,
   output: 'server',
   // No Cloudflare Images binding on Himlio yet: images are served as uploaded.
