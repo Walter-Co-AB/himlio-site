@@ -9,12 +9,13 @@ import himlio from './himlio.json' with { type: 'json' };
 // Email (invites, sign-in links, comment notices) through the platform's EMAIL binding.
 // Only when himlio.json has `email`, which the platform writes once it has added the binding.
 // Without it EmDash has no email provider, and invites give a link to share instead.
+// No Reply-To: these are system emails from a no-reply sender, and the customer's contact
+// address lives in the admin, which build-time config can't read.
 const emailPlugins = himlio.email?.from
   ? [
       cloudflareEmail({
         binding: 'EMAIL',
         from: { email: himlio.email.from, name: himlio.name },
-        ...(himlio.contact?.email ? { replyTo: himlio.contact.email } : {}),
       }),
     ]
   : [];

@@ -28,13 +28,75 @@
           "searchable": true
         }
       ]
+    },
+    {
+      "slug": "company",
+      "label": "Företagsuppgifter",
+      "labelSingular": "Företagsuppgifter",
+      "description": "Kontaktuppgifter som visas på webbplatsen. Fyll i den enda posten; tomma fält visas inte.",
+      "admin": {
+        "quickCreate": false
+      },
+      "supports": [],
+      "routable": false,
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Rubrik",
+          "type": "string",
+          "required": true
+        },
+        {
+          "slug": "phone",
+          "label": "Telefon",
+          "type": "string"
+        },
+        {
+          "slug": "email",
+          "label": "E-post",
+          "type": "string"
+        },
+        {
+          "slug": "address",
+          "label": "Adress",
+          "type": "text"
+        },
+        {
+          "slug": "org_number",
+          "label": "Organisationsnummer",
+          "type": "string"
+        },
+        {
+          "slug": "opening_hours",
+          "label": "Öppettider",
+          "type": "text"
+        }
+      ]
     }
   ],
   "menus": [
     {
       "name": "primary",
       "label": "Huvudmeny",
-      "items": [{ "type": "custom", "label": "Start", "url": "/" }]
+      "items": [
+        {
+          "type": "custom",
+          "label": "Start",
+          "url": "/"
+        }
+      ]
     }
-  ]
+  ],
+  "content": {
+    "company": [
+      {
+        "id": "foretagsuppgifter",
+        "slug": "foretagsuppgifter",
+        "status": "published",
+        "data": {
+          "title": "Företagsuppgifter"
+        }
+      }
+    ]
+  }
 }

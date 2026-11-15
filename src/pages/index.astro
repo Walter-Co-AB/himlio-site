@@ -3,14 +3,17 @@ import { getEmDashEntry } from 'emdash';
 import { PortableText } from 'emdash/ui';
 import Base from '../layouts/Base.astro';
 import Contact from '../components/Contact.astro';
+import { contactDetails, hasContactDetails } from '../lib/contact';
 import { himlio } from '../lib/himlio';
 import { siteDescription } from '../lib/site-description';
 
-// The home page shows the company's details from himlio.json. If the customer publishes a
-// page with the slug "start" in the admin, its content is shown here as well.
+// The home page shows the site's name, its description (the admin's Tagline) and the contact
+// details from the admin. If the customer publishes a page with the slug "start", its content is
+// shown here as well.
 const { entry: start, cacheHint } = await getEmDashEntry('pages', 'start');
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 const description = await siteDescription(Astro.cache);
+const details = await contactDetails(Astro.cache);
 ---
 
 <Base
@@ -29,10 +32,12 @@ const description = await siteDescription(Astro.cache);
     </article>
   )}
 
-  <section class="prose" aria-labelledby="kontakt">
-    <h2 id="kontakt">Kontakt</h2>
-    <Contact />
-  </section>
+  {hasContactDetails(details) && (
+    <section class="prose" aria-labelledby="kontakt">
+      <h2 id="kontakt">Kontakt</h2>
+      <Contact details={details} />
+    </section>
+  )}
 </Base>
 
 <style>

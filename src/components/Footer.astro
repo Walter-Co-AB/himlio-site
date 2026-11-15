@@ -1,14 +1,16 @@
 ---
 import { himlio } from '../lib/himlio';
+import { contactDetails } from '../lib/contact';
 import Contact from './Contact.astro';
 
 const year = new Date().getFullYear();
+const details = await contactDetails(Astro.cache);
 ---
 
 <footer class="footer">
   <div class="container footer-inner">
     <strong>{himlio.name}</strong>
-    <Contact />
+    <Contact details={details} />
   </div>
   <div class="container copyright">
     © {year} {himlio.name}

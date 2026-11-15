@@ -1,10 +1,14 @@
 ---
-import { himlio, telHref } from '../lib/himlio';
+import { telHref, type ContactDetails } from '../lib/contact';
 
-const { email, phone, address, org_number } = himlio.contact;
+interface Props {
+  details: ContactDetails;
+}
+
+const { email, phone, address, org_number, opening_hours } = Astro.props.details;
 ---
 
-{(email || phone || address || org_number) && (
+{(email || phone || address || org_number || opening_hours) && (
   <dl class="contact">
     {email && (
       <div>
@@ -25,7 +29,13 @@ const { email, phone, address, org_number } = himlio.contact;
     {address && (
       <div>
         <dt>Adress</dt>
-        <dd class="address">{address}</dd>
+        <dd class="multiline">{address}</dd>
+      </div>
+    )}
+    {opening_hours && (
+      <div>
+        <dt>Öppettider</dt>
+        <dd class="multiline">{opening_hours}</dd>
       </div>
     )}
     {org_number && (
@@ -50,7 +60,7 @@ const { email, phone, address, org_number } = himlio.contact;
   dd {
     margin: 0;
   }
-  .address {
+  .multiline {
     white-space: pre-line;
   }
 </style>

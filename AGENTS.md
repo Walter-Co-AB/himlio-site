@@ -21,23 +21,24 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What you may change
 
-| What                        | Where                                                       |
-| --------------------------- | ----------------------------------------------------------- |
-| Content                     | In the admin. Pages are in the `pages` collection.          |
-| Site description            | In the admin: Settings → General → Tagline                  |
-| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/` |
-| Pages and templates         | `src/pages/`                                                |
-| Content model for new sites | `seed/seed.json` (applied once, when a site is set up)      |
-| Database tables of your own | New files in `migrations/`, numbered from 0100              |
+| What                        | Where                                                        |
+| --------------------------- | ------------------------------------------------------------ |
+| Content                     | In the admin. Pages are in the `pages` collection.           |
+| Site description            | In the admin: Settings → General → Tagline                   |
+| Contact details             | In the admin: the one entry in Företagsuppgifter (`company`) |
+| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/`  |
+| Pages and templates         | `src/pages/`                                                 |
+| Content model for new sites | `seed/seed.json` (applied once, when a site is set up)       |
+| Database tables of your own | New files in `migrations/`, numbered from 0100               |
 
 ## What the platform owns (don't edit)
 
-| File or rule               | Why                                                                                                                                                                                                                                                                                                                |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `himlio.json`              | Slug, name, description, locale, URL, contact details and email sender. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. Its description is only the starting value: use `siteDescription()` (`src/lib/site-description.ts`), which prefers the Tagline set in the admin. |
-| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                                                                                                                                                                     |
-| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                                                                                                                                                                          |
-| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                                                                                                                                                                                |
+| File or rule               | Why                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `himlio.json`              | Slug, name, locale, URL and email sender: platform facts only. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. The description and contact details are the customer's and live in the admin: use `siteDescription()` (`src/lib/site-description.ts`) and `contactDetails()` (`src/lib/contact.ts`). |
+| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                                                                                                                                                                                                |
+| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                                                                                                                                                                                                     |
+| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                                                                                                                                                                                                           |
 
 ## Rules
 
@@ -65,8 +66,8 @@ working on this site. The site runs on Himlio, the website platform from Walter 
    details.
 9. **Privacy (GDPR).** No third-party fonts, analytics, trackers or embeds without asking.
    Fonts are self-hosted via `@fontsource`. Store only the personal data a feature needs.
-10. **Honest content.** No invented text, testimonials, customers or numbers. Use what is in
-    `himlio.json` or what the customer has written.
+10. **Honest content.** No invented text, testimonials, customers or numbers. Use what the
+    customer has written in the admin.
 11. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework, a UI
     library or a new dependency.
 
