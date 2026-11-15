@@ -1,10 +1,11 @@
 // Limits what OAuth clients (MCP connectors such as Claude's custom connector, the EmDash CLI)
 // can get to content work, plus reading the content model and the site settings. No write
 // access to the schema (it can delete content; the model belongs in seed/seed.json) or to
-// settings (they hold the site URL, which passkeys and MCP depend on, and staging/noindex). EmDash grants whatever scopes a client requests, capped only by the
-// signing-in user's role, and has no setting to restrict them. So the Worker rewrites the
-// requested scopes before EmDash sees them. Personal API tokens made in the admin are not
-// affected.
+// settings (they hold the site URL, which passkeys and MCP depend on, and staging/noindex).
+//
+// EmDash grants whatever scopes a client requests, capped only by the signing-in user's role,
+// and has no setting to restrict them. So the Worker rewrites the requested scopes before
+// EmDash sees them. Personal API tokens made in the admin are not affected.
 //
 // Plain web APIs only, so tests/oauth-scopes.test.mjs can run it under Node.
 
@@ -61,18 +62,29 @@ function routePath(url: URL): string | null {
 }
 
 const NOT_FOUND_LOG = '/_emdash/api/redirects/404s';
+const SETTINGS = '/_emdash/api/settings';
 
 /**
- * EmDash lets settings:read tokens read the 404 log, which holds visitor IP addresses.
- * Connectors don't need it (no MCP tool reads it), so OAuth access tokens are refused there.
- * Signed-in admins and personal API tokens are not affected.
+ * REST routes that OAuth access tokens may not use, although EmDash's scope table lets a
+ * settings:read token through:
+ * - the 404 log, which holds visitor IP addresses;
+ * - everything under /_emdash/api/settings/ (email, domain, backups and any future sub-route).
+ *   Some of them only check the user's role, so an admin's connector token would pass, e.g.
+ *   the email provider and SMTP status. Exact /_emdash/api/settings (what settings_get returns)
+ *   stays open.
+ * Connectors lose nothing: MCP tools run in-process, not through these routes. Signed-in
+ * admins and personal API tokens are not affected.
  */
 export function refusesOAuthToken(request: Request): boolean {
-  const path = routePath(new URL(request.url));
-  const isNotFoundLog =
-    path === null || path === NOT_FOUND_LOG || path.startsWith(NOT_FOUND_LOG + '/');
   // EmDash reads the token the same way: "Bearer " exactly, then the ec_oat_ prefix.
-  return isNotFoundLog && (request.headers.get('Authorization') ?? '').startsWith('Bearer ec_oat_');
+  if (!(request.headers.get('Authorization') ?? '').startsWith('Bearer ec_oat_')) return false;
+  const path = routePath(new URL(request.url));
+  if (path === null) return true;
+  return (
+    path === NOT_FOUND_LOG ||
+    path.startsWith(NOT_FOUND_LOG + '/') ||
+    path.startsWith(SETTINGS + '/')
+  );
 }
 
 export function isOAuthScopePath(url: URL): boolean {

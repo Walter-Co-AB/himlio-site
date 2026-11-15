@@ -125,7 +125,7 @@ test('invalid JSON is passed through for EmDash to answer', async () => {
   assert.equal(await limitOAuthScopes(req), req);
 });
 
-test('OAuth access tokens are refused on the 404 log (visitor IPs), nothing else', () => {
+test('OAuth access tokens are refused on the 404 log and settings sub-routes, nothing else', () => {
   const req = (path, auth) =>
     new Request(ORIGIN + path, { headers: auth ? { Authorization: auth } : {} });
   for (const p of [
@@ -133,12 +133,25 @@ test('OAuth access tokens are refused on the 404 log (visitor IPs), nothing else
     '/_emdash/api/redirects/404s/summary',
     '/_emdash/api/Redirects/404s/',
     '/_emdash//api/redirects/%34%304s',
+    '/_emdash/api/settings/email',
+    '/_emdash/api/settings/domain',
+    '/_emdash/api/settings/backups',
+    '/_emdash/api/settings/x',
+    '/_emdash/api/Settings/%65mail',
+    '/_emdash/api/%zz',
   ])
     assert.equal(refusesOAuthToken(req(p, 'Bearer ec_oat_abc')), true, p);
   // Signed-in admins (no bearer) and personal API tokens keep access.
-  assert.equal(refusesOAuthToken(req('/_emdash/api/redirects/404s')), false);
-  assert.equal(refusesOAuthToken(req('/_emdash/api/redirects/404s', 'Bearer ec_pat_abc')), false);
-  // Other routes are left to EmDash's own scope checks.
-  for (const p of ['/_emdash/api/redirects', '/_emdash/api/settings', '/_emdash/api/mcp'])
+  for (const p of ['/_emdash/api/redirects/404s', '/_emdash/api/settings/email']) {
+    assert.equal(refusesOAuthToken(req(p)), false, p);
+    assert.equal(refusesOAuthToken(req(p, 'Bearer ec_pat_abc')), false, p);
+  }
+  // Exact /settings (what settings_get returns) and other routes are left to EmDash.
+  for (const p of [
+    '/_emdash/api/settings',
+    '/_emdash/api/settings/',
+    '/_emdash/api/redirects',
+    '/_emdash/api/mcp',
+  ])
     assert.equal(refusesOAuthToken(req(p, 'Bearer ec_oat_abc')), false, p);
 });
