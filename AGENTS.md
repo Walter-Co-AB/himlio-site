@@ -20,7 +20,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 | Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/` |
 | Pages and templates         | `src/pages/`                                                |
 | Content model for new sites | `seed/seed.json` (applied once, when a site is set up)      |
-| Database tables of your own | New files in `migrations/`                                  |
+| Database tables of your own | New files in `migrations/`, numbered from 0100              |
 
 ## What the platform owns (don't edit)
 
@@ -47,7 +47,8 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 6. **Parameterised SQL only.** `env.DB.prepare('... WHERE id = ?').bind(id)`. Never build SQL
    by joining strings.
 7. **Migrations are append-only.** Add `migrations/NNNN_description.sql`; never edit one that
-   has been applied. EmDash creates its own tables itself.
+   has been applied. Numbers 0001–0099 belong to the platform and this template; a customer
+   site's own migrations start at 0100. EmDash creates its own tables itself.
 8. **Every route needs a decision about access.** Public endpoints (forms) need input
    validation with length limits and abuse protection. Anything that shows or changes data
    that isn't public must check the EmDash session. Return generic error messages; log
