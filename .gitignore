@@ -2,7 +2,13 @@ node_modules/
 dist/
 .astro/
 .wrangler/
+.emdash/migrations.json
+himlio-build/
+uploads/
+data.db
+data.db-*
 .dev.vars
+.dev.vars.*
 .env
 .env.*
 *.log

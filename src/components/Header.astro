@@ -1,11 +1,12 @@
 ---
 interface Props {
   name: string;
-  menu: { label: string; href: string }[];
+  menu: { label: string; url: string; target?: string }[];
 }
 
 const { name, menu } = Astro.props;
 const current = Astro.url.pathname.replace(/\/?$/, '/');
+const isCurrent = (url: string) => url.replace(/\/?$/, '/') === current;
 ---
 
 <header class="header">
@@ -18,7 +19,12 @@ const current = Astro.url.pathname.replace(/\/?$/, '/');
         <ul>
           {menu.map((item) => (
             <li>
-              <a href={item.href} aria-current={item.href === current ? 'page' : undefined}>
+              <a
+                href={item.url}
+                target={item.target}
+                rel={item.target === '_blank' ? 'noopener noreferrer' : undefined}
+                aria-current={isCurrent(item.url) ? 'page' : undefined}
+              >
                 {item.label}
               </a>
             </li>

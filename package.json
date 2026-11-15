@@ -1,31 +1,46 @@
 {
-  "name": "walterco-site-template",
+  "name": "himlio-site",
   "type": "module",
   "private": true,
   "version": "0.1.0",
   "engines": {
     "node": ">=22.23.4"
   },
+  "emdash": {
+    "seed": "seed/seed.json"
+  },
   "scripts": {
-    "dev": "astro dev",
+    "dev": "wrangler d1 migrations apply DB --local && astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check && node scripts/check-cms.mjs",
-    "check:cms": "node scripts/check-cms.mjs",
+    "check": "astro check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "verify": "npm run format:check && npm run check && npm run build"
+    "himlio-build": "rm -rf himlio-build && npx wrangler deploy --dry-run --outdir himlio-build/worker && node scripts/himlio-build.mjs",
+    "verify": "npm run format:check && npm run check && npm test && npm run build && npm run himlio-build",
+    "test": "node --test \"tests/**/*.test.mjs\""
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/cloudflare": "^14.4.8",
+    "@astrojs/react": "^7.1.9",
+    "@emdash-cms/cloudflare": "1.5.0",
     "@fontsource-variable/inter": "^5.3.0",
-    "astro": "^7.4.8"
+    "astro": "^7.4.12",
+    "emdash": "1.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
-    "prettier": "^3.9.10",
+    "@cloudflare/workers-types": "^5.20261115.1",
+    "prettier": "^3.10.1",
     "prettier-plugin-astro": "^1.1.2",
     "typescript": "^5.9.3",
-    "yaml": "^2.9.1"
+    "wrangler": "^4.162.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261110.1": true,
+    "workerd@1.20261113.1": true,
+    "esbuild@0.28.2": true
   }
 }

@@ -1,37 +1,17 @@
 ---
-import type { z } from 'astro/zod';
-import type { settingsSchema } from '../schemas';
+import { himlio } from '../lib/himlio';
+import Contact from './Contact.astro';
 
-interface Props {
-  settings: z.infer<typeof settingsSchema>;
-}
-
-const { settings } = Astro.props;
 const year = new Date().getFullYear();
 ---
 
 <footer class="footer">
   <div class="container footer-inner">
-    <div>
-      <strong>{settings.name}</strong>
-      {settings.address && <p class="address">{settings.address}</p>}
-      {settings.orgNumber && <p>Org.nr {settings.orgNumber}</p>}
-    </div>
-    <div>
-      {settings.email && (
-        <p>
-          <a href={`mailto:${settings.email}`}>{settings.email}</a>
-        </p>
-      )}
-      {settings.phone && (
-        <p>
-          <a href={`tel:${settings.phone.replace(/[^\d+]/g, '')}`}>{settings.phone}</a>
-        </p>
-      )}
-    </div>
+    <strong>{himlio.name}</strong>
+    <Contact />
   </div>
   <div class="container copyright">
-    © {year} {settings.name}
+    © {year} {himlio.name}
   </div>
 </footer>
 
@@ -47,12 +27,6 @@ const year = new Date().getFullYear();
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 1.5rem;
-  }
-  p {
-    margin: 0.25rem 0 0;
-  }
-  .address {
-    white-space: pre-line;
   }
   .copyright {
     margin-top: 2rem;

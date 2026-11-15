@@ -1,4 +1,7 @@
 dist/
 .astro/
+.wrangler/
+himlio-build/
 package-lock.json
-public/admin/index.html
+emdash-env.d.ts
+worker-configuration.d.ts

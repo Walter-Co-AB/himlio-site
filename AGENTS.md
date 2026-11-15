@@ -1,76 +1,74 @@
 # AGENTS.md
 
 Rules for AI coding tools (Claude Code, Codex, Cursor, Copilot and others) and for people
-working on this site. The site is hosted by Walter & Co on Cloudflare Pages.
+working on this site. The site runs on Himlio, the website platform from Walter & Co AB.
 
 ## Stack
 
-- Astro, static output. Pages are built from `src/content/` (Markdown and JSON).
-- Sveltia CMS at `/admin/`. Editors log in with GitHub and every save is a git commit.
-- Optional server code in `functions/` (Cloudflare Pages Functions) and an optional D1
-  database bound as `env.DB` with migrations in `migrations/`. Neither exists until it is
-  needed; see `examples/`.
+- [EmDash](https://github.com/emdash-cms/emdash) (an Astro CMS) on Cloudflare Workers for
+  Platforms. Server rendered (`output: 'server'`) with `@astrojs/cloudflare`.
+- Admin at `/_emdash/admin`. Content, users and sessions are stored in D1 (`DB`), media in R2
+  (`MEDIA`), and co-editing rooms in a Durable Object (`EMDASH_ROOMS`).
+- The public URL is `url` in `himlio.json` (EmDash `siteUrl`, set for builds, not in `astro dev`).
+  Passkeys, OAuth, MCP and links in emails use it.
+- OAuth clients (MCP connectors, the EmDash CLI) only get content scopes: `src/lib/oauth-scopes.ts`
+  limits them before EmDash sees the request. Don't widen the list without asking Walter & Co.
+- Swedish first: `sv` is the site language and the admin is in Swedish for Swedish browsers.
+  Write interface text and starter content in Swedish.
 
-## Files and who owns them
+## What you may change
 
-| File                                | What it is                                                              |
-| ----------------------------------- | ----------------------------------------------------------------------- |
-| `site.config.json`                  | Repo, domain, Pages project, CMS login. Set by Walter & Co; don't edit. |
-| `src/content/settings/site.json`    | Name, contact details and colours. Edited in the CMS.                   |
-| `src/content/pages/<slug>/index.md` | One page each, images in the same folder. `start` is the home page.     |
-| `cms/config.yml`                    | CMS fields. Must match `src/schemas.ts`.                                |
-| `src/schemas.ts`                    | Zod schemas for the content. Must match `cms/config.yml`.               |
-| `src/pages/admin/config.yml.ts`     | Builds `/admin/config.yml` from the two files above.                    |
+| What                        | Where                                                       |
+| --------------------------- | ----------------------------------------------------------- |
+| Content                     | In the admin. Pages are in the `pages` collection.          |
+| Design                      | `src/styles/`, `src/layouts/`, `src/components/`, `public/` |
+| Pages and templates         | `src/pages/`                                                |
+| Content model for new sites | `seed/seed.json` (applied once, when a site is set up)      |
+| Database tables of your own | New files in `migrations/`, numbered from 0100              |
+
+## What the platform owns (don't edit)
+
+| File or rule               | Why                                                                                                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `himlio.json`              | Slug, name, description, locale, URL, contact details and email sender. Written by Terraform and overwritten on every apply. Read it through `src/lib/himlio.ts`. |
+| `.github/workflows/ci.yml` | Builds the `himlio-build` artifact that the platform releases.                                                                                                    |
+| OAuth scope limits         | `src/lib/oauth-scopes.ts` and its use in `src/worker.ts`.                                                                                                         |
+| The build contract         | `docs/himlio-build.md`, `scripts/himlio-build.mjs`, the `/_himlio/cron` handler in `src/worker.ts`.                                                               |
 
 ## Rules
 
-1. **`npm run verify` must pass** before you commit (format, type check, CMS check, build).
-2. **Preview before production.** Work on a branch. Every branch gets a preview at
-   `https://<branch>.<project>.pages.dev`. Merge to `main` only after the preview has been
-   checked and approved.
-3. **Keep the CMS and the schemas in sync.** When you add, rename or remove a content field,
-   change both `cms/config.yml` and `src/schemas.ts`. A field is `.optional()` in Zod
-   exactly when it is `required: false` in the CMS.
-4. **No secrets in git.** API keys, tokens and passwords are set as secrets in Cloudflare by
-   Walter & Co and read from `env` at runtime. Never write them into code, config, `.env`
-   files that get committed, or the CMS. `.dev.vars` is for local values and is ignored.
-5. **Use bindings, not URLs and keys.** Talk to D1, KV and the Walter & Co API through the
-   bindings on `env` (`env.DB` and so on). Ask Walter & Co to add a binding; don't create
-   Cloudflare resources yourself and don't add a `wrangler.toml` (the Pages project is
-   managed by Walter & Co).
-6. **Parameterised SQL only.** `env.DB.prepare('... WHERE id = ?').bind(id)`. Never build
-   SQL by joining strings.
-7. **Every route needs a decision about access.** Files in `functions/` are public URLs.
-   Public endpoints (forms) need Turnstile, input validation with length limits, and rate
-   limiting. Anything that shows or changes data that isn't public must be behind
-   Cloudflare Access or check a session. Return generic error messages; log details.
-8. **Migrations are append-only.** Add `migrations/NNNN_description.sql`; never edit one that
-   has been applied.
+1. **`npm run verify` must pass** before you commit (format, type check, tests, build, artifact).
+2. **Work on a branch.** Walter & Co merges to `main`; every push to `main` can be released.
+3. **No secrets in git.** Customers may have write access to this repo. Never write keys,
+   tokens or passwords into code, config or `.env` files. `.dev.vars` is for local values and
+   is ignored.
+4. **Only the bindings the platform provides.** `DB`, `MEDIA`, `EMAIL`, `HIMLIO_SLUG`, plus what the
+   build declares itself: assets, Durable Objects and plain-text vars. No KV, queues, service
+   bindings or extra D1/R2; `scripts/himlio-build.mjs` fails on them. Ask Walter & Co if you
+   need one.
+5. **No Cron Triggers.** They don't run on the platform. Put scheduled work in the
+   `/_himlio/cron` handler in `src/worker.ts`; the expressions come from `triggers.crons` in
+   `wrangler.jsonc` (UTC, at most 3). The work must be safe to run twice or to skip.
+6. **Parameterised SQL only.** `env.DB.prepare('... WHERE id = ?').bind(id)`. Never build SQL
+   by joining strings.
+7. **Migrations are append-only.** Add `migrations/NNNN_description.sql`; never edit one that
+   has been applied. Numbers 0001–0099 belong to the platform and this template; a customer
+   site's own migrations start at 0100. EmDash creates its own tables itself.
+8. **Every route needs a decision about access.** Public endpoints (forms) need input
+   validation with length limits and abuse protection. Anything that shows or changes data
+   that isn't public must check the EmDash session. Return generic error messages; log
+   details.
 9. **Privacy (GDPR).** No third-party fonts, analytics, trackers or embeds without asking.
    Fonts are self-hosted via `@fontsource`. Store only the personal data a feature needs.
-10. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework, a UI
+10. **Honest content.** No invented text, testimonials, customers or numbers. Use what is in
+    `himlio.json` or what the customer has written.
+11. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework, a UI
     library or a new dependency.
-
-## Bindings and environment
-
-Set by Walter & Co on the Pages project, for both production and previews. They only exist
-when the feature is turned on for this site; check before relying on one.
-
-| Name                        | Kind                | When               | Notes                                                                                                                |
-| --------------------------- | ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `env.DB`                    | D1                  | database turned on | Previews use a separate preview database, never production data.                                                     |
-| `env.API`                   | Service binding     | forms turned on    | The Walter & Co API. Call it with `env.API.fetch(...)`; it has no public URL.                                        |
-| `env.API_KEY`               | Secret              | forms turned on    | Send as `Authorization: Bearer <key>` to `env.API`. The API derives the site from the key; never send a customer id. |
-| `env.TURNSTILE_SECRET`      | Secret              | forms turned on    | Server-side Turnstile check.                                                                                         |
-| `PUBLIC_TURNSTILE_SITE_KEY` | Build-time variable | forms turned on    | `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY` in Astro, for the widget.                                                |
-
-Previews (`*.<project>.pages.dev`) may be behind Cloudflare Access, so requests from outside
-the browser (curl, webhooks, tests) to a preview need an Access login or service token.
 
 ## Commands
 
 ```sh
 npm install
-npm run dev          # http://localhost:4321 (the CMS needs the deployed site to log in)
+npm run dev          # http://localhost:4321, admin at /_emdash/admin
 npm run verify       # everything CI runs
 ```
