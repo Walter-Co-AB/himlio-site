@@ -1,5 +1,4 @@
-/* Colours come from src/content/settings/site.json (set on <html> in Base.astro).
-   The fallbacks here are only used if a value is missing. */
+/* Design tokens. Change colours and fonts here. */
 :root {
   --color-primary: #1d4ed8;
   --color-bg: #ffffff;

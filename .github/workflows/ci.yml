@@ -1,6 +1,8 @@
 name: CI
 
-# Runs on pull requests and on pushes to any branch (CMS saves included).
+# Owned by the Himlio platform; don't change it. On pushes to main it uploads the
+# `himlio-build` artifact that the platform releases (see docs/himlio-build.md).
+# It uses no secrets.
 on:
   push:
   pull_request:
@@ -14,14 +16,24 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    name: Verify
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Format, type check, astro build, wrangler deploy --dry-run and scripts/himlio-build.mjs.
       - run: npm run verify
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: himlio-build
+          path: himlio-build/
+          include-hidden-files: false
+          if-no-files-found: error

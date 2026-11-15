@@ -1,51 +1,66 @@
 ---
 import '@fontsource-variable/inter';
 import '../styles/global.css';
-import config from '../../site.config.json';
-import { isPreview } from '../lib/site-url.mjs';
-import { getMenu, getSettings } from '../lib/content';
+import { getMenuWithCacheHint } from 'emdash';
+import { EmDashHead, EmDashBodyStart, EmDashBodyEnd } from 'emdash/ui';
+import { createPublicPageContext } from 'emdash/page';
+import { himlio } from '../lib/himlio';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 
 interface Props {
   title: string;
-  description: string;
+  pageTitle?: string | null;
+  description?: string | null;
+  image?: string | null;
+  canonical?: string | null;
+  /** Content reference, for plugin contributions on content pages. */
+  content?: { collection: string; id: string; slug?: string | null };
 }
 
-const { title, description } = Astro.props;
-const settings = await getSettings();
-const menu = await getMenu();
-const fullTitle = title === settings.name ? title : `${title} | ${settings.name}`;
-const canonical = new URL(Astro.url.pathname, Astro.site);
-const { primary, background, text } = settings.colors;
-const theme = `--color-primary:${primary};--color-bg:${background};--color-text:${text};`;
+const { title, pageTitle, description, image, canonical, content } = Astro.props;
+
+const menuResult = await getMenuWithCacheHint('primary');
+if (Astro.cache?.enabled) Astro.cache.set(menuResult.cacheHint);
+const menu = menuResult.data?.items ?? [];
+
+const siteName = himlio.name;
+const fullTitle =
+  title === siteName || title.endsWith(` | ${siteName}`) ? title : `${title} | ${siteName}`;
+
+const pageCtx = createPublicPageContext({
+  Astro,
+  kind: content ? 'content' : 'custom',
+  pageType: 'website',
+  title: fullTitle,
+  pageTitle: pageTitle ?? title,
+  description: description ?? himlio.description,
+  canonical,
+  image,
+  content,
+  siteName,
+});
 ---
 
 <!doctype html>
-<html lang={config.locale} style={theme}>
+<html lang={himlio.locale}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
-    <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
-    <meta property="og:title" content={fullTitle} />
-    <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta property="og:site_name" content={settings.name} />
-    <meta property="og:type" content="website" />
-    {isPreview && <meta name="robots" content="noindex" />}
+    <EmDashHead page={pageCtx} />
   </head>
   <body>
+    <EmDashBodyStart page={pageCtx} />
     <a class="skip" href="#main">
       Hoppa till innehållet
     </a>
-    <Header name={settings.name} menu={menu} />
-    <main id="main">
+    <Header name={siteName} menu={menu} />
+    <main id="main" class="container">
       <slot />
     </main>
-    <Footer settings={settings} />
+    <Footer />
+    <EmDashBodyEnd page={pageCtx} />
   </body>
 </html>

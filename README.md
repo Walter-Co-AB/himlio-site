@@ -1,38 +1,29 @@
-# Walter & Co site template
+# Himlio site template
 
-Starter for customer websites hosted by Walter & Co: Astro + Sveltia CMS on Cloudflare Pages.
-New customer repos are created from this template by the provisioning in the
-`infrastructure` repo.
+The starting point for websites on Himlio, the hosted website platform from Walter & Co AB.
+Each customer site is an [EmDash](https://github.com/emdash-cms/emdash) site (an Astro CMS)
+that runs on Cloudflare Workers for Platforms. The platform creates customer repos from this
+template as `Walter-Co-AB/site-<slug>`.
 
-## What onboarding fills in
+- The site answers on `<slug>.himlio.app` and on the customer's own domains.
+- Content is edited in the admin at `/_emdash/admin`. Content and users are stored in the
+  site's D1 database and media in its R2 bucket, both in the EU.
+- The site's name, description and contact details come from `himlio.json`, which the
+  platform writes.
 
-Two files hold everything that differs between customers:
+## Development
 
-**`site.config.json`** (infrastructure-owned, not editable in the CMS)
+```sh
+npm install
+npm run dev       # applies D1 migrations locally, then http://localhost:4321
+npm run verify    # what CI runs: format, type check, build, himlio-build artifact
+```
 
-| Key            | Example                                           | Used for                                        |
-| -------------- | ------------------------------------------------- | ----------------------------------------------- |
-| `slug`         | `"acme"`                                          | Identifier                                      |
-| `pagesProject` | `"acme"`                                          | Preview URLs `<branch>.<project>.pages.dev`     |
-| `domain`       | `"acme.se"` or `null`                             | Production URL (`null` → `<project>.pages.dev`) |
-| `repo`         | `"Walter-Co-AB/acme"`                             | CMS backend                                     |
-| `branch`       | `"main"`                                          | Production branch                               |
-| `cmsAuthUrl`   | `"https://sveltia-cms-auth.walterco.workers.dev"` | CMS GitHub login                                |
-| `locale`       | `"sv"`                                            | `<html lang>`                                   |
+The first visit to `/_emdash/admin` starts the setup, where you create the first
+administrator.
 
-**`src/content/settings/site.json`** (initial values; the customer edits them in the CMS)
+## Releasing
 
-`name`, `description`, optional `email`, `phone`, `address`, `orgNumber`, and
-`colors.primary`, `colors.background`, `colors.text` as `#rrggbb`.
-
-## How it works
-
-- `src/lib/site-url.mjs` picks the site URL from `CF_PAGES_BRANCH`: the production URL on the
-  production branch, the branch alias on previews. Previews get `noindex` and a blocking
-  `robots.txt`.
-- `/admin/config.yml` is generated at build time from `site.config.json` and
-  `cms/config.yml`. On a preview the CMS commits to that preview's branch.
-- `npm run check:cms` checks that `cms/config.yml` and `src/schemas.ts` agree, and validates
-  the content.
-
-See [AGENTS.md](AGENTS.md) for the rules that apply to changes.
+Pushes to `main` build the `himlio-build` artifact in CI. Walter & Co releases it to the
+platform. See [docs/himlio-build.md](docs/himlio-build.md) for the contract and
+[AGENTS.md](AGENTS.md) for what may be changed.

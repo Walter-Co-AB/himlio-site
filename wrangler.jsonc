@@ -1,0 +1,24 @@
+// Worker config for local development and for building the himlio-build artifact.
+//
+// DB, MEDIA and HIMLIO_SLUG are for local dev only. In production the Himlio platform adds
+// them itself; scripts/himlio-build.mjs leaves them out of himlio-build.json.
+// Cron Triggers don't run on the platform. The crons below are sent to the platform, which
+// calls POST /_himlio/cron instead (see docs/himlio-build.md).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "himlio-site",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [{ "binding": "DB", "database_name": "himlio-local" }],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "himlio-local-media" }],
+  "vars": { "HIMLIO_SLUG": "template" },
+  // Co-editing rooms in the admin, one Durable Object per entry being edited.
+  // EmDash looks the binding up by the name EMDASH_ROOMS.
+  "durable_objects": {
+    "bindings": [{ "name": "EMDASH_ROOMS", "class_name": "EmDashRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["EmDashRoom"] }],
+  // Scheduled publishing and maintenance.
+  "triggers": { "crons": ["* * * * *"] },
+}

@@ -1,19 +1,33 @@
 ---
-import type { GetStaticPaths } from 'astro';
+import { getEmDashEntry, getSeoMeta, decodeSlug } from 'emdash';
+import { PortableText } from 'emdash/ui';
 import Base from '../layouts/Base.astro';
-import PageContent from '../components/PageContent.astro';
-import { getPages, HOME_ID } from '../lib/content';
+import { himlio } from '../lib/himlio';
 
-export const getStaticPaths = (async () => {
-  const pages = await getPages();
-  return pages
-    .filter((page) => page.id !== HOME_ID)
-    .map((page) => ({ params: { slug: page.id }, props: { page } }));
-}) satisfies GetStaticPaths;
+const slug = decodeSlug(Astro.params.slug);
+// "start" is shown on the home page.
+if (!slug || slug === 'start') return Astro.rewrite('/404');
 
-const { page } = Astro.props;
+const { entry: page, cacheHint } = await getEmDashEntry('pages', slug);
+if (!page) return Astro.rewrite('/404');
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const seo = getSeoMeta(page, {
+  siteTitle: himlio.name,
+  siteUrl: Astro.url.origin,
+  path: Astro.url.pathname.replace(/\/$/, ''),
+});
 ---
 
-<Base title={page.data.title} description={page.data.description}>
-  <PageContent page={page} />
+<Base
+  title={seo.title}
+  pageTitle={seo.ogTitle}
+  description={seo.description}
+  canonical={seo.canonical}
+  content={{ collection: 'pages', id: page.data.id, slug }}
+>
+  <article class="prose">
+    <h1 {...page.edit.title}>{page.data.title}</h1>
+    <PortableText value={page.data.content} />
+  </article>
 </Base>

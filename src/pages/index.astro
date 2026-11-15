@@ -1,13 +1,43 @@
 ---
-import { getEntry } from 'astro:content';
+import { getEmDashEntry } from 'emdash';
+import { PortableText } from 'emdash/ui';
 import Base from '../layouts/Base.astro';
-import PageContent from '../components/PageContent.astro';
-import { HOME_ID } from '../lib/content';
+import Contact from '../components/Contact.astro';
+import { himlio } from '../lib/himlio';
 
-const page = await getEntry('pages', HOME_ID);
-if (!page) throw new Error(`The home page src/content/pages/${HOME_ID}/index.md is missing`);
+// The home page shows the company's details from himlio.json. If the customer publishes a
+// page with the slug "start" in the admin, its content is shown here as well.
+const { entry: start, cacheHint } = await getEmDashEntry('pages', 'start');
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 ---
 
-<Base title={page.data.title} description={page.data.description}>
-  <PageContent page={page} />
+<Base
+  title={himlio.name}
+  description={himlio.description}
+  content={start ? { collection: 'pages', id: start.data.id, slug: 'start' } : undefined}
+>
+  <section class="hero prose">
+    <h1>{himlio.name}</h1>
+    {himlio.description && <p class="lead">{himlio.description}</p>}
+  </section>
+
+  {start?.data.content && (
+    <article class="prose">
+      <PortableText value={start.data.content} />
+    </article>
+  )}
+
+  <section class="prose" aria-labelledby="kontakt">
+    <h2 id="kontakt">Kontakt</h2>
+    <Contact />
+  </section>
 </Base>
+
+<style>
+  .hero {
+    padding-block: 3rem 1rem;
+  }
+  .lead {
+    font-size: 1.25rem;
+  }
+</style>
