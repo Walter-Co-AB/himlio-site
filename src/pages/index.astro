@@ -4,21 +4,23 @@ import { PortableText } from 'emdash/ui';
 import Base from '../layouts/Base.astro';
 import Contact from '../components/Contact.astro';
 import { himlio } from '../lib/himlio';
+import { siteDescription } from '../lib/site-description';
 
 // The home page shows the company's details from himlio.json. If the customer publishes a
 // page with the slug "start" in the admin, its content is shown here as well.
 const { entry: start, cacheHint } = await getEmDashEntry('pages', 'start');
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const description = await siteDescription(Astro.cache);
 ---
 
 <Base
   title={himlio.name}
-  description={himlio.description}
+  description={description}
   content={start ? { collection: 'pages', id: start.data.id, slug: 'start' } : undefined}
 >
   <section class="hero prose">
     <h1>{himlio.name}</h1>
-    {himlio.description && <p class="lead">{himlio.description}</p>}
+    {description && <p class="lead">{description}</p>}
   </section>
 
   {start?.data.content && (
