@@ -19,8 +19,8 @@ copied from `docs/release.md` in `Walter-Co-AB/himlio-infrastructure`. The check
   start at 0100. EmDash creates its own tables at
   runtime, not through `migrations/`.
 - Content-model changes for existing sites are `seed/migrations/NNNN_name.json` (partial EmDash
-  seeds). The site applies pending ones itself on the first request after a deploy
-  (`src/middleware.ts`), in "skip" mode, and records them in D1. Nothing to do at release.
+  seeds). The site applies pending ones itself, in the background after the first
+  request after a deploy (`himlioMiddleware`, never delaying a page), in "skip" mode, and records them in D1. Nothing to do at release.
 - Email: when `himlio.json` has `email.from`, the build adds EmDash's Cloudflare email provider,
   which sends through the `EMAIL` (`send_email`) binding, with the site name as sender name
   and no Reply-To. Without it, the site has no email provider and invites give a
