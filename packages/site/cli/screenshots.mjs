@@ -2,7 +2,7 @@
 //
 //   himlio-site screenshots --out screenshots/full [--url http://localhost:4321] [/ /om-oss ...]
 //
-// Pages default to the home page, "Om oss" (from dev:fixtures) and a missing page (404).
+// Pages default to the home page, "Om oss" (from himlio-site fixtures) and a missing page (404).
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
