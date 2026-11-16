@@ -31,7 +31,18 @@ jobs:
         run: |
           version=$(node -p 'require("./packages/site/package.json").version')
           test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$version"; exit 1; }
-      - run: npm run build
-      - run: npm test
-      - run: npm publish --provenance --access public
+      - name: Skip a version that is already on npm (1.0.0 was published by hand)
+        id: published
+        run: |
+          version=$(node -p 'require("./packages/site/package.json").version')
+          if npm view "@himlio/site@$version" version >/dev/null 2>&1; then
+            echo "@himlio/site@$version is already on npm; nothing to publish"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.published.outputs.exists != 'true'
+        run: npm run build
+      - if: steps.published.outputs.exists != 'true'
+        run: npm test
+      - if: steps.published.outputs.exists != 'true'
+        run: npm publish --provenance --access public
         working-directory: packages/site
