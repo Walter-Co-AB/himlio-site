@@ -73,6 +73,7 @@ const PACKAGE = {
     '@emdash-cms/cloudflare',
     'astro',
     'emdash',
+    'kysely',
     'react',
     'react-dom',
   ],

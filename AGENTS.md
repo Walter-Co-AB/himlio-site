@@ -79,7 +79,8 @@ contact details are the customer's and live in the admin: use `siteDescription()
    site's own migrations start at 0100. EmDash creates its own tables itself.
    Content-model migrations (`seed/migrations/NNNN_name.json`) follow the same rule: partial
    seeds with collections, fields and content only, applied once per site by the site itself
-   (first request after a deploy), and mirrored in `seed/seed.json`. Tests check both.
+   (in the background, after the first request after a deploy), and mirrored in
+   `seed/seed.json`. Tests check both.
 8. **Every route needs a decision about access.** Public endpoints (forms) need input
    validation with length limits and abuse protection. Anything that shows or changes data
    that isn't public must check the EmDash session. Return generic error messages; log
