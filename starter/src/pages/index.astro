@@ -1,0 +1,50 @@
+---
+import { getEmDashEntry } from 'emdash';
+import { PortableText } from 'emdash/ui';
+import Base from '../layouts/Base.astro';
+import Contact from '../components/Contact.astro';
+import { contactDetails, hasContactDetails } from '@himlio/site/runtime';
+import { himlio } from '@himlio/site/runtime';
+import { siteDescription } from '@himlio/site/runtime';
+
+// The home page shows the site's name, its description (the admin's Tagline) and the contact
+// details from the admin. If the customer publishes a page with the slug "start", its content is
+// shown here as well.
+const { entry: start, cacheHint } = await getEmDashEntry('pages', 'start');
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+const description = await siteDescription(Astro.cache);
+const details = await contactDetails(Astro.cache);
+---
+
+<Base
+  title={himlio.name}
+  description={description}
+  content={start ? { collection: 'pages', id: start.data.id, slug: 'start' } : undefined}
+>
+  <section class="hero prose">
+    <h1>{himlio.name}</h1>
+    {description && <p class="lead">{description}</p>}
+  </section>
+
+  {start?.data.content && (
+    <article class="prose">
+      <PortableText value={start.data.content} />
+    </article>
+  )}
+
+  {hasContactDetails(details) && (
+    <section class="prose" aria-labelledby="kontakt">
+      <h2 id="kontakt">Kontakt</h2>
+      <Contact details={details} />
+    </section>
+  )}
+</Base>
+
+<style>
+  .hero {
+    padding-block: 3rem 1rem;
+  }
+  .lead {
+    font-size: 1.25rem;
+  }
+</style>

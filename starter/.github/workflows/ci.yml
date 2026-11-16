@@ -1,0 +1,19 @@
+name: CI
+
+# The Himlio build: checks, the himlio-build artifact on main, screenshots on pull requests.
+# Bump the version together with @himlio/site in package.json.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  himlio:
+    uses: Walter-Co-AB/himlio-site/.github/workflows/build.yml@v1.0.0

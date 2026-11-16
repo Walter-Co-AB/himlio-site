@@ -1,0 +1,99 @@
+# @himlio/site
+
+The Himlio platform for a customer website: an [EmDash](https://github.com/emdash-cms/emdash)
+(Astro CMS) site on Cloudflare Workers for Platforms. A site's repo holds its design and its own
+code. This package brings everything the platform owns, and updates by version.
+
+## Use
+
+```js
+// astro.config.mjs
+import { defineHimlioConfig } from '@himlio/site';
+
+export default defineHimlioConfig({
+  integrations: [], // the site's own
+});
+```
+
+```astro
+---
+// in a page or component
+import { contactDetails, siteDescription, himlio } from '@himlio/site/runtime';
+const details = await contactDetails(Astro.cache);
+---
+```
+
+```json
+// package.json
+"scripts": { "dev": "himlio-site dev", "build": "himlio-site build" }
+```
+
+`defineHimlioConfig()` adds:
+
+- EmDash on D1 (`DB`) and R2 (`MEDIA`), set up from `himlio.json` (name, locale, URL, email
+  sender), with the admin in Swedish;
+- sessions in D1, and email through the platform's `EMAIL` binding once `himlio.json` has
+  `email.from`;
+- the Cloudflare adapter with a generated Worker config (`.himlio/wrangler.json`; there is no
+  `wrangler.jsonc` in a site);
+- the platform middleware, the Worker entry (`/_himlio/cron`, OAuth scope limits for AI
+  connectors, MCP guidance for connectors);
+- the platform content model (`company`, Företagsuppgifter) and D1 tables, applied to every
+  site automatically;
+- the dev port: 4321 for the starter, 4400–4899 per customer site from its slug.
+
+EmDash is pinned by this package, so a site can't drift to another EmDash version.
+
+## Runtime helpers (`@himlio/site/runtime`)
+
+| Export                                         | What                                                                                                                     |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `himlio`                                       | Platform facts from `himlio.json`: slug, name, locale, url, email.                                                       |
+| `contactDetails(Astro.cache)`                  | Phone, email, address, org number and opening hours from the admin (the one `company` entry). Empty fields are left out. |
+| `hasContactDetails(details)`, `telHref(phone)` | Helpers for the above.                                                                                                   |
+| `siteDescription(Astro.cache)`                 | The Tagline from the admin (Settings → General), or `undefined`.                                                         |
+
+Pass `Astro.cache` so cached pages are purged when the content changes.
+
+## Extension points
+
+This table is the whole public API. A breaking change to it is a major version.
+
+| Need                               | How                                                                                                                                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Own integrations and Astro options | `defineHimlioConfig({ integrations, vite, image, ... })`. The platform's adapter, output, session, site URL and dev port win.                                                                                                                           |
+| Own middleware                     | `src/middleware.ts` (plain Astro). The platform's middleware is registered by `defineHimlioConfig()` and runs first.                                                                                                                                    |
+| Own scheduled work                 | `defineHimlioConfig({ himlio: { crons: { '0 3 * * *': './src/cron/nightly.ts' } } })`. The module's default export is `(controller, env, ctx) => void \| Promise<void>`. At most 2; UTC; only `*`, numbers, `a-b`, `*/n`, `a,b`.                        |
+| Own content model                  | `himlio: { modelMigrations: 'src/model-migrations' }`: `NNNN_name.json`, partial EmDash seeds (collections, fields, content). Applied once per site, in the background after the first request after a deploy. Append-only.                             |
+| Own Durable Objects                | `himlio: { durableObjects: [{ binding: 'COUNTER', className: 'Counter' }] }`, and `src/worker.ts` that exports the class and re-exports the platform Worker: `export { default, EmDashRoom, EmDashRoomSite, PluginBridge } from '@himlio/site/worker';` |
+| Own D1 tables                      | `migrations/0100_name.sql` and up (0001–0099 are the platform's). Merged into the build.                                                                                                                                                                |
+| Own API routes                     | `src/pages/api/*.ts` (plain Astro). Decide about access for each.                                                                                                                                                                                       |
+| Own vars                           | `himlio: { vars: { NAME: 'value' } }`. Plain text, not secrets.                                                                                                                                                                                         |
+
+Reserved binding names: `DB`, `MEDIA`, `EMAIL`, `HIMLIO_SLUG`, `ASSETS`, `EMDASH_ROOMS`.
+
+## `himlio-site` command
+
+| Command                                            | What                                                                                                                       |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `himlio-site dev`                                  | Apply D1 migrations to the local database, then `astro dev`.                                                               |
+| `himlio-site build`                                | `astro build`, then the `himlio-build/` artifact the platform releases ([docs/build-artifact.md](docs/build-artifact.md)). |
+| `himlio-site fixtures [--empty]`                   | Sample content on the local dev server, or the empty state. Refuses servers that aren't this checkout's.                   |
+| `himlio-site screenshots [--out dir] [/path ...]`  | Full-page screenshots in light, dark and mobile. Scrolls through each page first, so scroll effects show.                  |
+| `himlio-site install-browsers`, `himlio-site port` | For CI.                                                                                                                    |
+
+CI: a site's `.github/workflows/ci.yml` calls the reusable workflow
+`Walter-Co-AB/himlio-site/.github/workflows/build.yml@vX.Y.Z` (same version as the package).
+
+## AI connectors (MCP)
+
+Connectors authorised over OAuth get content work plus reading the schema and settings:
+`content:read/write`, `media:read/write`, `taxonomies:manage`, `menus:manage`, `schema:read`,
+`settings:read`. No schema or settings changes, and no access to the 404 log or settings
+sub-routes. On connect, they receive instructions, among them: **when changing a published
+item with `content_update`, pass `status: "published"` (or call `content_publish`)**, or the
+change may stay a draft and not show on the site.
+
+## Licence
+
+MIT. The licence covers the code, not the Himlio name or logo.

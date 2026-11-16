@@ -1,0 +1,37 @@
+---
+import { himlio } from '@himlio/site/runtime';
+import { contactDetails } from '@himlio/site/runtime';
+import Contact from './Contact.astro';
+
+const year = new Date().getFullYear();
+const details = await contactDetails(Astro.cache);
+---
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <strong>{himlio.name}</strong>
+    <Contact details={details} />
+  </div>
+  <div class="container copyright">
+    © {year} {himlio.name}
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: 4rem;
+    padding-block: 2.5rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.9375rem;
+  }
+  .footer-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .copyright {
+    margin-top: 2rem;
+    opacity: 0.7;
+  }
+</style>
