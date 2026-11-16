@@ -91,7 +91,7 @@ const PAGES = {
     content: [
       block('Exempeltext för startsidan', 'h2'),
       block(
-        'Det här är exempelinnehåll från npm run dev:fixtures, för att se hur designen fungerar med riktig text. Det visas bara på den lokala utvecklingsservern.'
+        'Det här är exempelinnehåll från himlio-site fixtures, för att se hur designen fungerar med riktig text. Det visas bara på den lokala utvecklingsservern.'
       ),
     ],
   },
