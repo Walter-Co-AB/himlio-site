@@ -16,3 +16,8 @@ npm run dev -w himlio-starter       # the starter on http://localhost:4321
 
 Releasing: bump `packages/site/package.json`, merge, tag `vX.Y.Z`. The publish workflow puts it
 on npm with provenance, and sites get a version-bump PR.
+
+## Licence
+
+MIT ([LICENSE](LICENSE)), for the package, the starter and the workflows. It covers the code, not
+the Himlio name or logo.
