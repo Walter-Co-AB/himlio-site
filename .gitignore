@@ -18,3 +18,5 @@ data.db-*
 .claude/settings.local.json
 screenshots/
 dev-server.log
+.himlio/
+packages/site/pack.json

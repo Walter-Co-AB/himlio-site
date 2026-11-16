@@ -1,9 +1,9 @@
+node_modules/
 dist/
 .astro/
 .wrangler/
+.himlio/
 himlio-build/
+screenshots/
 package-lock.json
-emdash-env.d.ts
-worker-configuration.d.ts
-himlio.json
-himlio-platform.json
+starter/
