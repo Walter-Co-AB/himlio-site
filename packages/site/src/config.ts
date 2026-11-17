@@ -137,8 +137,10 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
         fail(`${dir}/${file}: name must look like 0001_add_fields.json`);
       const seed = JSON.parse(readFileSync(join(dir, file), 'utf8'));
       for (const key of Object.keys(seed))
-        if (!['$schema', 'version', 'meta', 'collections', 'content'].includes(key))
-          fail(`${dir}/${file}: only collections and content are allowed (found "${key}")`);
+        if (!['$schema', 'version', 'meta', 'blockTypes', 'collections', 'content'].includes(key))
+          fail(
+            `${dir}/${file}: only blockTypes, collections and content are allowed (found "${key}")`
+          );
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });
     }
   };

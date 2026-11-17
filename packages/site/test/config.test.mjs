@@ -87,8 +87,18 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   const names = readModelMigrations(root, { modelMigrations: 'model' }).map((m) => m.name);
   assert.equal(names[0], '0001_company');
   assert.equal(names.at(-1), 'site/0001_products');
+  const blocks = site({
+    'model/0001_sections.json': JSON.stringify({ version: '1', blockTypes: [], collections: [] }),
+  });
+  assert.equal(
+    readModelMigrations(blocks, { modelMigrations: 'model' }).at(-1).name,
+    'site/0001_sections'
+  );
   const bad = site({ 'model/0001_x.json': JSON.stringify({ version: '1', settings: {} }) });
-  assert.throws(() => readModelMigrations(bad, { modelMigrations: 'model' }), /only collections/);
+  assert.throws(
+    () => readModelMigrations(bad, { modelMigrations: 'model' }),
+    /only blockTypes, collections and content/
+  );
 });
 
 test('invalid options are refused', () => {
