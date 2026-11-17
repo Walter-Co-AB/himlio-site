@@ -51,6 +51,10 @@ try {
         window.scrollTo(0, document.documentElement.scrollHeight);
         await pause(200);
         window.scrollTo(0, 0);
+        // Let scroll handlers react to being back at the top: they often update in
+        // requestAnimationFrame, and their CSS transitions start a frame later.
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await pause(300);
         await Promise.race([
           Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))),
           pause(3000),
