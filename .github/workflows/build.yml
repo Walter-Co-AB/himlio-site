@@ -6,7 +6,7 @@ name: Himlio build
 #   permissions: { contents: read }
 #   jobs:
 #     himlio:
-#       uses: Walter-Co-AB/himlio-site/.github/workflows/build.yml@v1.0.0
+#       uses: Walter-Co-AB/himlio-site/.github/workflows/build.yml@vX.Y.Z (the @himlio/site version)
 #
 # On every push and pull request it checks and builds the site. On pushes to main it uploads
 # the `himlio-build` artifact the platform releases (packages/site/docs/build-artifact.md). On
