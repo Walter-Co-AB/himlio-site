@@ -9,7 +9,9 @@ Rules for AI coding tools and people working on the Himlio platform repo.
   `migrations/` (0001–0099), platform content-model migrations in `model-migrations/`, tests in
   `test/` (against `dist/`). Its README is the public documentation.
 - `starter/`: the design new sites start from, consuming the package through the npm workspace.
-  It is copied once per new site and never synced, so changes here only reach new sites.
+  Infra copies it once per new site, at the tag of the latest `@himlio/site`, and never syncs it,
+  so it must be a complete site on its own, and its `@himlio/site` version and `build.yml@vX.Y.Z`
+  must equal the package version (a test checks).
 - `.github/workflows/build.yml`: the reusable workflow sites call. `ci.yml` runs it on the
   starter, against the package in the same commit.
 
