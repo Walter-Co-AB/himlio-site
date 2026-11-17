@@ -14,8 +14,11 @@ npm run verify                      # build and test the package, check and buil
 npm run dev -w himlio-starter       # the starter on http://localhost:4321
 ```
 
-Releasing: bump `packages/site/package.json`, merge, tag `vX.Y.Z`. The publish workflow puts it
-on npm with provenance, and sites get a version-bump PR.
+Releasing: bump `packages/site/package.json` (semver; the extension-point table in its README is
+the public API), merge, then ask Anton or the infrastructure side to push the tag `vX.Y.Z`: only
+org admins may create `v*` tags. The tag runs `publish.yml`, which puts the version on npm with
+provenance (npm Trusted Publishing, environment `npm`), and sites get a version-bump PR. The tag
+also pins the reusable workflow sites call (`build.yml@vX.Y.Z`).
 
 ## Licence
 
