@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 
 // New sites are created by copying starter/ at the tag of the latest @himlio/site, once
@@ -27,4 +27,12 @@ test('the starter has what a site needs on its own', () => {
     'AGENTS.md',
   ])
     assert.ok(existsSync(new URL(`../../../starter/${path}`, import.meta.url)), path);
+});
+
+test("the starter's code imports EmDash through @himlio/site, never directly", () => {
+  const dir = new URL('../../../starter/src/', import.meta.url);
+  const direct = readdirSync(dir, { recursive: true })
+    .filter((f) => /\.(astro|ts|tsx|js|mjs)$/.test(f))
+    .filter((f) => /from ['"]emdash(\/[^'"]*)?['"]/.test(readFileSync(new URL(f, dir), 'utf8')));
+  assert.deepEqual(direct, []);
 });

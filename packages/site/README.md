@@ -55,6 +55,22 @@ EmDash is pinned by this package, so a site can't drift to another EmDash versio
 
 Pass `Astro.cache` so cached pages are purged when the content changes.
 
+## EmDash (`@himlio/site/emdash`)
+
+EmDash is a dependency of this package, pinned to one version, not of the site. Import it
+through the package, so a site always uses the EmDash the platform was tested with:
+
+| Instead of       | Import from                   |
+| ---------------- | ----------------------------- |
+| `emdash`         | `@himlio/site/emdash`         |
+| `emdash/ui`      | `@himlio/site/emdash/ui`      |
+| `emdash/page`    | `@himlio/site/emdash/page`    |
+| `emdash/runtime` | `@himlio/site/emdash/runtime` |
+
+They re-export EmDash's own modules unchanged, so EmDash's documentation applies. An EmDash
+update that breaks what they export is a major version of this package. (`emdash-env.d.ts`,
+which EmDash generates with the collection types, still names `emdash`; leave it as it is.)
+
 ## Extension points
 
 This table is the whole public API. A breaking change to it is a major version.

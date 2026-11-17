@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",
@@ -44,10 +44,26 @@
     "./session-driver": {
       "types": "./dist/runtime/session-d1.d.ts",
       "default": "./dist/runtime/session-d1.js"
+    },
+    "./emdash": {
+      "types": "./dist/emdash/index.d.ts",
+      "default": "./dist/emdash/index.js"
+    },
+    "./emdash/ui": {
+      "types": "./dist/emdash/ui.d.ts",
+      "default": "./dist/emdash/ui.js"
+    },
+    "./emdash/page": {
+      "types": "./dist/emdash/page.d.ts",
+      "default": "./dist/emdash/page.js"
+    },
+    "./emdash/runtime": {
+      "types": "./dist/emdash/runtime.d.ts",
+      "default": "./dist/emdash/runtime.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/",
     "test": "node --test \"test/**/*.test.mjs\"",
     "prepack": "npm run build"
   },
