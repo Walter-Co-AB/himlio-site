@@ -3,6 +3,8 @@
 // content only). They reach every site, new or existing, without manual work. They are applied in name order with
 // EmDash's applySeed in "skip" mode, so anything that already exists is left alone and a file
 // can safely run on a site that has it already (e.g. a new site whose seed already includes it).
+// Fields a migration adds to a collection that already exists are created too; nothing that
+// exists is changed. Block types (`blockTypes`) are allowed as well.
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -16,7 +18,7 @@
 // Rules for migration files: append-only, never edit one that has been released.
 import { createDialect } from '@emdash-cms/cloudflare/db/d1';
 import { env } from 'cloudflare:workers';
-import { applySeed, validateSeed } from 'emdash';
+import { SchemaRegistry, applySeed, validateSeed } from 'emdash';
 import { Kysely } from 'kysely';
 import { modelMigrations } from 'virtual:himlio/config';
 
@@ -35,6 +37,31 @@ let since = 0;
 
 const d1 = () => (env as unknown as { DB: D1Database }).DB;
 
+/**
+ * applySeed in "skip" mode leaves an existing collection alone, including fields the migration
+ * adds to it. Create those fields here. Existing fields and collection settings are never changed
+ * (EmDash can't change most field types without a manual content migration anyway).
+ */
+async function addMissingFields(db: Database, seed: Seed, name: string): Promise<void> {
+  const registry = new SchemaRegistry(db);
+  for (const collection of seed.collections ?? []) {
+    if (!(await registry.getCollection(collection.slug))) continue;
+    for (const field of collection.fields) {
+      if (await registry.getField(collection.slug, field.slug)) continue;
+      if (field.type === 'reference')
+        throw new Error(
+          `${name}: add reference field ${collection.slug}.${field.slug} in the admin`
+        );
+      // SeedField's validation/options are loosely typed; EmDash validates them in createField.
+      await registry.createField(
+        collection.slug,
+        field as Parameters<SchemaRegistry['createField']>[1]
+      );
+      console.log(`[himlio] ${name}: added field ${collection.slug}.${field.slug}`);
+    }
+  }
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -50,6 +77,7 @@ async function applyPending(): Promise<void> {
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
       await applySeed(db, seed, { includeContent: true, onConflict: 'skip' });
+      await addMissingFields(db, seed, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

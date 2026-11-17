@@ -20,7 +20,7 @@ test('model migrations only touch the content model and content, never settings 
     const m = JSON.parse(readFileSync(new URL(file, dir), 'utf8'));
     for (const key of Object.keys(m))
       assert.ok(
-        ['$schema', 'version', 'meta', 'collections', 'content'].includes(key),
+        ['$schema', 'version', 'meta', 'blockTypes', 'collections', 'content'].includes(key),
         `${file}: ${key}`
       );
     assert.equal(m.version, '1', file);
