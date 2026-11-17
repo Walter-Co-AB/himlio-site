@@ -12,6 +12,8 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 - This repo holds the site's own code: design, pages, components and, if needed, its own API
   routes, tables, crons and content model. It was created from the Himlio starter once and is
   never synced; the platform reaches it only as `@himlio/site` version updates.
+- Import EmDash through the package: `@himlio/site/emdash`, `@himlio/site/emdash/ui`, `/page`
+  and `/runtime`, never `emdash` directly, so the site uses the EmDash version the platform pins.
 - Admin at `/_emdash/admin`. Content and users in D1 (`DB`), media in R2 (`MEDIA`).
 - Swedish first: `sv` is the site language. Write interface text and content in Swedish.
 
