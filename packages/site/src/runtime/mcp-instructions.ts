@@ -7,7 +7,7 @@ export const MCP_INSTRUCTIONS = `This is a Himlio website, run on EmDash CMS.
 - Publishing: a change to a published item is saved as a draft unless you publish it. When you change a published item with content_update, pass status: "published", or call content_publish afterwards. Otherwise the change is not visible on the site, even though the update succeeded.
 - Contact details (phone, email, address, organisation number, opening hours) are the one entry in the "company" collection, slug "foretagsuppgifter". Update that entry with content_get, then content_update (pass the _rev from content_get, and status: "published"). Don't create a second entry. Empty fields are not shown on the site.
 - The site's description is the Tagline in the site settings. You can read it (settings_get) but not change it; the customer changes it in the admin under Settings → General.
-- Pages are in the "pages" collection. The home page shows the page with slug "start" below the company name.
+- Pages are in the "pages" collection; the home page is the page with slug "home" (on older sites "start"). Read the collection with schema_get_collection before writing: on most Himlio sites a page's content is a list of sections (EmDash block types such as marketing_hero, marketing_text, marketing_faq). Use the existing block types and their fields; don't put whole pages into one text section.
 - Write in Swedish unless asked otherwise, and don't invent facts, customers, numbers or testimonials.`;
 
 function routePath(url: URL): string | null {

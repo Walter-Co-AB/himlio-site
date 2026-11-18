@@ -1,15 +1,25 @@
 ---
-import Base from '../layouts/Base.astro';
-
-Astro.response.status = 404;
+import Base from "../layouts/Base.astro";
 ---
 
 <Base title="Sidan finns inte">
-  <div class="prose">
-    <h1>Sidan finns inte</h1>
-    <p>Sidan du letar efter finns inte, eller har flyttats.</p>
-    <p>
-      <a href="/">Till startsidan</a>
-    </p>
-  </div>
+	<section class="container empty-state">
+		<p class="display not-found__code">404</p>
+		<h1 class="display empty-state__title">Sidan finns inte</h1>
+		<p class="lead">
+			Sidan du letar efter finns inte, eller har flyttats.
+		</p>
+		<div class="actions">
+			<a href="/" class="btn btn-lg">Till startsidan</a>
+		</div>
+	</section>
 </Base>
+
+<style>
+	.not-found__code {
+		font-size: clamp(120px, 22vw, 240px);
+		line-height: 0.85;
+		letter-spacing: var(--tracking-tight);
+		color: var(--color-muted);
+	}
+</style>

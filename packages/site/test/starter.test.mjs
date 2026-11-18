@@ -25,6 +25,8 @@ test('the starter has what a site needs on its own', () => {
     'himlio.json',
     'src/live.config.ts',
     'AGENTS.md',
+    'UPSTREAM.md',
+    'seed/seed.json',
   ])
     assert.ok(existsSync(new URL(`../../../starter/${path}`, import.meta.url)), path);
 });
