@@ -9,6 +9,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { validateSeed } from 'emdash';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -182,6 +183,11 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
             `${dir}/${file}: only blockTypes, collections, content and relabel are allowed (found "${key}")`
           );
       if (seed.relabel !== undefined) validateRelabel(seed.relabel, `${dir}/${file}`);
+      // The same check the runner makes before applying: catch it in the build, not on the
+      // live site, where a failing migration is retried every minute and never applied.
+      const { relabel: _relabel, ...plain } = seed;
+      const validation = validateSeed(plain);
+      if (!validation.valid) fail(`${dir}/${file}: ${validation.errors.join('; ')}`);
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });
     }
   };

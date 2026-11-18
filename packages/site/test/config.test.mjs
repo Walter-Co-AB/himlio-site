@@ -101,6 +101,16 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   );
 });
 
+test('model migrations are validated as EmDash seeds at build time', () => {
+  const root = site({
+    'model/0001_pages.json': JSON.stringify({ collections: [] }), // no version
+  });
+  assert.throws(
+    () => readModelMigrations(root, { modelMigrations: 'model' }),
+    /0001_pages.json: .*version/
+  );
+});
+
 test('relabel entries are checked at build time', () => {
   const read = (relabel) =>
     readModelMigrations(site({ 'model/0001_x.json': JSON.stringify({ version: '1', relabel }) }), {
