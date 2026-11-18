@@ -15,7 +15,7 @@ const base = (value('--url') ?? `http://localhost:${devPort(himlio.slug)}`).repl
 const out = value('--out') ?? 'screenshots';
 const flagValues = new Set([value('--url'), value('--out')]);
 const pages = args.filter((a) => a.startsWith('/') && !flagValues.has(a));
-if (pages.length === 0) pages.push('/', '/om-oss', '/sidan-finns-inte');
+if (pages.length === 0) pages.push('/', '/om-oss', '/kontakt', '/sidan-finns-inte');
 
 const VARIANTS = [
   { name: 'desktop-light', viewport: { width: 1280, height: 800 }, colorScheme: 'light' },

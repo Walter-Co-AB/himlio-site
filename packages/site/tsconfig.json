@@ -13,5 +13,10 @@
     "types": ["@cloudflare/workers-types", "astro/client", "node"]
   },
   "include": ["src"],
-  "exclude": ["src/emdash/ui.js", "src/emdash/ui.d.ts"]
+  "exclude": [
+    "src/emdash/ui.js",
+    "src/emdash/ui.d.ts",
+    "src/forms/index.js",
+    "src/forms/index.d.ts"
+  ]
 }

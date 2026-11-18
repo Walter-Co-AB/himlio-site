@@ -1,4 +1,4 @@
-// The Himlio platform for an Astro site: EmDash (D1, R2, sessions in D1, email, Swedish admin)
+// The Himlio platform for an Astro site: EmDash (D1, R2, sessions in D1, email, forms, Swedish admin)
 // from himlio.json, the Cloudflare adapter with a generated Worker config, the platform
 // middleware, and the dev port.
 //
@@ -26,6 +26,7 @@ import {
   type HimlioFacts,
   type HimlioOptions,
 } from './config.js';
+import { formsPlugin } from './forms-plugin.js';
 
 export type { HimlioFacts, HimlioOptions };
 export { devPort };
@@ -102,7 +103,10 @@ function himlio(options: HimlioOptions) {
       siteUrl,
       database: d1({ binding: 'DB', session: 'auto', coalesce: true }),
       storage: r2({ binding: 'MEDIA' }),
-      plugins: emailPlugins,
+      // Forms (Formulär) on every site: built in the admin, placed on a page as a Form block in
+      // rich text. Honeypot spam protection unless a form chooses otherwise; notifications go
+      // out through the email plugin above.
+      plugins: [formsPlugin({ defaultSpamProtection: 'honeypot' }), ...emailPlugins],
       admin: {
         siteName: facts.name,
         // Swedish first. English stays available; the admin follows the browser language.

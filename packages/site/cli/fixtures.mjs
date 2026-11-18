@@ -1,7 +1,8 @@
 // Sample content for the local dev server, for looking at the design and for screenshots.
 // Part of @himlio/site. Uses EmDash's dev-only setup bypass, so it only works against `astro dev`.
 //
-//   himlio-site fixtures             tagline, company details, a home page and "Om oss"
+//   himlio-site fixtures             tagline, company details, a home page, "Om oss" and "Kontakt"
+//                                    with a sample contact form
 //   himlio-site fixtures --empty    everything empty: no tagline or details, pages unpublished
 //   ... -- --url http://localhost:4644   another server (default: this repo's dev port)
 //
@@ -133,6 +134,15 @@ async function samplePages() {
     primary_cta_label: 'Om oss',
     primary_cta_url: '/om-oss',
   };
+  const contact = {
+    _type: 'marketing_text',
+    _key: key(),
+    headline: 'Kontakta oss',
+    body: [
+      block('Exempeltext: skriv till oss så hör vi av oss.'),
+      { _type: 'emdash-form', _key: key(), formId: FORM_SLUG },
+    ],
+  };
   const only = (blocks) => blocks.filter((b) => allowed.size === 0 || allowed.has(b._type));
   return {
     home: {
@@ -148,7 +158,48 @@ async function samplePages() {
         ]),
       ]),
     },
+    kontakt: { title: 'Kontakt', content: only([contact]) },
   };
+}
+
+// A sample contact form from the Forms plugin, placed on "Kontakt" (blocks sites only).
+const FORM_SLUG = 'exempelformular';
+const FORMS_API = '/_emdash/api/plugins/emdash-forms';
+async function sampleForm() {
+  const list = ok(await api('GET', `${FORMS_API}/forms/list`), 'list forms').data;
+  if ((list.items ?? []).some((f) => f.slug === FORM_SLUG)) return;
+  const field = (type, name, label, required, width = 'full') => ({
+    id: name,
+    type,
+    name,
+    label,
+    required,
+    width,
+  });
+  ok(
+    await api('POST', `${FORMS_API}/forms/create`, {
+      name: 'Exempelformulär',
+      slug: FORM_SLUG,
+      pages: [
+        {
+          fields: [
+            field('text', 'namn', 'Namn', true, 'half'),
+            field('email', 'epost', 'E-post', true, 'half'),
+            field('tel', 'telefon', 'Telefon', false),
+            field('textarea', 'meddelande', 'Meddelande', true),
+          ],
+        },
+      ],
+      settings: {
+        submitLabel: 'Skicka',
+        confirmationMessage: 'Tack! Det här är ett exempelformulär på utvecklingsservern.',
+        notifyEmails: ['info@example.com'],
+        spamProtection: 'honeypot',
+        retentionDays: 30,
+      },
+    }),
+    'create the sample form'
+  );
 }
 
 async function upsertPage(slug, page) {
@@ -198,7 +249,7 @@ ok(await api('POST', '/_emdash/api/setup/dev-bypass'), 'dev bypass');
 if (empty) {
   ok(await api('POST', '/_emdash/api/settings', { tagline: '' }), 'tagline');
   await setCompany({ phone: '', email: '', address: '', org_number: '', opening_hours: '' });
-  for (const slug of ['home', 'start', 'om-oss']) await removePage(slug);
+  for (const slug of ['home', 'start', 'om-oss', 'kontakt']) await removePage(slug);
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
@@ -214,6 +265,8 @@ if (empty) {
     org_number: '556000-0000',
     opening_hours: 'Mån–fre 9–17',
   });
-  for (const [slug, page] of Object.entries(await samplePages())) await upsertPage(slug, page);
+  const pages = await samplePages();
+  if (pages.kontakt) await sampleForm();
+  for (const [slug, page] of Object.entries(pages)) await upsertPage(slug, page);
   console.log(`fixtures: sample content on ${base}`);
 }

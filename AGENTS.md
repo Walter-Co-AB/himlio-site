@@ -26,7 +26,7 @@ Rules for AI coding tools and people working on the Himlio platform repo.
    (`packages/site/model-migrations/NNNN_*.json`) alike.
 4. **No secrets in git.** The repo is public.
 5. **Pin what sites depend on:** EmDash and `@emdash-cms/cloudflare` exactly, actions by commit
-   SHA, new npm packages at a version at least two weeks old.
+   SHA, new npm packages at a version at least 7 days old.
 6. **Releases go through a tag.** Bump `packages/site/package.json`, merge, then ask Anton or the
    infrastructure agent to push `vX.Y.Z` (only org admins may create `v*` tags). `publish.yml`
    publishes it with npm Trusted Publishing. Never publish by hand.
