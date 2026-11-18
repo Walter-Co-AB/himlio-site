@@ -83,12 +83,16 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
 - Spam protection is a honeypot by default. Turnstile needs a key pair per site; ask Walter & Co.
 - Notifications go to the form's addresses through the platform's email, with Reply-To set to the
   sender's address. In `astro dev` they are written to the log instead.
+- **Recipients come from the platform config** (`himlio.json` `forms.notify`, set by Walter & Co)
+  until the plugin's admin has a field for them: a form saved without recipients gets that list,
+  and on the platform's minute cron so does any stored form that has none. A form that already
+  has recipients keeps them. No `forms` in `himlio.json` means no default, and no notifications.
 - Submissions are personal data, so they are kept at most 12 months: a form's retention is
   1–365 days, 365 by default. "0 = forever" in the admin and anything over 365 are saved as 365.
   The plugin deletes expired submissions weekly, on the platform's cron.
 - No autoresponder: it would email any address a visitor types in, from the platform's sender.
   The admin still shows the setting, but the platform drops it when a form is saved.
-- Both are enforced in the Worker on the plugin's `forms/create` and `forms/update` routes, the
+- These rules are enforced in the Worker on the plugin's `forms/create` and `forms/update` routes, the
   only ones that take form settings. A request it can't read is refused.
 - AI connectors can't create forms or read submissions (plugin routes need the `admin` scope,
   which connectors never get); they can place an existing form on a page.

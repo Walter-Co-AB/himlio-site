@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   applyFormRules,
   guardFormsRequest,
+  hasRecipients,
   isFormsWritePath,
   RETENTION_DAYS_MAX,
 } from '../dist/runtime/forms-guard.js';
@@ -60,6 +61,28 @@ test('create and update are matched however the path is spelled; other routes ar
   for (const path of ['forms/list', 'forms/duplicate', 'submit', 'definition', 'submissions/list'])
     assert.equal(isFormsWritePath(new URL(BASE + path)), false, path);
   assert.equal(isFormsWritePath(new URL(`${ORIGIN}/kontakt`)), false);
+});
+
+test('recipients: the platform list when none were sent; a sent list is kept', () => {
+  const notify = ['anton@walterco.se'];
+  assert.deepEqual(applyFormRules(undefined, true, notify).notifyEmails, notify);
+  assert.deepEqual(applyFormRules({ notifyEmails: [] }, true, notify).notifyEmails, notify);
+  assert.deepEqual(applyFormRules({ notifyEmails: ['x@example.com'] }, true, notify).notifyEmails, [
+    'x@example.com',
+  ]);
+  // update: an empty list is filled; no notifyEmails leaves the stored list alone
+  assert.deepEqual(applyFormRules({ notifyEmails: [] }, false, notify).notifyEmails, notify);
+  assert.equal('notifyEmails' in applyFormRules({ retentionDays: 30 }, false, notify), false);
+  assert.equal(applyFormRules(undefined, false, notify), undefined);
+  // no platform list: nothing is added
+  assert.equal('notifyEmails' in applyFormRules({}, true, []), false);
+  assert.deepEqual(applyFormRules({ notifyEmails: [] }, true).notifyEmails, []);
+  // the list is a copy
+  const out = applyFormRules({}, true, notify);
+  out.notifyEmails.push('y@example.com');
+  assert.deepEqual(notify, ['anton@walterco.se']);
+  assert.equal(hasRecipients(['a@example.com']), true);
+  for (const v of [[], undefined, null, 'a@example.com']) assert.equal(hasRecipients(v), false);
 });
 
 const post = (path, body, init = {}) =>
