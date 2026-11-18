@@ -1,0 +1,207 @@
+/*
+  forms.css -- forms from the Forms plugin (@emdash-cms/plugin-forms), in this design.
+
+  Forms are built in the admin under Forms and placed on a page as a Form block inside a Text
+  section. The plugin renders plain markup with .ec-form classes; this file styles it with the
+  tokens in tokens.css (it is in @layer base, so theme.css still wins). Himlio addition, not
+  part of EmDash's marketing template.
+*/
+
+@layer base {
+	.ec-form {
+		display: grid;
+		gap: 20px;
+		max-width: 560px;
+		margin-block: 32px;
+		font-size: 16px;
+		line-height: var(--leading-normal);
+		color: var(--color-text);
+	}
+
+	.ec-form-page {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 20px 16px;
+		min-width: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.ec-form-page-title {
+		margin-block-end: 4px;
+		font-family: var(--font-heading);
+		font-weight: var(--font-weight-heading);
+		font-size: var(--font-size-lg);
+	}
+
+	.ec-form-field {
+		display: grid;
+		flex: 1 1 100%;
+		gap: 6px;
+		min-width: 0;
+	}
+
+	.ec-form-field--half {
+		flex-basis: calc(50% - 8px);
+	}
+
+	@media (max-width: 560px) {
+		.ec-form-field--half {
+			flex-basis: 100%;
+		}
+	}
+
+	.ec-form-label {
+		font-size: 14.5px;
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.ec-form-required {
+		margin-inline-start: 2px;
+		color: var(--color-muted);
+	}
+
+	.ec-form-input {
+		width: 100%;
+		min-height: 44px;
+		padding: 10px 14px;
+		border: 0;
+		border-radius: var(--radius-sm);
+		background: var(--color-surface);
+		box-shadow: inset 0 0 0 1px var(--color-border-strong);
+		color: var(--color-text);
+		font: inherit;
+		transition: box-shadow 150ms var(--ease-out);
+	}
+
+	textarea.ec-form-input {
+		min-height: 140px;
+		resize: vertical;
+	}
+
+	.ec-form-input::placeholder {
+		color: var(--color-muted);
+	}
+
+	.ec-form-input:focus-visible {
+		outline: none;
+		box-shadow:
+			inset 0 0 0 1px var(--color-brand),
+			0 0 0 4px var(--color-brand-ring);
+	}
+
+	.ec-form-field[data-invalid] .ec-form-input,
+	.ec-form-input[aria-invalid="true"] {
+		box-shadow: inset 0 0 0 1px var(--color-danger);
+	}
+
+	.ec-form-radio-group,
+	.ec-form-checkbox-group {
+		display: grid;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+	.ec-form-radio-label,
+	.ec-form-checkbox-label {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		font-size: 15px;
+		color: var(--color-text-secondary);
+	}
+
+	.ec-form-radio-label input,
+	.ec-form-checkbox-label input {
+		accent-color: var(--color-brand);
+	}
+
+	.ec-form-help {
+		font-size: 13.5px;
+		color: var(--color-muted);
+	}
+
+	.ec-form-error {
+		font-size: 13.5px;
+		color: var(--color-danger);
+	}
+
+	.ec-form-error:empty {
+		display: none;
+	}
+
+	.ec-form-nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+	}
+
+	.ec-form-submit,
+	.ec-form-next,
+	.ec-form-prev {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 44px;
+		padding: 10px 22px;
+		border: 0;
+		border-radius: var(--radius-full);
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font: inherit;
+		font-size: 15px;
+		font-weight: 500;
+		line-height: 1.2;
+		cursor: pointer;
+		transition:
+			background 150ms var(--ease-out),
+			scale 150ms var(--ease-out);
+	}
+
+	.ec-form-prev {
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: var(--shadow-card);
+	}
+
+	.ec-form-submit:hover,
+	.ec-form-next:hover {
+		background: var(--color-brand-strong);
+	}
+
+	.ec-form-submit:active,
+	.ec-form-next:active,
+	.ec-form-prev:active {
+		scale: 0.96;
+	}
+
+	.ec-form-submit:disabled {
+		opacity: 0.6;
+		cursor: progress;
+	}
+
+	.ec-form-nav [hidden] {
+		display: none;
+	}
+
+	.ec-form-progress {
+		font-size: 13.5px;
+		color: var(--color-muted);
+	}
+
+	.ec-form-status:empty {
+		display: none;
+	}
+
+	.ec-form-status {
+		padding: 14px 16px;
+		border-radius: var(--radius);
+		background: var(--color-sunken);
+		color: var(--color-text);
+		font-size: 15px;
+	}
+}

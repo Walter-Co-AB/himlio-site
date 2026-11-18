@@ -71,6 +71,26 @@ They re-export EmDash's own modules unchanged, so EmDash's documentation applies
 update that breaks what they export is a major version of this package. (`emdash-env.d.ts`,
 which EmDash generates with the collection types, still names `emdash`; leave it as it is.)
 
+## Forms (`@himlio/site/forms`)
+
+Every site has EmDash's Forms plugin ([`@emdash-cms/plugin-forms`](https://www.npmjs.com/package/@emdash-cms/plugin-forms),
+pinned): the customer builds forms in the admin under Forms and reads the submissions there.
+A form goes on a page as a Form block in rich text (a Text section's body), rendered by the
+plugin with `.ec-form` classes for the site to style (the starter does it in
+`src/styles/forms.css`). Outside rich text: `import { Form } from '@himlio/site/forms'`, then
+`<Form id="kontakt" />` (the form's slug or id).
+
+- Spam protection is a honeypot by default. Turnstile needs a key pair per site; ask Walter & Co.
+- Notifications go to the form's addresses through the platform's email, with Reply-To set to the
+  sender's address. In `astro dev` they are written to the log instead.
+- Submissions are personal data: set a retention period on each form (Forms → settings); the
+  plugin deletes expired submissions weekly. The autoresponder emails whatever address a visitor
+  enters, so leave it off unless the form needs it.
+- AI connectors can't create forms or read submissions (plugin routes need the `admin` scope,
+  which connectors never get); they can place an existing form on a page.
+- The plugin's own texts (validation errors, "Submitting...", the notification email) are in
+  English; the submit button and confirmation message are set per form.
+
 ## Extension points
 
 This table is the whole public API. A breaking change to it is a major version.
@@ -105,8 +125,8 @@ CI: a site's `.github/workflows/ci.yml` calls the reusable workflow
 
 Connectors authorised over OAuth get content work plus reading the schema and settings:
 `content:read/write`, `media:read/write`, `taxonomies:manage`, `menus:manage`, `schema:read`,
-`settings:read`. No schema or settings changes, and no access to the 404 log or settings
-sub-routes. On connect, they receive instructions, among them: **when changing a published
+`settings:read`. No schema or settings changes, no forms or submissions, and no access to the
+404 log or settings sub-routes. On connect, they receive instructions, among them: **when changing a published
 item with `content_update`, pass `status: "published"` (or call `content_publish`)**, or the
 change may stay a draft and not show on the site.
 

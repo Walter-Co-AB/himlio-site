@@ -22,6 +22,11 @@ test('the guidance tells connectors to publish, and where contact details live',
   assert.match(MCP_INSTRUCTIONS, /"company"/);
 });
 
+test('the guidance says forms are made in the admin and how to place one', () => {
+  assert.match(MCP_INSTRUCTIONS, /in the admin under Forms/);
+  assert.match(MCP_INSTRUCTIONS, /_type: "emdash-form"/);
+});
+
 test('only the MCP endpoint is matched', () => {
   assert.equal(isMcpPath(new URL(URL_)), true);
   assert.equal(isMcpPath(new URL('https://a.se/_emdash//api/MCP/')), true);
