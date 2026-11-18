@@ -4,7 +4,8 @@ import handler, {
   EmDashRoomSite,
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
-import { siteCrons } from 'virtual:himlio/config';
+import { facts, siteCrons } from 'virtual:himlio/config';
+import { fillStoredFormRecipients } from './form-recipients.js';
 import { guardFormsRequest, isFormsWritePath } from './forms-guard.js';
 import { addMcpInstructions, initializeIds, isMcpPath } from './mcp-instructions.js';
 import { isOAuthScopePath, limitOAuthScopes, refusesOAuthToken } from './oauth-scopes.js';
@@ -16,7 +17,8 @@ const emdashScheduled = createScheduledHandler();
 
 const PLATFORM_CRON = '* * * * *';
 
-// The platform's minute: scheduled publishing and maintenance (EmDash) and session cleanup.
+// The platform's minute: scheduled publishing and maintenance (EmDash), session cleanup and
+// notification recipients on forms that have none.
 // Any other expression is the site's own (himlio({ crons })).
 const scheduled: ExportedHandlerScheduledHandler<Env> = (controller, env, ctx) => {
   if (controller.cron === PLATFORM_CRON) {
@@ -24,6 +26,11 @@ const scheduled: ExportedHandlerScheduledHandler<Env> = (controller, env, ctx) =
     ctx.waitUntil(
       deleteExpiredSessions(env.DB).catch((error: unknown) => {
         console.error('[scheduled] deleting expired sessions failed:', error);
+      })
+    );
+    ctx.waitUntil(
+      fillStoredFormRecipients(facts.forms.notify).catch((error: unknown) => {
+        console.error('[scheduled] form recipients failed:', error);
       })
     );
     return;
@@ -74,7 +81,7 @@ export default {
     if (refusesOAuthToken(request)) return new Response('Forbidden', { status: 403 });
     if (isFormsWritePath(url)) {
       // Platform rules for forms: no autoresponder, retention at most a year (forms-guard.ts).
-      const guarded = await guardFormsRequest(request);
+      const guarded = await guardFormsRequest(request, facts.forms.notify);
       if (guarded instanceof Response) return guarded;
       return handler.fetch!(guarded as typeof request, env, ctx);
     }

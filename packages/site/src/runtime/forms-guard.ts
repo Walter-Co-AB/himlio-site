@@ -6,6 +6,9 @@
 //   plugin's duplicate copies stored settings, so it can't come back that way.
 // - Submissions are kept 1–365 days, 365 by default: no "forever" (personal data, GDPR). The
 //   plugin's weekly cleanup deletes what is older.
+// - Notification recipients: the plugin's admin has no field for them, so a form saved without
+//   any (missing or empty `notifyEmails`) gets the platform's list (himlio.json forms.notify).
+//   A non-empty list that was sent is kept. Stored forms are filled in by form-recipients.ts.
 //
 // The plugin has no settings for either, so the Worker rewrites the request body of the routes
 // that take form settings (create, update). It fails closed: a request it can't read is refused,
@@ -52,14 +55,22 @@ type Settings = Record<string, unknown>;
 /** The form settings with the platform rules applied. `create` fills in what is missing. */
 export function applyFormRules(
   settings: Settings | undefined,
-  create: boolean
+  create: boolean,
+  notify: readonly string[] = []
 ): Settings | undefined {
   if (!create && settings === undefined) return undefined; // update without settings: unchanged
   const out: Settings = { ...(settings ?? {}) };
   if (create) delete out.autoresponder;
   else out.autoresponder = null; // the plugin's way to clear a stored one
   if (create || 'retentionDays' in out) out.retentionDays = retention(out.retentionDays);
+  if (notify.length > 0 && (create || 'notifyEmails' in out) && !hasRecipients(out.notifyEmails))
+    out.notifyEmails = [...notify];
   return out;
+}
+
+/** A non-empty list: the plugin validates the addresses themselves. */
+export function hasRecipients(notifyEmails: unknown): boolean {
+  return Array.isArray(notifyEmails) && notifyEmails.length > 0;
 }
 
 const refuse = (status: number, message: string, headers?: HeadersInit) =>
@@ -72,7 +83,10 @@ const refuse = (status: number, message: string, headers?: HeadersInit) =>
  * The request with the rules applied to its body, or a Response refusing it: only POST with a
  * JSON object body (and an object `settings`, if any) is let through.
  */
-export async function guardFormsRequest(request: Request): Promise<Request | Response> {
+export async function guardFormsRequest(
+  request: Request,
+  notify: readonly string[] = []
+): Promise<Request | Response> {
   if (request.method !== 'POST') return refuse(405, 'Method not allowed', { Allow: 'POST' });
   const path = routePath(new URL(request.url));
   if (path === null) return refuse(400, 'Bad path');
@@ -91,7 +105,7 @@ export async function guardFormsRequest(request: Request): Promise<Request | Res
     (typeof settings !== 'object' || settings === null || Array.isArray(settings))
   )
     return refuse(400, 'settings must be an object');
-  const rewritten = applyFormRules(settings as Settings | undefined, path === CREATE);
+  const rewritten = applyFormRules(settings as Settings | undefined, path === CREATE, notify);
   const headers = new Headers(request.headers);
   headers.set('Content-Type', 'application/json');
   headers.delete('content-length');

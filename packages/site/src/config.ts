@@ -20,6 +20,11 @@ export interface HimlioFacts {
   locale: string;
   url: string | null;
   email?: { from: string };
+  /**
+   * Forms: who gets the notification emails, until the Forms plugin's admin has a field for it
+   * (from the customer's platform config). Empty when himlio.json has no `forms`.
+   */
+  forms: { notify: string[] };
 }
 
 export interface HimlioOptions {
@@ -67,7 +72,22 @@ export function readHimlio(root: string): HimlioFacts {
     locale: raw.locale || 'sv',
     url: raw.url ?? null,
     ...(raw.email?.from ? { email: { from: raw.email.from } } : {}),
+    forms: { notify: formRecipients(raw.forms) },
   };
+}
+
+const EMAIL = /^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]+$/;
+
+/** himlio.json `forms.notify`: a list of plain addresses, or nothing. */
+function formRecipients(forms: unknown): string[] {
+  if (forms === undefined || forms === null) return [];
+  const notify = (forms as { notify?: unknown }).notify;
+  if (notify === undefined || notify === null) return [];
+  if (!Array.isArray(notify)) fail('himlio.json: forms.notify must be a list of email addresses');
+  for (const address of notify as unknown[])
+    if (typeof address !== 'string' || !EMAIL.test(address) || address.length > 254)
+      fail(`himlio.json: forms.notify has an invalid address: ${JSON.stringify(address)}`);
+  return [...new Set(notify as string[])];
 }
 
 /**

@@ -26,7 +26,32 @@ const generated = (root) => JSON.parse(readFileSync(join(root, '.himlio/wrangler
 
 test('readHimlio: defaults, and email only when set', () => {
   const facts = readHimlio(site({ 'himlio.json': '{"slug":"a","name":"A"}' }));
-  assert.deepEqual(facts, { slug: 'a', name: 'A', locale: 'sv', url: null });
+  assert.deepEqual(facts, {
+    slug: 'a',
+    name: 'A',
+    locale: 'sv',
+    url: null,
+    forms: { notify: [] },
+  });
+});
+
+test('readHimlio: form recipients from forms.notify; missing is empty, invalid fails', () => {
+  const read = (forms) =>
+    readHimlio(site({ 'himlio.json': JSON.stringify({ slug: 'a', name: 'A', forms }) })).forms;
+  assert.deepEqual(read({ notify: ['anton@walterco.se', 'anton@walterco.se', 'b@example.com'] }), {
+    notify: ['anton@walterco.se', 'b@example.com'],
+  });
+  assert.deepEqual(read({}), { notify: [] });
+  assert.deepEqual(read(null), { notify: [] });
+  assert.throws(() => read({ notify: 'anton@walterco.se' }), /must be a list/);
+  for (const bad of [
+    'anton',
+    'a b@example.com',
+    'Anton <a@example.com>',
+    'a@example.com,b@example.com',
+    7,
+  ])
+    assert.throws(() => read({ notify: [bad] }), /invalid address/, String(bad));
 });
 
 test('the generated Worker config: platform bindings, EmDash rooms, the platform cron', () => {
