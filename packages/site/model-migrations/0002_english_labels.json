@@ -1,0 +1,54 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "0002_english_labels",
+    "description": "The admin is in English: English labels for the company collection, and for pages where they are still the starter 1.3.0's Swedish ones. Labels the customer has changed are kept."
+  },
+  "relabel": [
+    {
+      "collection": "company",
+      "label": ["Företagsuppgifter", "Company details"],
+      "labelSingular": ["Företagsuppgifter", "Company details"],
+      "description": [
+        "Kontaktuppgifter som visas på webbplatsen. Fyll i den enda posten; tomma fält visas inte.",
+        "Contact details shown on the website. Fill in the one entry; empty fields are not shown."
+      ]
+    },
+    {
+      "collection": "company",
+      "field": "title",
+      "label": ["Rubrik", "Title"]
+    },
+    {
+      "collection": "company",
+      "field": "phone",
+      "label": ["Telefon", "Phone"]
+    },
+    {
+      "collection": "company",
+      "field": "email",
+      "label": ["E-post", "Email"]
+    },
+    {
+      "collection": "company",
+      "field": "address",
+      "label": ["Adress", "Address"]
+    },
+    {
+      "collection": "company",
+      "field": "org_number",
+      "label": ["Organisationsnummer", "Organisation number"]
+    },
+    {
+      "collection": "company",
+      "field": "opening_hours",
+      "label": ["Öppettider", "Opening hours"]
+    },
+    {
+      "collection": "pages",
+      "label": ["Sidor", "Pages"],
+      "labelSingular": ["Sida", "Page"]
+    }
+  ]
+}

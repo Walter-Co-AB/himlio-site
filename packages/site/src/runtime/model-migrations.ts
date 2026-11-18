@@ -4,7 +4,8 @@
 // EmDash's applySeed in "skip" mode, so anything that already exists is left alone and a file
 // can safely run on a site that has it already (e.g. a new site whose seed already includes it).
 // Fields a migration adds to a collection that already exists are created too; nothing that
-// exists is changed. Block types (`blockTypes`) are allowed as well.
+// exists is changed. Block types (`blockTypes`) are allowed as well. `relabel` renames
+// collections and fields, but only labels that still have their old value (see applyRelabel).
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -23,10 +24,19 @@ import { Kysely } from 'kysely';
 import { modelMigrations } from 'virtual:himlio/config';
 
 type Seed = Parameters<typeof applySeed>[1];
+type LabelChange = [from: string, to: string];
+interface Relabel {
+  collection: string;
+  field?: string;
+  label?: LabelChange;
+  labelSingular?: LabelChange;
+  description?: LabelChange;
+}
+type Migration = Seed & { relabel?: Relabel[] };
 type Database = Parameters<typeof applySeed>[0];
 
 /** Platform migrations (in the package) first, then the site's own ("site/..."). */
-export const MODEL_MIGRATIONS = modelMigrations as { name: string; seed: Seed }[];
+export const MODEL_MIGRATIONS = modelMigrations as { name: string; seed: Migration }[];
 
 const RETRY_MS = 60_000;
 /** A run that hasn't finished after this long is treated as lost, so a later request retries. */
@@ -62,6 +72,28 @@ async function addMissingFields(db: Database, seed: Seed, name: string): Promise
   }
 }
 
+/**
+ * Renames collections and fields (e.g. to English admin labels). A label changes only while it
+ * still has the `from` value, so one the customer changed in the admin is kept, and a missing
+ * collection or field is skipped.
+ */
+async function applyRelabel(db: Database, relabel: Relabel[], name: string): Promise<void> {
+  const registry = new SchemaRegistry(db);
+  for (const { collection, field, ...changes } of relabel) {
+    const current = field
+      ? await registry.getField(collection, field)
+      : await registry.getCollection(collection);
+    if (!current) continue;
+    const update: Record<string, string> = {};
+    for (const [key, [from, to]] of Object.entries(changes) as [string, LabelChange][])
+      if ((current as unknown as Record<string, unknown>)[key] === from) update[key] = to;
+    if (Object.keys(update).length === 0) continue;
+    if (field) await registry.updateField(collection, field, update);
+    else await registry.updateCollection(collection, update);
+    console.log(`[himlio] ${name}: relabelled ${field ? `${collection}.${field}` : collection}`);
+  }
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -72,12 +104,14 @@ async function applyPending(): Promise<void> {
 
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
-    for (const { name, seed } of todo) {
+    for (const { name, seed: migration } of todo) {
+      const { relabel, ...seed } = migration;
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
       await applySeed(db, seed, { includeContent: true, onConflict: 'skip' });
       await addMissingFields(db, seed, name);
+      if (relabel) await applyRelabel(db, relabel, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

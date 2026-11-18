@@ -772,8 +772,8 @@
 	"collections": [
 		{
 			"slug": "pages",
-			"label": "Sidor",
-			"labelSingular": "Sida",
+			"label": "Pages",
+			"labelSingular": "Page",
 			"urlPattern": "/{slug}",
 			"supports": ["drafts", "revisions", "preview", "seo"],
 			"fields": [

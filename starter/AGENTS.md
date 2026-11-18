@@ -14,8 +14,10 @@ working on this site. The site runs on Himlio, the website platform from Walter 
   never synced; the platform reaches it only as `@himlio/site` version updates.
 - Import EmDash through the package: `@himlio/site/emdash`, `@himlio/site/emdash/ui`, `/page`
   and `/runtime`, never `emdash` directly, so the site uses the EmDash version the platform pins.
-- Admin at `/_emdash/admin`. Content and users in D1 (`DB`), media in R2 (`MEDIA`).
-- Swedish first: `sv` is the site language. Write interface text and content in Swedish.
+- Admin at `/_emdash/admin`, in English (like EmDash, its plugins and the code). Content and
+  users in D1 (`DB`), media in R2 (`MEDIA`).
+- Swedish first on the site: `sv` is the site language. Write the site's interface text and content
+  in Swedish.
 
 ## What's where
 
@@ -24,7 +26,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 | Content                                                                   | In the admin. Pages are in `pages`: each page is a list of sections (EmDash block types); the home page is the page with slug `home`.                                                                   |
 | Forms                                                                     | In the admin under Forms (submissions too). Place one on a page as a Form block in a Text section; outside rich text, `<Form id="slug" />` from `@himlio/site/forms`. Styled in `src/styles/forms.css`. |
 | Site description                                                          | In the admin: Settings → General → Tagline. Read it with `siteDescription()`.                                                                                                                           |
-| Contact details                                                           | In the admin: the one entry in Företagsuppgifter (`company`). Read them with `contactDetails()`.                                                                                                        |
+| Contact details                                                           | In the admin: the one entry in Company details (`company`). Read them with `contactDetails()`.                                                                                                          |
 | Design                                                                    | `src/styles/theme.css` (colours, fonts, radii; tokens in `tokens.css`), `src/layouts/Base.astro`, `src/components/` (one component per block type in `blocks/`), `public/`                              |
 | Pages                                                                     | `src/pages/`                                                                                                                                                                                            |
 | Astro config                                                              | `astro.config.mjs`: the site's integrations and options, in `defineHimlioConfig()`                                                                                                                      |

@@ -97,8 +97,31 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   const bad = site({ 'model/0001_x.json': JSON.stringify({ version: '1', settings: {} }) });
   assert.throws(
     () => readModelMigrations(bad, { modelMigrations: 'model' }),
-    /only blockTypes, collections and content/
+    /only blockTypes, collections, content and relabel/
   );
+});
+
+test('relabel entries are checked at build time', () => {
+  const read = (relabel) =>
+    readModelMigrations(site({ 'model/0001_x.json': JSON.stringify({ version: '1', relabel }) }), {
+      modelMigrations: 'model',
+    });
+  assert.equal(
+    read([
+      { collection: 'pages', label: ['Sidor', 'Pages'], labelSingular: ['Sida', 'Page'] },
+      { collection: 'pages', field: 'title', label: ['Rubrik', 'Title'] },
+    ]).at(-1).name,
+    'site/0001_x'
+  );
+  assert.throws(() => read({}), /must be a list/);
+  assert.throws(() => read([{ label: ['a', 'b'] }]), /needs a collection/);
+  assert.throws(() => read([{ collection: 'pages' }]), /changes nothing/);
+  assert.throws(() => read([{ collection: 'pages', label: 'Pages' }]), /\["from", "to"\]/);
+  assert.throws(
+    () => read([{ collection: 'pages', field: 'title', description: ['a', 'b'] }]),
+    /can't change "description" of a field/
+  );
+  assert.throws(() => read([{ collection: 'pages', slug: ['a', 'b'] }]), /can't change "slug"/);
 });
 
 test('invalid options are refused', () => {
