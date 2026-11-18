@@ -25,6 +25,8 @@ test('the guidance tells connectors to publish, and where contact details live',
 test('the guidance says forms are made in the admin and how to place one', () => {
   assert.match(MCP_INSTRUCTIONS, /in the admin under Forms/);
   assert.match(MCP_INSTRUCTIONS, /_type: "emdash-form"/);
+  assert.match(MCP_INSTRUCTIONS, /at most 12 months/);
+  assert.match(MCP_INSTRUCTIONS, /can't send automatic replies/);
 });
 
 test('only the MCP endpoint is matched', () => {
