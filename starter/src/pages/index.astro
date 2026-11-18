@@ -1,50 +1,58 @@
 ---
-import { getEmDashEntry } from '@himlio/site/emdash';
-import { PortableText } from '@himlio/site/emdash/ui';
-import Base from '../layouts/Base.astro';
-import Contact from '../components/Contact.astro';
-import { contactDetails, hasContactDetails } from '@himlio/site/runtime';
-import { himlio } from '@himlio/site/runtime';
-import { siteDescription } from '@himlio/site/runtime';
+import { getContentSeo, getEmDashEntry, getSeoMeta, getSiteSettings } from "@himlio/site/emdash";
+import Base from "../layouts/Base.astro";
+import PageView from "../components/PageView.astro";
+import { heroSeoDefaults } from "../utils/page";
+import { resolveSiteIdentity } from "../utils/site";
 
-// The home page shows the site's name, its description (the admin's Tagline) and the contact
-// details from the admin. If the customer publishes a page with the slug "start", its content is
-// shown here as well.
-const { entry: start, cacheHint } = await getEmDashEntry('pages', 'start');
+const [{ entry: page, cacheHint }, settings] = await Promise.all([
+	getEmDashEntry("pages", "home"),
+	getSiteSettings(),
+]);
+
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
-const description = await siteDescription(Astro.cache);
-const details = await contactDetails(Astro.cache);
+
+const { siteTitle, siteTagline } = resolveSiteIdentity(settings);
+const seo = page
+	? getSeoMeta(page, {
+			siteUrl: Astro.url.origin,
+			path: "/",
+			...heroSeoDefaults(page.data.content, Astro.url.origin),
+		})
+	: null;
+// The home page is titled after the site unless its SEO panel sets a title.
+const seoTitle = page ? getContentSeo(page)?.title || undefined : undefined;
 ---
 
 <Base
-  title={himlio.name}
-  description={description}
-  content={start ? { collection: 'pages', id: start.data.id, slug: 'start' } : undefined}
+	title={seoTitle}
+	pageTitle={seoTitle}
+	description={seo?.description}
+	image={seo?.ogImage}
+	canonical={seo?.canonical}
+	robots={seo?.robots}
+	content={page ? { collection: "pages", id: page.data.id, slug: page.id } : undefined}
 >
-  <section class="hero prose">
-    <h1>{himlio.name}</h1>
-    {description && <p class="lead">{description}</p>}
-  </section>
-
-  {start?.data.content && (
-    <article class="prose">
-      <PortableText value={start.data.content} />
-    </article>
-  )}
-
-  {hasContactDetails(details) && (
-    <section class="prose" aria-labelledby="kontakt">
-      <h2 id="kontakt">Kontakt</h2>
-      <Contact details={details} />
-    </section>
-  )}
+	{
+		page ? (
+			<PageView page={page} heading={siteTitle} />
+		) : (
+			<section class="container empty-state">
+				<h1 class="display empty-state__title">{siteTitle}</h1>
+				{siteTagline && <p class="lead">{siteTagline}</p>}
+				{Astro.locals.user && (
+					<>
+						<p class="lead">
+							Skapa eller publicera en sida med adressen (slug) “home” för att visa den här.
+						</p>
+						<div class="actions">
+							<a href="/_emdash/admin/content/pages/new" class="btn btn-lg">
+								Skapa sida
+							</a>
+						</div>
+					</>
+				)}
+			</section>
+		)
+	}
 </Base>
-
-<style>
-  .hero {
-    padding-block: 3rem 1rem;
-  }
-  .lead {
-    font-size: 1.25rem;
-  }
-</style>

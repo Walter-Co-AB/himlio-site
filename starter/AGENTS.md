@@ -19,17 +19,39 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## What's where
 
-| What                                                                      | Where                                                                                                                                    |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Content                                                                   | In the admin. Pages are in the `pages` collection; the home page shows the page with slug `start`.                                       |
-| Site description                                                          | In the admin: Settings → General → Tagline. Read it with `siteDescription()`.                                                            |
-| Contact details                                                           | In the admin: the one entry in Företagsuppgifter (`company`). Read them with `contactDetails()`.                                         |
-| Design                                                                    | `src/styles/`, `src/layouts/`, `src/components/`, `public/`                                                                              |
-| Pages                                                                     | `src/pages/`                                                                                                                             |
-| Astro config                                                              | `astro.config.mjs`: the site's integrations and options, in `defineHimlioConfig()`                                                       |
-| Own middleware, API routes, tables, crons, content model, Durable Objects | See "Extension points" in the `@himlio/site` README. Tables: `migrations/0100_*.sql` and up.                                             |
-| Platform facts                                                            | `himlio.json`: slug, name, locale, URL, email sender. Written by the platform (Terraform) and overwritten on every apply; never edit it. |
-| CI                                                                        | `.github/workflows/ci.yml` calls the platform's build workflow. Keep its version equal to `@himlio/site` in `package.json`.              |
+| What                                                                      | Where                                                                                                                                                                      |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content                                                                   | In the admin. Pages are in `pages`: each page is a list of sections (EmDash block types); the home page is the page with slug `home`.                                      |
+| Site description                                                          | In the admin: Settings → General → Tagline. Read it with `siteDescription()`.                                                                                              |
+| Contact details                                                           | In the admin: the one entry in Företagsuppgifter (`company`). Read them with `contactDetails()`.                                                                           |
+| Design                                                                    | `src/styles/theme.css` (colours, fonts, radii; tokens in `tokens.css`), `src/layouts/Base.astro`, `src/components/` (one component per block type in `blocks/`), `public/` |
+| Pages                                                                     | `src/pages/`                                                                                                                                                               |
+| Astro config                                                              | `astro.config.mjs`: the site's integrations and options, in `defineHimlioConfig()`                                                                                         |
+| Own middleware, API routes, tables, crons, content model, Durable Objects | See "Extension points" in the `@himlio/site` README. Tables: `migrations/0100_*.sql` and up.                                                                               |
+| Platform facts                                                            | `himlio.json`: slug, name, locale, URL, email sender. Written by the platform (Terraform) and overwritten on every apply; never edit it.                                   |
+| CI                                                                        | `.github/workflows/ci.yml` calls the platform's build workflow. Keep its version equal to `@himlio/site` in `package.json`.                                                |
+
+## Build it the EmDash way
+
+This starter is EmDash's marketing template (`templates/marketing-cloudflare` in
+[emdash-cms/emdash](https://github.com/emdash-cms/emdash)) on `@himlio/site`; `UPSTREAM.md` says
+which version and what Himlio changed. Work with EmDash, not around it:
+
+- **Content lives in the CMS, as sections.** A page's `content` is a list of block types
+  (`marketing_hero`, `marketing_features`, `marketing_text`, ...). Customers and their AI
+  connector edit whole pages that way. Don't hardcode copy in `.astro` files.
+- **A new kind of section is a new block type**, with a component in `src/components/blocks/`
+  registered in `blocks/index.ts`, and the block type added through a content-model migration
+  (`himlio({ modelMigrations })`, `blockTypes`) and to `seed/seed.json`. Reuse or extend the
+  template's block types before inventing new ones.
+- **Look it up before inventing a pattern:** EmDash's docs MCP (`https://docs.emdashcms.com/mcp`,
+  set up in `.mcp.json`) and EmDash's agent skills and templates.
+- **Style through tokens.** Change `theme.css` (it overrides `tokens.css`); keep component CSS
+  on the tokens. Colours use `light-dark()` for dark mode.
+- **Don't port other themes** (AstroWind, AstroDeck and the like) into a Himlio site; they put
+  content in code. Take the look, rebuild it with these blocks and tokens.
+- **Keep upstream files recognisable.** `src/` follows EmDash's formatting (tabs) and isn't
+  reformatted by Prettier, so EmDash's template updates can be compared and applied.
 
 ## Rules
 
@@ -47,8 +69,10 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 7. **Every route needs a decision about access.** Public endpoints need input validation with
    length limits and abuse protection. Anything non-public must check the EmDash session.
 8. **Privacy (GDPR).** No third-party fonts, analytics, trackers or embeds without asking.
-   Fonts are self-hosted via `@fontsource`. Store only the personal data a feature needs.
-9. **Honest content.** No invented text, testimonials, customers or numbers.
+   Fonts are self-hosted via `@fontsource` (not Astro's Google font provider): import them in
+   `Base.astro`, name them in `theme.css`. Store only the personal data a feature needs.
+9. **Honest content.** No invented text, testimonials, customers or numbers. The template's
+   testimonials, pricing, logos and stats blocks are for the customer's real ones only.
 10. **Keep it simple.** Prefer plain Astro and CSS. Ask before adding a framework or library.
 11. **Platform changes go to `@himlio/site`**, not into this repo. Don't copy platform code
     here to change it; ask for an extension point or a fix in `Walter-Co-AB/himlio-site`.

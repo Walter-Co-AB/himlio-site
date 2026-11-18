@@ -7,3 +7,7 @@ emdash-env.d.ts
 worker-configuration.d.ts
 himlio.json
 .himlio/
+src/
+.mcp.json
+.cursor/
+.vscode/

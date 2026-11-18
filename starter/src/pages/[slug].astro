@@ -1,33 +1,32 @@
 ---
-import { getEmDashEntry, getSeoMeta, decodeSlug } from '@himlio/site/emdash';
-import { PortableText } from '@himlio/site/emdash/ui';
-import Base from '../layouts/Base.astro';
-import { himlio } from '@himlio/site/runtime';
+import { decodeSlug, getEmDashEntry, getSeoMeta } from "@himlio/site/emdash";
+import Base from "../layouts/Base.astro";
+import PageView from "../components/PageView.astro";
+import { heroSeoDefaults } from "../utils/page";
 
 const slug = decodeSlug(Astro.params.slug);
-// "start" is shown on the home page.
-if (!slug || slug === 'start') return Astro.rewrite('/404');
+if (!slug) return Astro.rewrite("/404");
 
-const { entry: page, cacheHint } = await getEmDashEntry('pages', slug);
-if (!page) return Astro.rewrite('/404');
+const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
+if (!page) return Astro.rewrite("/404");
+
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const seo = getSeoMeta(page, {
-  siteTitle: himlio.name,
-  siteUrl: Astro.url.origin,
-  path: Astro.url.pathname.replace(/\/$/, ''),
+	siteUrl: Astro.url.origin,
+	path: `/${page.id}`,
+	...heroSeoDefaults(page.data.content, Astro.url.origin),
 });
 ---
 
 <Base
-  title={seo.title}
-  pageTitle={seo.ogTitle}
-  description={seo.description}
-  canonical={seo.canonical}
-  content={{ collection: 'pages', id: page.data.id, slug }}
+	title={seo.title}
+	pageTitle={page.data.title}
+	description={seo.description}
+	image={seo.ogImage}
+	canonical={seo.canonical}
+	robots={seo.robots}
+	content={{ collection: "pages", id: page.data.id, slug: page.id }}
 >
-  <article class="prose">
-    <h1 {...page.edit.title}>{page.data.title}</h1>
-    <PortableText value={page.data.content} />
-  </article>
+	<PageView page={page} />
 </Base>

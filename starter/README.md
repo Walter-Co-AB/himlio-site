@@ -9,6 +9,8 @@ on the package [`@himlio/site`](https://www.npmjs.com/package/@himlio/site).
 - The site's name, locale and URL come from `himlio.json`, which the platform writes. The
   description (Tagline) and contact details are edited in the admin.
 - This repo holds the site's design and its own code. The platform comes as `@himlio/site`.
+- The design started from EmDash's marketing template: pages are built from sections (block
+  types) in the admin. See [UPSTREAM.md](UPSTREAM.md) and AGENTS.md, "Build it the EmDash way".
 
 ## Development
 

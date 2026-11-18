@@ -8,7 +8,9 @@ Rules for AI coding tools and people working on the Himlio platform repo.
   with `tsc`), the `himlio-site` command in `cli/` (plain ESM), platform D1 migrations in
   `migrations/` (0001–0099), platform content-model migrations in `model-migrations/`, tests in
   `test/` (against `dist/`). Its README is the public documentation.
-- `starter/`: the design new sites start from, consuming the package through the npm workspace.
+- `starter/`: the design new sites start from: EmDash's marketing template (block-type pages)
+  adapted to Himlio, consuming the package through the npm workspace. `starter/UPSTREAM.md` lists
+  the EmDash version it follows and every Himlio change; keep `src/` close to upstream.
   Infra copies it once per new site, at the tag of the latest `@himlio/site`, and never syncs it,
   so it must be a complete site on its own, and its `@himlio/site` version and `build.yml@vX.Y.Z`
   must equal the package version (a test checks).
