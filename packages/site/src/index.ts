@@ -1,4 +1,4 @@
-// The Himlio platform for an Astro site: EmDash (D1, R2, sessions in D1, email, forms, Swedish admin)
+// The Himlio platform for an Astro site: EmDash (D1, R2, sessions in D1, email, forms, English admin)
 // from himlio.json, the Cloudflare adapter with a generated Worker config, the platform
 // middleware, and the dev port.
 //
@@ -109,8 +109,9 @@ function himlio(options: HimlioOptions) {
       plugins: [formsPlugin({ defaultSpamProtection: 'honeypot' }), ...emailPlugins],
       admin: {
         siteName: facts.name,
-        // Swedish first. English stays available; the admin follows the browser language.
-        locales: ['sv', 'en'],
+        // The admin is in English, like EmDash, its plugins and the code. The site itself (content
+        // and interface text) is Swedish.
+        locales: ['en'],
       },
     }),
     runtime,

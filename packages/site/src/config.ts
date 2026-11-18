@@ -126,6 +126,46 @@ function mergeMigrations(root: string, out: string): void {
   }
 }
 
+const MODEL_MIGRATION_KEYS = [
+  '$schema',
+  'version',
+  'meta',
+  'blockTypes',
+  'collections',
+  'content',
+  'relabel',
+];
+
+/**
+ * `relabel` in a model migration: [{ collection, field?, label?: [from, to], ... }]. A collection
+ * may change label, labelSingular and description; a field its label. Each change applies only
+ * while the current value is still `from`, so a label the customer changed is kept.
+ */
+function validateRelabel(relabel: unknown, where: string): void {
+  if (!Array.isArray(relabel)) fail(`${where}: relabel must be a list`);
+  for (const item of relabel as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item))
+      fail(`${where}: each relabel entry must be an object`);
+    const entry = item as Record<string, unknown>;
+    if (typeof entry.collection !== 'string')
+      fail(`${where}: each relabel entry needs a collection`);
+    const isField = entry.field !== undefined;
+    if (isField && typeof entry.field !== 'string')
+      fail(`${where}: relabel field must be a string`);
+    const allowed = isField ? ['label'] : ['label', 'labelSingular', 'description'];
+    const changes = Object.keys(entry).filter((k) => k !== 'collection' && k !== 'field');
+    if (changes.length === 0)
+      fail(`${where}: relabel entry for ${entry.collection} changes nothing`);
+    for (const key of changes) {
+      if (!allowed.includes(key))
+        fail(`${where}: relabel can't change "${key}" of a ${isField ? 'field' : 'collection'}`);
+      const pair = entry[key];
+      if (!Array.isArray(pair) || pair.length !== 2 || !pair.every((v) => typeof v === 'string'))
+        fail(`${where}: relabel ${key} must be ["from", "to"]`);
+    }
+  }
+}
+
 /** Platform model migrations (unprefixed names) and the site's own ("site/NNNN_name"). */
 export function readModelMigrations(root: string, options: HimlioOptions) {
   const list: { name: string; seed: unknown }[] = [];
@@ -137,10 +177,11 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
         fail(`${dir}/${file}: name must look like 0001_add_fields.json`);
       const seed = JSON.parse(readFileSync(join(dir, file), 'utf8'));
       for (const key of Object.keys(seed))
-        if (!['$schema', 'version', 'meta', 'blockTypes', 'collections', 'content'].includes(key))
+        if (!MODEL_MIGRATION_KEYS.includes(key))
           fail(
-            `${dir}/${file}: only blockTypes, collections and content are allowed (found "${key}")`
+            `${dir}/${file}: only blockTypes, collections, content and relabel are allowed (found "${key}")`
           );
+      if (seed.relabel !== undefined) validateRelabel(seed.relabel, `${dir}/${file}`);
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });
     }
   };

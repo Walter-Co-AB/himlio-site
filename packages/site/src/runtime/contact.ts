@@ -1,5 +1,5 @@
 // The company's contact details, edited in the admin: the single entry in the
-// "Företagsuppgifter" collection (slug `company`, created by seed/seed.json). Connectors can
+// "Company details" collection (slug `company`, created by seed/seed.json). Connectors can
 // update it over MCP with content:write.
 //
 // Missing or empty fields are left out, and so is everything when the collection or its entry

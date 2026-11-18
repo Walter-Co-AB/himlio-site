@@ -38,7 +38,7 @@ const details = await contactDetails(Astro.cache);
   `wrangler.jsonc` in a site);
 - the platform middleware, the Worker entry (`/_himlio/cron`, OAuth scope limits for AI
   connectors, MCP guidance for connectors);
-- the platform content model (`company`, Företagsuppgifter) and D1 tables, applied to every
+- the platform content model (`company`, Company details) and D1 tables, applied to every
   site automatically;
 - the dev port: 4321 for the starter, 4400–4899 per customer site from its slug.
 
