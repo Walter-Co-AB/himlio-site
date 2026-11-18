@@ -5,6 +5,7 @@ import handler, {
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
 import { siteCrons } from 'virtual:himlio/config';
+import { guardFormsRequest, isFormsWritePath } from './forms-guard.js';
 import { addMcpInstructions, initializeIds, isMcpPath } from './mcp-instructions.js';
 import { isOAuthScopePath, limitOAuthScopes, refusesOAuthToken } from './oauth-scopes.js';
 import { deleteExpiredSessions } from './session-d1.js';
@@ -71,6 +72,12 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/_himlio/')) return himlio(request, env, ctx);
     if (refusesOAuthToken(request)) return new Response('Forbidden', { status: 403 });
+    if (isFormsWritePath(url)) {
+      // Platform rules for forms: no autoresponder, retention at most a year (forms-guard.ts).
+      const guarded = await guardFormsRequest(request);
+      if (guarded instanceof Response) return guarded;
+      return handler.fetch!(guarded as typeof request, env, ctx);
+    }
     if (isMcpPath(url)) {
       const ids = await initializeIds(request);
       return addMcpInstructions(await handler.fetch!(request, env, ctx), ids);
