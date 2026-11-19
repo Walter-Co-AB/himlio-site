@@ -5,10 +5,15 @@ import handler, {
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
 import { facts, siteCrons } from 'virtual:himlio/config';
-import { fillStoredFormRecipients } from './form-recipients.js';
+import { formsCronPass } from './form-recipients.js';
 import { guardFormsRequest, isFormsWritePath } from './forms-guard.js';
 import { addMcpInstructions, initializeIds, isMcpPath } from './mcp-instructions.js';
-import { isOAuthScopePath, limitOAuthScopes, refusesOAuthToken } from './oauth-scopes.js';
+import {
+  isOAuthScopePath,
+  limitOAuthScopes,
+  refusesOAuthToken,
+  refusesSiteUrlChange,
+} from './oauth-scopes.js';
 import { deleteExpiredSessions } from './session-d1.js';
 
 export { EmDashRoom, EmDashRoomSite, PluginBridge };
@@ -29,8 +34,8 @@ const scheduled: ExportedHandlerScheduledHandler<Env> = (controller, env, ctx) =
       })
     );
     ctx.waitUntil(
-      fillStoredFormRecipients(facts.forms.notify).catch((error: unknown) => {
-        console.error('[scheduled] form recipients failed:', error);
+      formsCronPass(facts.forms.notify).catch((error: unknown) => {
+        console.error('[scheduled] forms pass failed:', error);
       })
     );
     return;
@@ -79,6 +84,8 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/_himlio/')) return himlio(request, env, ctx);
     if (refusesOAuthToken(request)) return new Response('Forbidden', { status: 403 });
+    const siteUrl = await refusesSiteUrlChange(request);
+    if (siteUrl) return siteUrl;
     if (isFormsWritePath(url)) {
       // Platform rules for forms: no autoresponder, retention at most a year (forms-guard.ts).
       const guarded = await guardFormsRequest(request, facts.forms.notify);

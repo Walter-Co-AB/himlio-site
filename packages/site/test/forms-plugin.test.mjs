@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire, stripTypeScriptTypes } from 'node:module';
 import test from 'node:test';
-import { formsPlugin, formsPluginVersion } from '../dist/forms-plugin.js';
+import { FORMS_ENTRYPOINT, formsPlugin, formsPluginVersion } from '../dist/forms-plugin.js';
 
 // Our copy of the Forms plugin's descriptor must equal what the installed plugin's own
 // formsPlugin() returns, so a plugin update that changes it fails here.
@@ -18,7 +18,10 @@ test('the Forms descriptor matches the installed plugin', () => {
   const theirs = new Function('version', `${fn}\nreturn formsPlugin;`)(formsPluginVersion());
 
   const options = { defaultSpamProtection: 'honeypot' };
-  assert.deepEqual(formsPlugin(options), theirs(options));
+  assert.deepEqual(formsPlugin(options), {
+    ...theirs(options),
+    entrypoint: FORMS_ENTRYPOINT, // ours: the plugin plus the connector tools
+  });
 });
 
 test('the Forms plugin is pinned exactly', () => {

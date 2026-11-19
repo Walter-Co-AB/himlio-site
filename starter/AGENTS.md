@@ -85,8 +85,9 @@ which version and what Himlio changed. Work with EmDash, not around it:
 When you change a **published** item with `content_update` (contact details, a page), pass
 `status: "published"` or call `content_publish` afterwards. Otherwise the change can stay a
 draft and not show on the site. The contact details are the one entry `foretagsuppgifter` in
-`company`: `content_get` it, then `content_update` with its `_rev`. The Tagline can only be
-changed in the admin.
+`company`: `content_get` it, then `content_update` with its `_rev`. Connectors can also change
+the content model, the site settings (not the site URL) and forms, and read form submissions;
+see "AI connectors" in the `@himlio/site` README for what they can and can't do.
 
 ## Working alongside other agents
 

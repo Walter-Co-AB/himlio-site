@@ -2,6 +2,8 @@
 // Written out here because Astro loads the config in plain Node, which can't import the
 // plugin's TypeScript source from node_modules; EmDash's Vite build loads the plugin itself
 // from `entrypoint`. test/forms-plugin.test.mjs checks it against the installed plugin.
+// One difference: `entrypoint` is ours (src/forms/plugin.js), the plugin plus MCP tools for AI
+// connectors (runtime/form-tools.ts).
 import type { PluginDescriptor } from 'emdash';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -13,6 +15,7 @@ export interface FormsPluginOptions {
 }
 
 export const FORMS_PACKAGE = '@emdash-cms/plugin-forms';
+export const FORMS_ENTRYPOINT = '@himlio/site/forms/plugin';
 
 /** The installed plugin's version (its exports don't include package.json). */
 export function formsPluginVersion(): string {
@@ -27,7 +30,7 @@ export function formsPlugin(
   return {
     id: 'emdash-forms',
     version: formsPluginVersion(),
-    entrypoint: FORMS_PACKAGE,
+    entrypoint: FORMS_ENTRYPOINT,
     adminEntry: `${FORMS_PACKAGE}/admin`,
     componentsEntry: `${FORMS_PACKAGE}/astro`,
     options,

@@ -22,11 +22,21 @@ test('the guidance tells connectors to publish, and where contact details live',
   assert.match(MCP_INSTRUCTIONS, /"company"/);
 });
 
-test('the guidance says forms are made in the admin and how to place one', () => {
-  assert.match(MCP_INSTRUCTIONS, /in the admin under Forms/);
+test('the guidance names the form tools, how to place a form, and the platform rules', () => {
+  assert.match(MCP_INSTRUCTIONS, /create_form/);
+  assert.match(MCP_INSTRUCTIONS, /recipients are changed in the admin/);
   assert.match(MCP_INSTRUCTIONS, /_type: "emdash-form"/);
   assert.match(MCP_INSTRUCTIONS, /at most 12 months/);
   assert.match(MCP_INSTRUCTIONS, /can't send automatic replies/);
+});
+
+test('the guidance treats submissions as personal data, and warns about schema deletes', () => {
+  assert.match(MCP_INSTRUCTIONS, /list_submissions/);
+  assert.match(MCP_INSTRUCTIONS, /personal data/);
+  assert.match(MCP_INSTRUCTIONS, /don't copy them into site content/);
+  assert.match(MCP_INSTRUCTIONS, /Ask the user before deleting a collection or field/);
+  assert.match(MCP_INSTRUCTIONS, /site URL is set by the platform/);
+  assert.doesNotMatch(MCP_INSTRUCTIONS, /can't create forms|but not change it/);
 });
 
 test('only the MCP endpoint is matched', () => {

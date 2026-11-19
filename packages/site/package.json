@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",
@@ -64,10 +64,14 @@
     "./forms": {
       "types": "./dist/forms/index.d.ts",
       "default": "./dist/forms/index.js"
+    },
+    "./forms/plugin": {
+      "types": "./dist/forms/plugin.d.ts",
+      "default": "./dist/forms/plugin.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts dist/forms/",
+    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts src/forms/plugin.js src/forms/plugin.d.ts dist/forms/",
     "test": "node --test \"test/**/*.test.mjs\"",
     "prepack": "npm run build"
   },

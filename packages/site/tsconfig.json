@@ -17,6 +17,8 @@
     "src/emdash/ui.js",
     "src/emdash/ui.d.ts",
     "src/forms/index.js",
-    "src/forms/index.d.ts"
+    "src/forms/index.d.ts",
+    "src/forms/plugin.js",
+    "src/forms/plugin.d.ts"
   ]
 }
