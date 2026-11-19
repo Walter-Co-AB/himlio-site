@@ -3,6 +3,7 @@
 // any path the request rewrite in forms-guard.ts doesn't see. Through the plugin's own routes
 // (forms/list, forms/update) via EmDash's withEmDashRuntime, so the plugin validates and stores
 // the change itself, digest schedule included. A form with recipients is never touched.
+import { enableFormTools, type FormToolsRuntime } from './form-tools.js';
 import { hasRecipients } from './forms-guard.js';
 
 /** Calls one of the Forms plugin's routes and returns its result (`{ success, data | error }`). */
@@ -38,11 +39,16 @@ export async function fillFormRecipients(
   return updated;
 }
 
-/** The pass, against the EmDash runtime (outside any request, as in a scheduled handler). */
-export async function fillStoredFormRecipients(notify: readonly string[]): Promise<void> {
-  if (notify.length === 0) return;
+/**
+ * The Forms work on the platform's minute cron, against the EmDash runtime (outside any
+ * request): keep the connector tools turned on (form-tools.ts), then fill in recipients.
+ */
+export async function formsCronPass(notify: readonly string[]): Promise<void> {
   const { withEmDashRuntime } = await import('emdash/middleware');
   await withEmDashRuntime(async (runtime) => {
+    if (await enableFormTools(runtime as unknown as FormToolsRuntime))
+      console.log('[himlio] forms: MCP tools turned on for connectors');
+    if (notify.length === 0) return;
     const call: FormsRoute = (path, body) =>
       runtime.handlePluginApiRoute(
         'emdash-forms',

@@ -94,8 +94,10 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
   The admin still shows the setting, but the platform drops it when a form is saved.
 - These rules are enforced in the Worker on the plugin's `forms/create` and `forms/update` routes, the
   only ones that take form settings. A request it can't read is refused.
-- AI connectors can't create forms or read submissions (plugin routes need the `admin` scope,
-  which connectors never get); they can place an existing form on a page.
+- AI connectors get MCP tools for forms (see "AI connectors" below): list, create and change
+  forms, and read submissions. The same rules apply there, and connectors can't set the
+  recipients, the webhook or the autoresponder; deleting forms, and changing, deleting or
+  exporting submissions, stay in the admin.
 - The plugin's visitor-facing texts (validation errors, "Submitting...", the fallback success
   and error messages) are in English for now; Swedish will come later. The submit button and
   confirmation message are set per form, so those can be Swedish. The notification email is
@@ -133,12 +135,32 @@ CI: a site's `.github/workflows/ci.yml` calls the reusable workflow
 
 ## AI connectors (MCP)
 
-Connectors authorised over OAuth get content work plus reading the schema and settings:
-`content:read/write`, `media:read/write`, `taxonomies:manage`, `menus:manage`, `schema:read`,
-`settings:read`. No schema or settings changes, no forms or submissions, and no access to the
-404 log or settings sub-routes. On connect, they receive instructions, among them: **when changing a published
-item with `content_update`, pass `status: "published"` (or call `content_publish`)**, or the
-change may stay a draft and not show on the site.
+Connectors authorised over OAuth (Claude's custom connector, the EmDash CLI) may get every scope
+but `admin` (users, roles, plugin installs) and `transfer:*` (exporting the whole site):
+`content:read/write`, `media:read/write`, `taxonomies:manage`, `menus:manage`,
+`schema:read/write`, `settings:read/manage`, `mcp:tools` and `mcp:tools:<plugin>`. What a token
+can do is still capped by the signing-in user's role. The Worker rewrites the requested scopes,
+and enforces:
+
+- **Settings**: everything but the site URL (passkeys and the connector itself depend on it): a
+  write with `url`, over MCP (`settings_update`) or REST, is refused. Title, tagline, logo,
+  staging/noindex, SEO and social are the customer's. The 404 log (visitor IP addresses) and the
+  settings sub-routes (email, domain, backups) stay closed to connector tokens.
+- **Schema**: `schema:write` can create, change and **delete** collections and fields, and
+  deleting a field or collection deletes its content. There is no undo in EmDash; the recovery
+  path is D1 Time Travel (ask Walter & Co, within 30 days). Model migrations don't fight such
+  changes: each runs once per site, in skip mode, so a field or collection a connector removed
+  later is not recreated, and `relabel` only changes a label that still has its old value.
+- **Forms** (MCP tools of the Forms plugin, scope `mcp:tools:emdash-forms` or `mcp:tools`; the
+  platform keeps them turned on): `emdash-forms__list_forms`, `__create_form` and `__update_form`
+  (fields, labels, button, confirmation message, retention, status; admins only, like the form
+  builder), `__list_submissions` (per form, paged) and `__get_submission` (editors and up). The
+  forms rules above apply; recipients, webhook and autoresponder can't be set; nothing deletes
+  or exports. Submissions are personal data, and the instructions say so.
+
+On connect, connectors receive instructions, among them: **when changing a published item with
+`content_update`, pass `status: "published"` (or call `content_publish`)**, or the change may
+stay a draft and not show on the site.
 
 ## Licence
 
