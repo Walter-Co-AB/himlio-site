@@ -122,7 +122,7 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   const bad = site({ 'model/0001_x.json': JSON.stringify({ version: '1', settings: {} }) });
   assert.throws(
     () => readModelMigrations(bad, { modelMigrations: 'model' }),
-    /only blockTypes, collections, content and relabel/
+    /only blockTypes, collections, content, relabel and allowBlockTypes/
   );
 });
 
@@ -157,6 +157,32 @@ test('relabel entries are checked at build time', () => {
     /can't change "description" of a field/
   );
   assert.throws(() => read([{ collection: 'pages', slug: ['a', 'b'] }]), /can't change "slug"/);
+});
+
+test('allowBlockTypes entries are checked at build time', () => {
+  const read = (allowBlockTypes) =>
+    readModelMigrations(
+      site({ 'model/0001_x.json': JSON.stringify({ version: '1', allowBlockTypes }) }),
+      { modelMigrations: 'model' }
+    );
+  assert.equal(
+    read([{ collection: 'pages', field: 'content', add: ['marketing_form'] }]).at(-1).name,
+    'site/0001_x'
+  );
+  assert.throws(() => read({}), /must be a list/);
+  assert.throws(() => read([{ collection: 'pages', add: ['a'] }]), /a collection and a field/);
+  assert.throws(
+    () => read([{ collection: 'pages', field: 'content', add: [] }]),
+    /block type slugs/
+  );
+  assert.throws(
+    () => read([{ collection: 'pages', field: 'content', add: ['Bad-Type'] }]),
+    /block type slugs/
+  );
+  assert.throws(
+    () => read([{ collection: 'pages', field: 'content', add: ['a'], remove: ['b'] }]),
+    /found "remove"/
+  );
 });
 
 test('invalid options are refused', () => {

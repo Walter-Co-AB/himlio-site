@@ -767,6 +767,70 @@
 					]
 				}
 			]
+		},
+		{
+			"slug": "marketing_form",
+			"label": "Contact form",
+			"description": "A form from Forms in its own section, with a headline, intro text and an optional side column with contact details, text or an image",
+			"icon": "envelope",
+			"category": "Marketing",
+			"currentVersion": 1,
+			"versions": [
+				{
+					"version": 1,
+					"fields": [
+						{
+							"slug": "headline",
+							"label": "Headline",
+							"type": "string"
+						},
+						{
+							"slug": "eyebrow",
+							"label": "Label above headline",
+							"type": "string"
+						},
+						{
+							"slug": "intro",
+							"label": "Intro text (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "form",
+							"label": "Form: its slug, from Forms in the admin (e.g. kontakt)",
+							"type": "string",
+							"required": true,
+							"validation": {
+								"pattern": "^[a-z][a-z0-9-]*$",
+								"maxLength": 100
+							}
+						},
+						{
+							"slug": "show_contact_details",
+							"label": "Show the contact details (from Company details) beside the form",
+							"type": "boolean",
+							"defaultValue": false
+						},
+						{
+							"slug": "aside_text",
+							"label": "Text beside the form (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "aside_image",
+							"label": "Image beside the form",
+							"type": "image"
+						},
+						{
+							"slug": "anchor_id",
+							"label": "Section ID (lowercase, for links like /#pricing)",
+							"type": "string",
+							"validation": {
+								"pattern": "^(?:$|[a-z][a-z0-9_-]*)$"
+							}
+						}
+					]
+				}
+			]
 		}
 	],
 	"collections": [
@@ -799,7 +863,8 @@
 							"marketing_stats",
 							"marketing_cta",
 							"marketing_contact",
-							"marketing_text"
+							"marketing_text",
+							"marketing_form"
 						],
 						"maxItems": 20
 					}

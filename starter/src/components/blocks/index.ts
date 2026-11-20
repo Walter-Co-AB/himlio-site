@@ -8,4 +8,5 @@ export { default as Split } from "./Split.astro";
 export { default as Stats } from "./Stats.astro";
 export { default as CTA } from "./CTA.astro";
 export { default as Contact } from "./Contact.astro";
+export { default as ContactForm } from "./ContactForm.astro";
 export { default as Text } from "./Text.astro";
