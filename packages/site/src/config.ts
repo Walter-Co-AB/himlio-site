@@ -155,6 +155,7 @@ const MODEL_MIGRATION_KEYS = [
   'collections',
   'content',
   'relabel',
+  'allowBlockTypes',
 ];
 
 /**
@@ -187,6 +188,31 @@ function validateRelabel(relabel: unknown, where: string): void {
   }
 }
 
+/**
+ * `allowBlockTypes` in a model migration: [{ collection, field, add: ["block_type", ...] }]. Adds
+ * block types to a blocks field's allowed list (e.g. a new section type on `pages.content`).
+ */
+function validateAllowBlockTypes(value: unknown, where: string): void {
+  if (!Array.isArray(value)) fail(`${where}: allowBlockTypes must be a list`);
+  for (const item of value as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item))
+      fail(`${where}: each allowBlockTypes entry must be an object`);
+    const entry = item as Record<string, unknown>;
+    if (typeof entry.collection !== 'string' || typeof entry.field !== 'string')
+      fail(`${where}: each allowBlockTypes entry needs a collection and a field`);
+    const add = entry.add;
+    if (
+      !Array.isArray(add) ||
+      add.length === 0 ||
+      !add.every((t) => typeof t === 'string' && /^[a-z][a-z0-9_]*$/.test(t))
+    )
+      fail(`${where}: allowBlockTypes add must list block type slugs`);
+    for (const key of Object.keys(entry))
+      if (!['collection', 'field', 'add'].includes(key))
+        fail(`${where}: allowBlockTypes entries take collection, field and add (found "${key}")`);
+  }
+}
+
 /** Platform model migrations (unprefixed names) and the site's own ("site/NNNN_name"). */
 export function readModelMigrations(root: string, options: HimlioOptions) {
   const list: { name: string; seed: unknown }[] = [];
@@ -200,12 +226,14 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
       for (const key of Object.keys(seed))
         if (!MODEL_MIGRATION_KEYS.includes(key))
           fail(
-            `${dir}/${file}: only blockTypes, collections, content and relabel are allowed (found "${key}")`
+            `${dir}/${file}: only blockTypes, collections, content, relabel and allowBlockTypes are allowed (found "${key}")`
           );
       if (seed.relabel !== undefined) validateRelabel(seed.relabel, `${dir}/${file}`);
+      if (seed.allowBlockTypes !== undefined)
+        validateAllowBlockTypes(seed.allowBlockTypes, `${dir}/${file}`);
       // The same check the runner makes before applying: catch it in the build, not on the
       // live site, where a failing migration is retried every minute and never applied.
-      const { relabel: _relabel, ...plain } = seed;
+      const { relabel: _relabel, allowBlockTypes: _allow, ...plain } = seed;
       const validation = validateSeed(plain);
       if (!validation.valid) fail(`${dir}/${file}: ${validation.errors.join('; ')}`);
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });

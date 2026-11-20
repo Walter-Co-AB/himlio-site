@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",

@@ -134,15 +134,28 @@ async function samplePages() {
     primary_cta_label: 'Om oss',
     primary_cta_url: '/om-oss',
   };
-  const contact = {
-    _type: 'marketing_text',
-    _key: key(),
-    headline: 'Kontakta oss',
-    body: [
-      block('Exempeltext: skriv till oss så hör vi av oss.'),
-      { _type: 'emdash-form', _key: key(), formId: FORM_SLUG },
-    ],
-  };
+  // The form in its own section (marketing_form, the starter's "Contact form") where the site
+  // has it, otherwise as a Form block in a Text section.
+  const contact = allowed.has('marketing_form')
+    ? {
+        _type: 'marketing_form',
+        _key: key(),
+        eyebrow: 'Kontakt',
+        headline: 'Kontakta oss',
+        intro: 'Exempeltext: skriv till oss så hör vi av oss.',
+        form: FORM_SLUG,
+        show_contact_details: true,
+        aside_text: 'Exempeltext: ett par rader bredvid formuläret, till exempel när ni svarar.',
+      }
+    : {
+        _type: 'marketing_text',
+        _key: key(),
+        headline: 'Kontakta oss',
+        body: [
+          block('Exempeltext: skriv till oss så hör vi av oss.'),
+          { _type: 'emdash-form', _key: key(), formId: FORM_SLUG },
+        ],
+      };
   const only = (blocks) => blocks.filter((b) => allowed.size === 0 || allowed.has(b._type));
   return {
     home: {

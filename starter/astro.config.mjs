@@ -6,6 +6,8 @@ import icon from "astro-iconset";
 import { Features } from "lightningcss";
 
 export default defineHimlioConfig({
+	// The site's own content-model migrations (Himlio): sections added after a site was made.
+	himlio: { modelMigrations: "src/model-migrations" },
 	vite: {
 		css: {
 			// Keep light-dark() native so the footer theme switcher works in

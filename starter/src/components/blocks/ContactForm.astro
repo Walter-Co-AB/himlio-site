@@ -1,0 +1,165 @@
+---
+// Himlio addition: a form from the Forms plugin in its own section ("Contact form",
+// marketing_form), with an optional side column (contact details, text, image). Not part of
+// EmDash's marketing template. A form that doesn't exist (or is paused) renders nothing.
+import { Icon } from "astro-iconset/components";
+import { contactDetails, hasContactDetails, telHref } from "@himlio/site/runtime";
+import { Form } from "@himlio/site/forms";
+import { Image, type BlockComponentProps } from "@himlio/site/emdash/ui";
+import type { PageContentBlock } from "../../../emdash-env";
+import { toParagraphs } from "../../utils/text";
+
+type ContactFormBlock = Extract<PageContentBlock, { _type: "marketing_form" }>;
+type Props = BlockComponentProps<ContactFormBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline, form, aside_image, show_contact_details } = value;
+
+const intro = toParagraphs(value.intro);
+const asideText = toParagraphs(value.aside_text);
+const contact = show_contact_details ? await contactDetails(Astro.cache) : {};
+const showContact = hasContactDetails(contact);
+const hasAside = showContact || asideText.length > 0 || Boolean(aside_image);
+---
+
+<section
+	id={anchor_id || undefined}
+	class:list={["contact-form", "section", { "contact-form--single": !hasAside }]}
+>
+	<div class="container contact-form__grid">
+		<div class="contact-form__main">
+			{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+			{headline && <h2 class="section-headline contact-form__headline">{headline}</h2>}
+			{intro.map((paragraph) => <p class="contact-form__intro">{paragraph}</p>)}
+			<div class="contact-form__form">
+				<Form id={form} />
+			</div>
+		</div>
+		{
+			hasAside && (
+				<aside class="contact-form__aside">
+					{aside_image && (
+						<figure class="media contact-form__media">
+							<div class="media__img">
+								<Image image={aside_image} sizes="(max-width: 960px) 100vw, 480px" />
+							</div>
+						</figure>
+					)}
+					{asideText.map((paragraph) => (
+						<p class="contact-form__aside-text">{paragraph}</p>
+					))}
+					{showContact && (
+						<ul class="contact-form__details" role="list">
+							{contact.email && (
+								<li>
+									<Icon name="ph:envelope" aria-hidden="true" />
+									<a class="text-link" href={`mailto:${contact.email}`}>
+										{contact.email}
+									</a>
+								</li>
+							)}
+							{contact.phone && (
+								<li>
+									<Icon name="ph:phone" aria-hidden="true" />
+									<a class="text-link" href={telHref(contact.phone)}>
+										{contact.phone}
+									</a>
+								</li>
+							)}
+							{contact.address && (
+								<li>
+									<Icon name="ph:map-pin" aria-hidden="true" />
+									<span>{contact.address}</span>
+								</li>
+							)}
+							{contact.opening_hours && (
+								<li>
+									<Icon name="ph:clock" aria-hidden="true" />
+									<span>{contact.opening_hours}</span>
+								</li>
+							)}
+						</ul>
+					)}
+				</aside>
+			)
+		}
+	</div>
+</section>
+
+<style>
+	.contact-form__grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+		gap: clamp(48px, 7vw, 112px);
+		align-items: start;
+	}
+
+	.contact-form--single .contact-form__grid {
+		grid-template-columns: minmax(0, 640px);
+	}
+
+	.eyebrow + .contact-form__headline {
+		margin-block-start: 18px;
+	}
+
+	.contact-form__intro {
+		max-width: 52ch;
+		margin-block-start: 20px;
+		font-size: 17px;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.contact-form__form {
+		margin-block-start: 32px;
+	}
+
+	/* forms.css spaces a form inside running text; here the section does. */
+	.contact-form__form :global(.ec-form) {
+		margin-block: 0;
+	}
+
+	.contact-form__aside {
+		display: grid;
+		gap: 20px;
+	}
+
+	.contact-form__media {
+		aspect-ratio: 4 / 3;
+	}
+
+	.contact-form__aside-text {
+		font-size: 16px;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.contact-form__details {
+		display: grid;
+		gap: 14px;
+		list-style: none;
+		font-size: 15.5px;
+		color: var(--color-text-secondary);
+		white-space: pre-line;
+	}
+
+	.contact-form__details li {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.contact-form__details :global(svg) {
+		flex: none;
+		width: 20px;
+		height: 20px;
+		margin-block-start: 2px;
+		color: var(--color-text);
+	}
+
+	@media (max-width: 960px) {
+		.contact-form__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+</style>

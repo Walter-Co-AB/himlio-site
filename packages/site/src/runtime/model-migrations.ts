@@ -6,6 +6,7 @@
 // Fields a migration adds to a collection that already exists are created too; nothing that
 // exists is changed. Block types (`blockTypes`) are allowed as well. `relabel` renames
 // collections and fields, but only labels that still have their old value (see applyRelabel).
+// `allowBlockTypes` adds block types to a blocks field's allowed list (applyAllowBlockTypes).
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -32,7 +33,13 @@ interface Relabel {
   labelSingular?: LabelChange;
   description?: LabelChange;
 }
-type Migration = Seed & { relabel?: Relabel[] };
+interface AllowBlockTypes {
+  collection: string;
+  field: string;
+  add: string[];
+}
+
+type Migration = Seed & { relabel?: Relabel[]; allowBlockTypes?: AllowBlockTypes[] };
 type Database = Parameters<typeof applySeed>[0];
 
 /** Platform migrations (in the package) first, then the site's own ("site/..."). */
@@ -94,6 +101,31 @@ async function applyRelabel(db: Database, relabel: Relabel[], name: string): Pro
   }
 }
 
+/**
+ * Adds block types to a blocks field's allowed list (a new section type on `pages.content`).
+ * Only adds: types the customer removed stay removed unless a migration names them again, and
+ * a field without a list (every type allowed) or a missing field is left alone.
+ */
+async function applyAllowBlockTypes(
+  db: Database,
+  entries: AllowBlockTypes[],
+  name: string
+): Promise<void> {
+  const registry = new SchemaRegistry(db);
+  for (const { collection, field, add } of entries) {
+    const current = await registry.getField(collection, field);
+    if (!current || current.type !== 'blocks') continue;
+    const allowed = current.validation?.allowedTypes;
+    if (!Array.isArray(allowed)) continue;
+    const missing = add.filter((t) => !allowed.includes(t));
+    if (missing.length === 0) continue;
+    await registry.updateField(collection, field, {
+      validation: { ...current.validation, allowedTypes: [...allowed, ...missing] },
+    });
+    console.log(`[himlio] ${name}: allowed ${missing.join(', ')} in ${collection}.${field}`);
+  }
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -105,13 +137,14 @@ async function applyPending(): Promise<void> {
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
     for (const { name, seed: migration } of todo) {
-      const { relabel, ...seed } = migration;
+      const { relabel, allowBlockTypes, ...seed } = migration;
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
       await applySeed(db, seed, { includeContent: true, onConflict: 'skip' });
       await addMissingFields(db, seed, name);
       if (relabel) await applyRelabel(db, relabel, name);
+      if (allowBlockTypes) await applyAllowBlockTypes(db, allowBlockTypes, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

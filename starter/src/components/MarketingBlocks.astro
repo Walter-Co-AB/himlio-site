@@ -3,6 +3,7 @@ import { Blocks, defineBlockComponents } from "@himlio/site/emdash/ui";
 import type { PageContentBlock } from "../../emdash-env";
 import CTA from "./blocks/CTA.astro";
 import Contact from "./blocks/Contact.astro";
+import ContactForm from "./blocks/ContactForm.astro";
 import FAQ from "./blocks/FAQ.astro";
 import Features from "./blocks/Features.astro";
 import Hero from "./blocks/Hero.astro";
@@ -30,6 +31,7 @@ const marketingComponents = defineBlockComponents<PageContentBlock>({
 	marketing_stats: Stats,
 	marketing_cta: CTA,
 	marketing_contact: Contact,
+	marketing_form: ContactForm,
 	marketing_text: Text,
 });
 ---

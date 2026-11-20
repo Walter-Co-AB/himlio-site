@@ -1,8 +1,8 @@
 /*
   forms.css -- forms from the Forms plugin (@emdash-cms/plugin-forms), in this design.
 
-  Forms are built in the admin under Forms and placed on a page as a Form block inside a Text
-  section. The plugin renders plain markup with .ec-form classes; this file styles it with the
+  Forms are built in the admin under Forms and placed on a page in a Contact form section
+  (blocks/ContactForm.astro), or as a Form block inside a Text section. The plugin renders plain markup with .ec-form classes; this file styles it with the
   tokens in tokens.css (it is in @layer base, so theme.css still wins). Himlio addition, not
   part of EmDash's marketing template.
 */
