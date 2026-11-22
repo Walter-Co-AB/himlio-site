@@ -52,11 +52,25 @@ export async function bookingPage(
     new Request(`${url.origin}/_emdash/api/plugins/${BOOKING_PLUGIN_ID}/link`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ a: q.a, b: q.b, s: q.s, act: request.method === 'POST' }),
+      body: JSON.stringify({
+        a: q.a,
+        b: q.b,
+        s: q.s,
+        act: request.method === 'POST',
+        ...(q.t ? { t: q.t } : {}),
+        ...(q.from ? { from: q.from } : {}),
+      }),
     })
   )) as {
     success?: boolean;
-    data?: { status: number; title: string; text: string[]; button?: string };
+    data?: {
+      status: number;
+      title: string;
+      text: string[];
+      button?: string;
+      groups?: { heading: string; choices: { label: string; value: string }[] }[];
+      more?: { label: string; from: string }[];
+    };
   };
   if (!result?.success || !result.data) {
     console.error('[himlio] booking link failed:', JSON.stringify(result).slice(0, 300));
@@ -65,14 +79,22 @@ export async function bookingPage(
       { status: 500, headers }
     );
   }
-  const { status, title, text, button } = result.data;
+  const { status, title, text, button, groups, more } = result.data;
+  // Links keep the signed part (a, b, s) and add a new start (t) or the dates to show (from).
+  const link = (extra: Record<string, string>) =>
+    `${url.pathname}?${new URLSearchParams({ a: q.a, b: q.b, s: q.s, ...extra })}`;
   return new Response(
     linkPage({
       site,
       title,
       text,
       button,
-      action: button ? `${url.pathname}${url.search}` : undefined,
+      action: button ? link({}) : undefined,
+      groups: groups?.map((g) => ({
+        heading: g.heading,
+        choices: g.choices.map((c) => ({ label: c.label, action: link({ t: c.value }) })),
+      })),
+      links: more?.map((m) => ({ label: m.label, href: link({ from: m.from }) })),
       home,
     }),
     { status, headers }

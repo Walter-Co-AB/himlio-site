@@ -1,13 +1,19 @@
 // What the booking plugin stores, and typed access to it. EmDash plugin storage (one D1 table,
 // JSON documents with expression indexes) and the plugin's KV; the shapes here are the contract.
 
-import type { Interval, Schedule, Service } from './schedule.js';
+import type { Interval, Resource, Schedule, Service } from './schedule.js';
 
 export const BOOKING_PLUGIN_ID = 'himlio-booking';
 /** The plugin's storage and routes version; bump when they change. */
-export const BOOKING_PLUGIN_VERSION = '1.0.0';
+export const BOOKING_PLUGIN_VERSION = '1.1.0';
 
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'expired';
+/**
+ * pending: waiting for the visitor's email confirmation (holds its time until holdUntil).
+ * requested: a request-mode booking waiting for the business (holds its time until holdUntil).
+ * confirmed: it counts. cancelled, declined (by the business), expired (nobody acted): over.
+ */
+export type BookingStatus =
+  'pending' | 'requested' | 'confirmed' | 'cancelled' | 'declined' | 'expired';
 
 export interface Booking {
   serviceId: string;
@@ -17,6 +23,18 @@ export interface Booking {
   end: string; // start + duration
   busyEnd: string; // end + the service's buffer
   status: BookingStatus;
+  /** Who or what is booked (absent on bookings from before resources: the implicit one). */
+  resourceId?: string;
+  resourceName?: string;
+  /** The service's mode and cancellation deadline when booked. */
+  mode?: 'instant' | 'request';
+  cancelHours?: number;
+  /** Answers to the service's questions. */
+  answers?: { label: string; value: string }[];
+  /** Why the business declined (shown to the visitor). */
+  declineReason?: string;
+  /** Moved by the visitor: when, and how many times. */
+  movedAt?: string;
   name: string;
   email: string;
   phone?: string;
@@ -43,6 +61,8 @@ export interface Lock {
 }
 
 export interface Block {
+  /** One resource's time off; absent: everyone. */
+  resourceId?: string;
   start: string; // ISO
   end: string;
   note?: string;
@@ -85,6 +105,7 @@ export const KV = {
 /** Indexes the queries below need (declared in the plugin's storage config). */
 export const BOOKING_STORAGE = {
   services: { indexes: ['active', 'position'] },
+  resources: { indexes: ['active', 'position'] },
   bookings: {
     indexes: [
       'status',
@@ -98,6 +119,8 @@ export const BOOKING_STORAGE = {
       ['status', 'createdAt'],
       ['email', 'createdAt'],
       ['ipHash', 'createdAt'],
+      'resourceId',
+      ['resourceId', 'start'],
     ],
   },
   locks: { indexes: ['bookingId', 'until'] },
@@ -137,6 +160,7 @@ export interface Collection<T> {
 
 export interface Storage {
   services: Collection<Service>;
+  resources: Collection<Resource>;
   bookings: Collection<Booking>;
   locks: Collection<Lock>;
   blocks: Collection<Block>;
@@ -170,4 +194,4 @@ export async function all<T>(
   return out.slice(0, max);
 }
 
-export type { Schedule, Service };
+export type { Resource, Schedule, Service };

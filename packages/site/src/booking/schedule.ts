@@ -61,7 +61,46 @@ export interface Service {
   active: boolean;
   /** Order in lists, lowest first. */
   position?: number;
+  /** Shown to visitors: a fixed price, a starting price, or none (on request). In whole kronor. */
+  price?: { kind: 'fixed' | 'from'; amount: number };
+  /** instant: booked when confirmed. request: the business approves or declines each booking. */
+  mode?: 'instant' | 'request';
+  /** Visitors can cancel or move a booking until this many hours before its start (0: until it starts). */
+  cancelHours?: number;
+  /** Extra questions in the booking form (placement, size, hair length...). */
+  questions?: Question[];
 }
+
+export interface Question {
+  id: string;
+  label: string;
+  required?: boolean;
+  /** A text area instead of one line. */
+  long?: boolean;
+}
+
+/**
+ * Who or what is booked: a person (stylist, tattoo artist), a chair or a room. Each has its own
+ * hours (or the site's), time off, services and lengths. A site without resources has one
+ * implicit resource with the site's hours (DEFAULT_RESOURCE_ID), so it works as before.
+ */
+export interface Resource {
+  id: string;
+  name: string;
+  description?: string;
+  active: boolean;
+  position?: number;
+  /** Own weekly hours; absent: the site's opening hours. */
+  hours?: WeekHours;
+  /** Own dates with other hours (time off: an empty list). */
+  exceptions?: DateException[];
+  /** The services it offers; absent or empty: all. */
+  serviceIds?: string[];
+  /** Its own length of a service, in minutes, where it differs. */
+  durations?: Record<string, number>;
+}
+
+export const DEFAULT_RESOURCE_ID = 'default';
 
 /** A half-open interval of instants [start, end), epoch ms. */
 export interface Interval {
@@ -167,6 +206,35 @@ export function hoursOn(schedule: Schedule, date: string): TimeRange[] {
   return exception ? exception.hours : (schedule.hours[weekdayOf(date)] ?? []);
 }
 
+/** The parts of `a` that are also in `b` (both sorted, non-overlapping lists of ranges). */
+export function intersect(a: TimeRange[], b: TimeRange[]): TimeRange[] {
+  const out: TimeRange[] = [];
+  for (const x of a)
+    for (const y of b) {
+      const start = x.start > y.start ? x.start : y.start;
+      const end = x.end < y.end ? x.end : y.end;
+      if (start < end) out.push({ start, end });
+    }
+  return out.sort((p, q) => (p.start < q.start ? -1 : 1));
+}
+
+/**
+ * A resource's hours on a date: its own date exception, else its own weekday hours (or the
+ * site's), always within the site's exception for that date (a holiday closes everyone).
+ */
+export function resourceHoursOn(
+  schedule: Schedule,
+  resource: Pick<Resource, 'hours' | 'exceptions'> | undefined,
+  date: string
+): TimeRange[] {
+  if (!resource || (!resource.hours && !resource.exceptions?.length))
+    return hoursOn(schedule, date);
+  const own = resource.exceptions?.find((e) => e.date === date);
+  const base = own ? own.hours : ((resource.hours ?? schedule.hours)[weekdayOf(date)] ?? []);
+  const site = schedule.exceptions.find((e) => e.date === date);
+  return site ? intersect(base, site.hours) : base;
+}
+
 /** The time a booking of `service` starting at `start` keeps busy: its length and buffer. */
 export function occupied(
   service: Pick<Service, 'durationMinutes' | 'bufferMinutes'>,
@@ -198,7 +266,8 @@ export function freeStarts(
   busy: readonly Interval[],
   now: number,
   from: string,
-  to: string
+  to: string,
+  hoursFor: (date: string) => TimeRange[] = (date) => hoursOn(schedule, date)
 ): number[] {
   const dates = bookableDates(schedule, now);
   const first = dates[0]!;
@@ -211,7 +280,7 @@ export function freeStarts(
     date <= to && date <= last;
     date = addDays(date, 1)
   ) {
-    for (const range of hoursOn(schedule, date)) {
+    for (const range of hoursFor(date)) {
       const open = fromLocal(date, range.start);
       const close =
         range.end === '24:00' ? fromLocal(addDays(date, 1), '00:00') : fromLocal(date, range.end);
@@ -235,10 +304,11 @@ export function isFreeStart(
   service: Pick<Service, 'durationMinutes' | 'bufferMinutes'>,
   busy: readonly Interval[],
   now: number,
-  start: number
+  start: number,
+  hoursFor?: (date: string) => TimeRange[]
 ): boolean {
   const date = toLocal(start).date;
-  return freeStarts(schedule, service, busy, now, date, date).includes(start);
+  return freeStarts(schedule, service, busy, now, date, date, hoursFor).includes(start);
 }
 
 /**
@@ -246,11 +316,71 @@ export function isFreeStart(
  * exactly when they share a cell (all times are on the grid), so storing every cell with
  * create-if-absent makes double booking impossible, whatever the request order.
  */
-export function lockCells(interval: Interval): string[] {
+export function lockCells(interval: Interval, resourceId = DEFAULT_RESOURCE_ID): string[] {
   const grid = GRID_MINUTES * MINUTE_MS;
   const first = Math.floor(interval.start / grid);
   const end = Math.ceil(interval.end / grid);
-  return Array.from({ length: Math.max(0, end - first) }, (_, i) => `cell:${first + i}`);
+  // The implicit resource keeps the ids from before resources existed.
+  const prefix = resourceId === DEFAULT_RESOURCE_ID ? 'cell:' : `cell:${resourceId}:`;
+  return Array.from({ length: Math.max(0, end - first) }, (_, i) => `${prefix}${first + i}`);
+}
+
+/** Problems with a service's booking fields (price, mode, deadline, questions); empty when valid. */
+export function serviceExtrasProblems(
+  service: Pick<Service, 'price' | 'mode' | 'cancelHours' | 'questions'>
+): string[] {
+  const problems: string[] = [];
+  if (service.price !== undefined) {
+    const { kind, amount } = service.price;
+    if (kind !== 'fixed' && kind !== 'from') problems.push('price.kind must be fixed or from');
+    if (!Number.isInteger(amount) || amount < 0 || amount > 1_000_000)
+      problems.push('price.amount must be whole kronor from 0 to 1000000');
+  }
+  if (service.mode !== undefined && service.mode !== 'instant' && service.mode !== 'request')
+    problems.push('mode must be instant or request');
+  if (
+    service.cancelHours !== undefined &&
+    (!Number.isInteger(service.cancelHours) || service.cancelHours < 0 || service.cancelHours > 720)
+  )
+    problems.push('cancelHours must be a whole number of hours from 0 to 720');
+  const qs = service.questions ?? [];
+  if (qs.length > 5) problems.push('at most 5 questions');
+  const ids = new Set<string>();
+  for (const q of qs) {
+    if (!q.label?.trim() || q.label.length > 200)
+      problems.push('a question needs a label (at most 200 characters)');
+    if (!/^[a-z0-9_-]{1,40}$/.test(q.id ?? ''))
+      problems.push(`question id ${q.id} must be a-z, 0-9, _ or -`);
+    if (ids.has(q.id)) problems.push(`question id ${q.id} appears twice`);
+    ids.add(q.id);
+  }
+  return problems;
+}
+
+/** Problems with a resource's hours; empty when valid. */
+export function resourceProblems(resource: Resource): string[] {
+  const problems: string[] = [];
+  if (!resource.name?.trim()) problems.push('name is required');
+  if (resource.hours) {
+    if (!Array.isArray(resource.hours) || resource.hours.length !== 7)
+      problems.push('hours must have 7 days, Monday first');
+    else resource.hours.forEach((day, i) => problems.push(...rangeProblems(day, `hours[${i}]`)));
+  }
+  const seen = new Set<string>();
+  for (const e of resource.exceptions ?? []) {
+    if (!isDate(e.date)) problems.push(`exception date ${e.date} is not YYYY-MM-DD`);
+    else if (seen.has(e.date)) problems.push(`exception date ${e.date} appears twice`);
+    seen.add(e.date);
+    problems.push(...rangeProblems(e.hours, `exception ${e.date}`));
+  }
+  if ((resource.exceptions?.length ?? 0) > LIMITS.exceptions)
+    problems.push(`at most ${LIMITS.exceptions} exceptions`);
+  for (const [id, minutes] of Object.entries(resource.durations ?? {})) {
+    const [min, max] = LIMITS.durationMinutes;
+    if (!Number.isInteger(minutes) || minutes < min || minutes > max || minutes % GRID_MINUTES)
+      problems.push(`durations.${id} must be a multiple of ${GRID_MINUTES} from ${min} to ${max}`);
+  }
+  return problems;
 }
 
 export { DAY_MS, MINUTE_MS };

@@ -27,8 +27,47 @@ function siteUrl(ctx: Ctx): string {
   }
 }
 
-function makeDeps(ctx: Ctx): Deps {
+const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+/**
+ * Turnstile, when the site has a site key (himlio.json) and the secret (Worker secret
+ * TURNSTILE_SECRET; it arrives with the release after the key). Without either: undefined, and
+ * booking confirms by email. The token must be for this site's hostname.
+ */
+async function turnstile(ctx: Ctx): Promise<Pick<Deps, 'verifyHuman' | 'turnstileSiteKey'>> {
+  const siteKey = facts.turnstile?.siteKey;
+  if (!siteKey) return {};
+  const secret = ((await import('./worker-env.js')).env as unknown as { TURNSTILE_SECRET?: string })
+    .TURNSTILE_SECRET;
+  if (!secret) return {};
+  let hostname = '';
+  try {
+    hostname = new URL(ctx.request.url).hostname;
+  } catch {
+    return {};
+  }
+  const ip = ctx.requestMeta?.ip as string | null | undefined;
   return {
+    turnstileSiteKey: siteKey,
+    async verifyHuman(token: string) {
+      const body = new FormData();
+      body.append('secret', secret);
+      body.append('response', token);
+      if (ip) body.append('remoteip', ip);
+      const res = await fetch(SITEVERIFY, {
+        method: 'POST',
+        body,
+        signal: AbortSignal.timeout(10_000),
+      });
+      const result = (await res.json()) as { success?: boolean; hostname?: string };
+      return result.success === true && result.hostname === hostname;
+    },
+  };
+}
+
+async function makeDeps(ctx: Ctx): Promise<Deps> {
+  return {
+    ...(await turnstile(ctx)),
     storage: ctx.storage,
     kv: ctx.kv,
     now: () => Date.now(),

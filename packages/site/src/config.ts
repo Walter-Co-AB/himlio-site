@@ -26,6 +26,8 @@ export interface HimlioFacts {
    * (from the customer's platform config). Empty when himlio.json has no `forms`.
    */
   forms: { notify: string[] };
+  /** Cloudflare Turnstile's public site key; its secret is the Worker secret TURNSTILE_SECRET. */
+  turnstile?: { siteKey: string };
 }
 
 export interface HimlioOptions {
@@ -55,6 +57,7 @@ export const RESERVED_BINDINGS = new Set([
   'HIMLIO_SLUG',
   'ASSETS',
   'EMDASH_ROOMS',
+  'TURNSTILE_SECRET',
 ]);
 const BINDING = /^[A-Z][A-Z0-9_]{0,63}$/;
 const CLASS_NAME = /^[A-Za-z_$][A-Za-z0-9_$]{0,63}$/;
@@ -70,6 +73,7 @@ export function readHimlio(root: string): HimlioFacts {
     readFileSync(join(root, 'himlio.json'), 'utf8')
   ) as Partial<HimlioFacts> & {
     email?: { from: string; reply_to?: unknown };
+    turnstile?: unknown;
   };
   return {
     slug: raw.slug ?? '',
@@ -78,10 +82,23 @@ export function readHimlio(root: string): HimlioFacts {
     url: raw.url ?? null,
     ...(raw.email?.from ? { email: emailFacts(raw.email) } : {}),
     forms: { notify: formRecipients(raw.forms) },
+    ...turnstileFacts(raw.turnstile),
   };
 }
 
 const EMAIL = /^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]+$/;
+
+/** himlio.json `turnstile`: { site_key } or null/absent (no Turnstile). */
+function turnstileFacts(raw: unknown): { turnstile?: { siteKey: string } } {
+  if (raw === undefined || raw === null) return {};
+  const key = (raw as { site_key?: unknown }).site_key;
+  if (key === undefined || key === null || key === '') return {};
+  if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{10,100}$/.test(key))
+    return fail(
+      `himlio.json: turnstile.site_key is not a Turnstile site key: ${JSON.stringify(key)}`
+    );
+  return { turnstile: { siteKey: key } };
+}
 
 /** himlio.json `email`: the sender, and `reply_to` (an address, or null/absent for none). */
 function emailFacts(email: { from: string; reply_to?: unknown }): {
