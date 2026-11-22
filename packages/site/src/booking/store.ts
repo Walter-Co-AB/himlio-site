@@ -68,6 +68,11 @@ export interface CalendarConnection {
   events?: number;
 }
 
+export const BOOKING_ADMIN_PAGES = [
+  { path: '/', label: 'Bookings', icon: 'calendar' },
+  { path: '/settings', label: 'Booking settings', icon: 'gear' },
+];
+
 export const KV = {
   schedule: 'state:schedule',
   settings: 'state:settings',

@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "verbatimModuleSyntax": false,
-    "types": ["@cloudflare/workers-types", "astro/client", "node"]
+    "types": ["@cloudflare/workers-types", "astro/client", "node"],
+    "jsx": "react-jsx"
   },
   "include": ["src"],
   "exclude": [
