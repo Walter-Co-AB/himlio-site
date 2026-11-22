@@ -68,6 +68,10 @@
     "./forms/plugin": {
       "types": "./dist/forms/plugin.d.ts",
       "default": "./dist/forms/plugin.js"
+    },
+    "./booking/plugin": {
+      "types": "./dist/booking/plugin.d.ts",
+      "default": "./dist/booking/plugin.js"
     }
   },
   "scripts": {

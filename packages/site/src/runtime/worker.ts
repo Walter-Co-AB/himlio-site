@@ -5,6 +5,7 @@ import handler, {
   PluginBridge,
 } from '@emdash-cms/cloudflare/worker';
 import { facts, siteCrons } from 'virtual:himlio/config';
+import { bookingCronPass } from './booking-cron.js';
 import { formsCronPass } from './form-recipients.js';
 import { guardFormsRequest, isFormsWritePath } from './forms-guard.js';
 import { addMcpInstructions, initializeIds, isMcpPath } from './mcp-instructions.js';
@@ -22,8 +23,8 @@ const emdashScheduled = createScheduledHandler();
 
 const PLATFORM_CRON = '* * * * *';
 
-// The platform's minute: scheduled publishing and maintenance (EmDash), session cleanup and
-// notification recipients on forms that have none.
+// The platform's minute: scheduled publishing and maintenance (EmDash), session cleanup,
+// notification recipients on forms that have none, and booking maintenance.
 // Any other expression is the site's own (himlio({ crons })).
 const scheduled: ExportedHandlerScheduledHandler<Env> = (controller, env, ctx) => {
   if (controller.cron === PLATFORM_CRON) {
@@ -36,6 +37,11 @@ const scheduled: ExportedHandlerScheduledHandler<Env> = (controller, env, ctx) =
     ctx.waitUntil(
       formsCronPass(facts.forms.notify).catch((error: unknown) => {
         console.error('[scheduled] forms pass failed:', error);
+      })
+    );
+    ctx.waitUntil(
+      bookingCronPass().catch((error: unknown) => {
+        console.error('[scheduled] booking pass failed:', error);
       })
     );
     return;

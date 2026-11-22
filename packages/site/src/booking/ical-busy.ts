@@ -79,7 +79,12 @@ function interval(event: Event, start: Time, end: Time): Interval {
  * The busy intervals of an iCalendar text that overlap [from, to), sorted and merged. Throws if
  * the text isn't iCalendar.
  */
-export function busyIntervals(text: string, from: number, to: number): Interval[] {
+export function busyIntervals(
+  text: string,
+  from: number,
+  to: number,
+  ignoreUid?: (uid: string) => boolean
+): Interval[] {
   const root = new ICAL.Component(ICAL.parse(text));
   const calendar = root.name === 'vcalendar' ? root : root.getFirstSubcomponent('vcalendar');
   if (!calendar) throw new Error('not an iCalendar file (no VCALENDAR)');
@@ -89,6 +94,7 @@ export function busyIntervals(text: string, from: number, to: number): Interval[
   const exceptions: Event[] = [];
   for (const vevent of vevents) {
     const event = new ICAL.Event(vevent);
+    if (event.uid && ignoreUid?.(event.uid)) continue;
     if (event.isRecurrenceException()) exceptions.push(event);
     else if (event.uid) masters.set(event.uid, event);
     else exceptions.push(event); // no UID: a lone event

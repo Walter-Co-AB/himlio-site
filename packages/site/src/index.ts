@@ -26,6 +26,7 @@ import {
   type HimlioFacts,
   type HimlioOptions,
 } from './config.js';
+import { bookingPlugin } from './booking-plugin.js';
 import { formsPlugin } from './forms-plugin.js';
 
 export type { HimlioFacts, HimlioOptions };
@@ -106,7 +107,12 @@ function himlio(options: HimlioOptions) {
       // Forms (Formulär) on every site: built in the admin, placed on a page as a Form block in
       // rich text. Honeypot spam protection unless a form chooses otherwise; notifications go
       // out through the email plugin above.
-      plugins: [formsPlugin({ defaultSpamProtection: 'honeypot' }), ...emailPlugins],
+      // Booking (Bokning): services and opening hours in the admin, a Booking block for pages.
+      plugins: [
+        formsPlugin({ defaultSpamProtection: 'honeypot' }),
+        bookingPlugin(),
+        ...emailPlugins,
+      ],
       admin: {
         siteName: facts.name,
         // The admin is in English, like EmDash, its plugins and the code. The site itself (content

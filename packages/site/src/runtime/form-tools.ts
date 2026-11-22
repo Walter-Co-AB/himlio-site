@@ -190,17 +190,21 @@ export interface FormToolsRuntime {
 }
 
 /**
- * Turns the Forms plugin's MCP tools on, with consent for the current tool list. Nothing changes
- * while it is already so, or while the plugin is inactive. Returns whether it changed anything.
+ * Turns a platform plugin's MCP tools on, with consent for the current tool list. Nothing
+ * changes while it is already so, or while the plugin is inactive. Returns whether it changed
+ * anything.
  */
-export async function enableFormTools(runtime: FormToolsRuntime): Promise<boolean> {
-  const tools = await runtime.getPluginMcpTools(FORMS_PLUGIN_ID);
+export async function enablePluginTools(
+  runtime: FormToolsRuntime,
+  pluginId: string
+): Promise<boolean> {
+  const tools = await runtime.getPluginMcpTools(pluginId);
   if (tools.length === 0) return false;
-  const consent = runtime.serializePluginMcpConsent(tools as never, FORMS_PLUGIN_ID);
+  const consent = runtime.serializePluginMcpConsent(tools as never, pluginId);
   const row = (await runtime.db
     .selectFrom('_plugin_state')
     .select(['status', 'mcp_tools_enabled', 'mcp_tools_consent'])
-    .where('plugin_id', '=', FORMS_PLUGIN_ID)
+    .where('plugin_id', '=', pluginId)
     .executeTakeFirst()) as
     { status: string; mcp_tools_enabled: number; mcp_tools_consent: string | null } | undefined;
   if (!row || row.status !== 'active') return false;
@@ -208,7 +212,11 @@ export async function enableFormTools(runtime: FormToolsRuntime): Promise<boolea
   await runtime.db
     .updateTable('_plugin_state')
     .set({ mcp_tools_enabled: 1, mcp_tools_consent: consent })
-    .where('plugin_id', '=', FORMS_PLUGIN_ID)
+    .where('plugin_id', '=', pluginId)
     .execute();
   return true;
 }
+
+/** The Forms plugin's tools (enablePluginTools). */
+export const enableFormTools = (runtime: FormToolsRuntime) =>
+  enablePluginTools(runtime, FORMS_PLUGIN_ID);
