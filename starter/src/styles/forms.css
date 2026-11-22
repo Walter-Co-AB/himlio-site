@@ -205,3 +205,10 @@
 		font-size: 15px;
 	}
 }
+
+/* The booking form (@himlio/site's <Booking />, in the Booking section): its contact fields use
+   the .ec-form classes above; the picked date and time take the brand colours. */
+.hb-booking {
+	--hb-booking-selected: var(--color-brand);
+	--hb-booking-on-selected: var(--color-on-brand);
+}

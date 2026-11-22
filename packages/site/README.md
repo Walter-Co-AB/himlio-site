@@ -112,6 +112,12 @@ in Swedish, without a separate booking service.
   dates with other hours or closed, step between start times, minimum notice and how far ahead
   people can book, and blocked time. Times are Europe/Stockholm, across daylight saving changes.
   Lengths, buffers and times are on whole 5 minutes.
+- **On a page**: a Booking section (`marketing_booking` in the starter; the section's service
+  by name, or empty to let the visitor choose), a Booking block in rich text (a Text section's
+  body), or in code `import { Booking } from '@himlio/site/booking'` and
+  `<Booking service="Klippning" />`. The contact fields use the Forms classes (`.ec-form-*`), so
+  a site's form styles apply; the date and time picker uses `.hb-booking-*`, and the picked date
+  and time take `--hb-booking-selected` / `--hb-booking-on-selected`. Swedish; needs JavaScript.
 - **Booking**: the visitor picks a time and gets an email with a link; the booking counts once
   they confirm it (within 30 minutes, or later if the time is still free). Then the visitor gets
   a confirmation with an .ics file and a cancel link, and the customer a notification with an

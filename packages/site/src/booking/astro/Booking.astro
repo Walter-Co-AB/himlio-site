@@ -1,0 +1,248 @@
+---
+// Himlio's booking form: service, date, time, contact details. Place it in a page or component:
+//   import { Booking } from '@himlio/site/booking';
+//   <Booking />                      (the visitor picks among the active services)
+//   <Booking service="Klippning" />  (one service, by name or id)
+// The contact fields use the Forms plugin's .ec-form classes, so a site's form styles apply; the
+// date and time picker uses .hb-booking-* classes. Text in Swedish. Needs JavaScript; without
+// it, the visitor is asked to turn it on.
+interface Props {
+  service?: string;
+  class?: string;
+}
+const { service, class: className } = Astro.props;
+const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class:list={['hb-booking', className]} data-hb-booking data-service={service || undefined}>
+  <p class="hb-booking-noscript" data-hb-noscript>
+    <noscript>Aktivera JavaScript för att boka en tid.</noscript>
+  </p>
+  <form class="ec-form hb-booking-form" novalidate={false} hidden>
+    <fieldset class="hb-booking-part" data-hb-services hidden>
+      <legend class="ec-form-label">Vad vill du boka?</legend>
+      <div class="hb-booking-options" data-hb-service-list></div>
+    </fieldset>
+
+    <fieldset class="hb-booking-part" data-hb-dates hidden>
+      <legend class="ec-form-label">Datum</legend>
+      <div class="hb-booking-dates-nav">
+        <button type="button" class="hb-booking-nav" data-hb-prev aria-label="Tidigare datum">
+          ‹
+        </button>
+        <div class="hb-booking-dates" data-hb-date-list></div>
+        <button type="button" class="hb-booking-nav" data-hb-next aria-label="Senare datum">
+          ›
+        </button>
+      </div>
+    </fieldset>
+
+    <fieldset class="hb-booking-part" data-hb-times hidden>
+      <legend class="ec-form-label" data-hb-time-legend>
+        Tid
+      </legend>
+      <div class="hb-booking-times" data-hb-time-list></div>
+    </fieldset>
+
+    <fieldset class="hb-booking-part ec-form-page" data-hb-details hidden>
+      <legend class="ec-form-label hb-booking-summary" data-hb-summary></legend>
+      <div class="ec-form-field">
+        <label class="ec-form-label" for={`${id}-name`}>
+          Namn
+          <span class="ec-form-required" aria-hidden="true">
+            *
+          </span>
+        </label>
+        <input
+          class="ec-form-input"
+          id={`${id}-name`}
+          name="name"
+          autocomplete="name"
+          required
+          maxlength="100"
+        />
+      </div>
+      <div class="ec-form-field ec-form-field--half">
+        <label class="ec-form-label" for={`${id}-email`}>
+          E-post
+          <span class="ec-form-required" aria-hidden="true">
+            *
+          </span>
+        </label>
+        <input
+          class="ec-form-input"
+          id={`${id}-email`}
+          name="email"
+          type="email"
+          autocomplete="email"
+          required
+          maxlength="254"
+        />
+      </div>
+      <div class="ec-form-field ec-form-field--half">
+        <label class="ec-form-label" for={`${id}-phone`}>
+          Telefon
+        </label>
+        <input
+          class="ec-form-input"
+          id={`${id}-phone`}
+          name="phone"
+          type="tel"
+          autocomplete="tel"
+          maxlength="40"
+        />
+      </div>
+      <div class="ec-form-field">
+        <label class="ec-form-label" for={`${id}-message`}>
+          Meddelande
+        </label>
+        <textarea
+          class="ec-form-input"
+          id={`${id}-message`}
+          name="message"
+          maxlength="1000"
+          rows="3"
+        ></textarea>
+      </div>
+      <div class="ec-form-field" style="position:absolute;left:-9999px;" aria-hidden="true">
+        <label for={`${id}-website`}>Lämna tomt</label>
+        <input id={`${id}-website`} name="website" tabindex="-1" autocomplete="off" />
+      </div>
+    </fieldset>
+
+    <div class="ec-form-nav">
+      <button type="submit" class="ec-form-submit" data-hb-submit hidden>
+        Boka
+      </button>
+    </div>
+  </form>
+  <p class="ec-form-status hb-booking-status" data-hb-status aria-live="polite"></p>
+</div>
+
+<script>
+  import { initBooking } from '@himlio/site/booking/client';
+  initBooking();
+  document.addEventListener('astro:page-load', initBooking);
+</script>
+
+<style is:global>
+  @layer base {
+    .hb-booking-part {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+    .hb-booking-part[hidden],
+    .hb-booking-form[hidden] {
+      display: none;
+    }
+    .hb-booking-options {
+      display: grid;
+      gap: 8px;
+    }
+    .hb-booking-option {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 14px;
+      border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .hb-booking-option-text {
+      display: grid;
+      gap: 2px;
+    }
+    .hb-booking-option-text > span {
+      opacity: 0.75;
+      font-size: 0.92em;
+    }
+    .hb-booking-dates-nav {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .hb-booking-dates {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      padding-block: 2px;
+    }
+    .hb-booking-date,
+    .hb-booking-time,
+    .hb-booking-nav {
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .hb-booking-nav {
+      width: 36px;
+      height: 52px;
+      font-size: 1.3em;
+    }
+    .hb-booking-date {
+      display: grid;
+      flex: none;
+      min-width: 64px;
+      padding: 6px 8px;
+      text-align: center;
+      scroll-snap-align: start;
+    }
+    .hb-booking-date-weekday {
+      font-size: 0.8em;
+      text-transform: capitalize;
+      opacity: 0.75;
+    }
+    .hb-booking-times {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+      gap: 6px;
+    }
+    .hb-booking-time {
+      min-height: 44px;
+      font-variant-numeric: tabular-nums;
+    }
+    /* A site sets --hb-booking-selected / --hb-booking-on-selected to its own colours. */
+    .hb-booking-date[aria-pressed='true'],
+    .hb-booking-time[aria-pressed='true'] {
+      border-color: transparent;
+      background: var(--hb-booking-selected, CanvasText);
+      color: var(--hb-booking-on-selected, Canvas);
+    }
+    .hb-booking-date:disabled,
+    .hb-booking-nav:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .hb-booking-date:focus-visible,
+    .hb-booking-time:focus-visible,
+    .hb-booking-nav:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+    .hb-booking-summary {
+      font-weight: 600;
+    }
+    .hb-booking-status[data-kind='error'] {
+      color: #c62828;
+    }
+    .hb-booking-done {
+      display: grid;
+      gap: 10px;
+    }
+    .hb-booking-done:focus {
+      outline: none;
+    }
+    .hb-booking-status:empty {
+      display: none;
+    }
+  }
+</style>

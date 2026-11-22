@@ -19,6 +19,7 @@
     "src/forms/index.js",
     "src/forms/index.d.ts",
     "src/forms/plugin.js",
-    "src/forms/plugin.d.ts"
+    "src/forms/plugin.d.ts",
+    "src/booking/astro"
   ]
 }

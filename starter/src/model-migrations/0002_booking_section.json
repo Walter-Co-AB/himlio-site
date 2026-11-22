@@ -1,0 +1,66 @@
+{
+	"version": "1",
+	"blockTypes": [
+		{
+			"slug": "marketing_booking",
+			"label": "Booking",
+			"description": "A booking form in its own section: the visitor picks a service, a date and a time. Services and opening hours are set under Booking in the admin",
+			"icon": "calendar",
+			"category": "Marketing",
+			"currentVersion": 1,
+			"versions": [
+				{
+					"version": 1,
+					"fields": [
+						{
+							"slug": "headline",
+							"label": "Headline",
+							"type": "string"
+						},
+						{
+							"slug": "eyebrow",
+							"label": "Label above headline",
+							"type": "string"
+						},
+						{
+							"slug": "intro",
+							"label": "Intro text (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "service",
+							"label": "Service: its name, from Booking in the admin (empty: the visitor chooses)",
+							"type": "string",
+							"validation": {
+								"maxLength": 100
+							}
+						},
+						{
+							"slug": "show_contact_details",
+							"label": "Show the address, opening hours and phone (from Company details) beside the form",
+							"type": "boolean",
+							"defaultValue": false
+						},
+						{
+							"slug": "anchor_id",
+							"label": "Section ID (lowercase, for links like /#boka)",
+							"type": "string",
+							"validation": {
+								"pattern": "^(?:$|[a-z][a-z0-9_-]*)$"
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"allowBlockTypes": [
+		{
+			"collection": "pages",
+			"field": "content",
+			"add": [
+				"marketing_booking"
+			]
+		}
+	]
+}
