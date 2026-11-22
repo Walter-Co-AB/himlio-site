@@ -84,7 +84,7 @@ export interface Deps {
   now(): number;
   send(mail: Mail): Promise<void>;
   /** The site's name and public origin (links in emails). */
-  site: { name: string; url: string };
+  site: { name: string; url: string; replyTo?: string };
   /** Recipients from himlio.json when the admin has set none. */
   platformNotify: readonly string[];
   /** Reads a calendar address (https). */

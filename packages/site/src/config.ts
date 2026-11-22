@@ -19,7 +19,8 @@ export interface HimlioFacts {
   name: string;
   locale: string;
   url: string | null;
-  email?: { from: string };
+  /** The platform's sender, and where visitors' replies go (optional). */
+  email?: { from: string; replyTo?: string };
   /**
    * Forms: who gets the notification emails, until the Forms plugin's admin has a field for it
    * (from the customer's platform config). Empty when himlio.json has no `forms`.
@@ -65,18 +66,34 @@ const CRON = /^[0-9*/,-]+( [0-9*/,-]+){4}$/;
 export const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 export function readHimlio(root: string): HimlioFacts {
-  const raw = JSON.parse(readFileSync(join(root, 'himlio.json'), 'utf8')) as Partial<HimlioFacts>;
+  const raw = JSON.parse(
+    readFileSync(join(root, 'himlio.json'), 'utf8')
+  ) as Partial<HimlioFacts> & {
+    email?: { from: string; reply_to?: unknown };
+  };
   return {
     slug: raw.slug ?? '',
     name: raw.name ?? '',
     locale: raw.locale || 'sv',
     url: raw.url ?? null,
-    ...(raw.email?.from ? { email: { from: raw.email.from } } : {}),
+    ...(raw.email?.from ? { email: emailFacts(raw.email) } : {}),
     forms: { notify: formRecipients(raw.forms) },
   };
 }
 
 const EMAIL = /^[^\s@<>",;]+@[^\s@<>",;]+\.[^\s@<>",;]+$/;
+
+/** himlio.json `email`: the sender, and `reply_to` (an address, or null/absent for none). */
+function emailFacts(email: { from: string; reply_to?: unknown }): {
+  from: string;
+  replyTo?: string;
+} {
+  const replyTo = email.reply_to;
+  if (replyTo === undefined || replyTo === null || replyTo === '') return { from: email.from };
+  if (typeof replyTo !== 'string' || !EMAIL.test(replyTo) || replyTo.length > 254)
+    return fail(`himlio.json: email.reply_to is not an email address: ${JSON.stringify(replyTo)}`);
+  return { from: email.from, replyTo };
+}
 
 /** himlio.json `forms.notify`: a list of plain addresses, or nothing. */
 function formRecipients(forms: unknown): string[] {

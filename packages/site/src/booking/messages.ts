@@ -48,7 +48,11 @@ export interface Mail {
 
 interface Site {
   name: string;
+  /** Where visitors' replies go (himlio.json email.reply_to); else no Reply-To. */
+  replyTo?: string;
 }
+
+const replyTo = (site: Site) => (site.replyTo ? { replyTo: site.replyTo } : {});
 
 const signature = (site: Site) => `\n\nVänliga hälsningar\n${site.name}`;
 
@@ -60,6 +64,7 @@ export function confirmRequestMail(
 ): Mail {
   return {
     to: booking.email,
+    ...replyTo(site),
     subject: `Bekräfta din bokning hos ${site.name}`,
     // Nothing the visitor typed (not even the name): the address isn't proven yet, so this
     // email must be useless for sending someone else a message.
@@ -82,6 +87,7 @@ export function confirmedMail(
 ): Mail {
   return {
     to: booking.email,
+    ...replyTo(site),
     subject: `Bokning bekräftad: ${booking.serviceName}, ${swedishWhen(booking)}`,
     text:
       `Hej ${booking.name}!\n\n` +
@@ -102,6 +108,7 @@ export function reminderMail(
 ): Mail {
   return {
     to: booking.email,
+    ...replyTo(site),
     subject: `Påminnelse: ${booking.serviceName} ${swedishWhen(booking)}`,
     text:
       `Hej ${booking.name}!\n\n` +
@@ -115,6 +122,7 @@ export function reminderMail(
 export function cancelledMail(site: Site, booking: Booking, ics: string, byStaff: boolean): Mail {
   return {
     to: booking.email,
+    ...replyTo(site),
     subject: `Avbokad: ${booking.serviceName} ${swedishWhen(booking)}`,
     text:
       `Hej ${booking.name}!\n\n` +

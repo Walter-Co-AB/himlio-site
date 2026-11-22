@@ -33,7 +33,11 @@ function makeDeps(ctx: Ctx): Deps {
     kv: ctx.kv,
     now: () => Date.now(),
     send,
-    site: { name: ctx.site?.name || facts.name, url: siteUrl(ctx) },
+    site: {
+      name: ctx.site?.name || facts.name,
+      url: siteUrl(ctx),
+      ...(facts.email?.replyTo ? { replyTo: facts.email.replyTo } : {}),
+    },
     platformNotify: facts.forms.notify,
     fetchCalendar,
     log: ctx.log,
