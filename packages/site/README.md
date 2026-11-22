@@ -105,45 +105,62 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
 
 ## Booking (Bokning)
 
-Every site has Himlio's booking plugin (`himlio-booking`): visitors book a time for a service,
-in Swedish, without a separate booking service.
+Every site has Himlio's booking plugin (`himlio-booking`): visitors book a time, in Swedish,
+without a separate booking service. It fits salons, tattoo studios, therapists and the like.
 
-- **Setup**: services (name, length, buffer after each booking), opening hours per weekday,
-  dates with other hours or closed, step between start times, minimum notice and how far ahead
-  people can book, and blocked time. Times are Europe/Stockholm, across daylight saving changes.
-  Lengths, buffers and times are on whole 5 minutes.
-- **Admin**: Bookings (a week of bookings and blocked time, a booking's details, cancel with or
-  without emailing the visitor, block time, upcoming bookings) and Booking settings (services,
-  opening hours, dates with other hours, rules, notification addresses, the feed address, the
-  customer's calendar with its status).
-- **On a page**: a Booking section (`marketing_booking` in the starter; the section's service
-  by name, or empty to let the visitor choose), a Booking block in rich text (a Text section's
-  body), or in code `import { Booking } from '@himlio/site/booking'` and
-  `<Booking service="Klippning" />`. The contact fields use the Forms classes (`.ec-form-*`), so
-  a site's form styles apply; the date and time picker uses `.hb-booking-*`, and the picked date
-  and time take `--hb-booking-selected` / `--hb-booking-on-selected`. Swedish; needs JavaScript.
-- **Booking**: the visitor picks a time and gets an email with a link; the booking counts once
-  they confirm it (within 30 minutes, or later if the time is still free). Then the visitor gets
-  a confirmation with an .ics file and a cancel link, and the customer a notification with an
-  .ics file. Reminders go out a day before (not for bookings made less than 36 hours ahead).
-  Visitors can cancel until the start. The links open a page at `/_booking` (rendered by the
-  platform middleware; a GET only shows the booking, the button confirms or cancels).
-- **No double bookings**: every 5 minutes a booking keeps busy (length and buffer) is stored once,
-  create-if-absent, so of two overlapping bookings only one is made.
-- **Calendars**: a secret iCal feed of the bookings to subscribe to in any calendar app, and the
-  customer's own calendar's secret iCal address in: read every 5 minutes, only busy times are kept
-  (never what the events are), recurring events included, events marked free ignored.
+- **Services**: name, length, buffer after each booking, price (fixed or "från"), up to 5
+  questions in the form (e.g. placement and size for a tattoo), a cancellation deadline in
+  hours, and a mode: **instant** (booked at once) or **request** (the business approves or
+  declines each one; the time is held up to 72 hours, then the request lapses and the visitor is
+  told).
+- **Staff and resources**: people, chairs or rooms. Each can have its own working hours (or the
+  site's opening hours), time off, services, own lengths per service, its own calendar in and
+  its own feed out. Visitors pick one or "Vem som helst" (whoever is free). A site without
+  resources books the business as a whole; bookings made before resources were added block
+  everyone.
+- **Opening hours**: per weekday, dates with other hours or closed (they apply to everyone),
+  step between start times, minimum notice and how far ahead people can book. Times are
+  Europe/Stockholm, across daylight saving changes; lengths, buffers and times on whole 5 minutes.
+- **Admin**: Bookings (a week of bookings and blocked time, filter by person, requests to answer
+  with approve/decline, details with answers, cancel with or without emailing the visitor,
+  block time for everyone or one person) and Booking settings (services, staff and resources,
+  opening hours, notifications, calendars and feeds).
+- **On a page**: a Booking section (`marketing_booking` in the starter; the section's service by
+  name, or empty to let the visitor choose), a Booking block in rich text (service and person
+  optional), or in code `import { Booking } from '@himlio/site/booking'` and
+  `<Booking service="Klippning" resource="Anna" />` (both optional, by name or id). The contact
+  fields use the Forms classes (`.ec-form-*`), so a site's form styles apply; the picker uses
+  `.hb-booking-*`, and the picked date and time take `--hb-booking-selected` /
+  `--hb-booking-on-selected`. Swedish; needs JavaScript.
+- **One step or two**: with Cloudflare Turnstile (`himlio.json` `turnstile.site_key` and the
+  Worker secret `TURNSTILE_SECRET`, both set by the platform), the form has a bot check and the
+  booking counts at once. Without it, or if the check fails, the visitor confirms by a link in
+  an email within 30 minutes (or later, if the time is still free). Tokens must be for the
+  request's hostname; Cloudflare's test keys work only on localhost.
+- **After booking**: the visitor gets a confirmation with an .ics file and links to cancel and
+  to move the booking (a page at `/_booking` lists free times with the same person), until the
+  service's deadline; the customer gets a notification with an .ics file, and notices when a
+  visitor cancels or moves. Reminders go out a day before (not for bookings made or moved less
+  than 36 hours ahead). A booking can be moved at most 3 times this way.
+- **No double bookings**: every 5 minutes a booking keeps busy (length and buffer) is stored
+  once per resource, create-if-absent, so of two overlapping bookings only one is made.
+- **Calendars**: secret iCal feeds of the bookings (all, and per person) to subscribe to in any
+  calendar app, and calendars in: the business's (blocks everyone) and each person's (blocks
+  that person), read every 5 minutes; only busy times are kept, never what the events are;
+  recurring events included, events marked free ignored.
 - **Notifications** go to the addresses set in the booking settings, or else `himlio.json`
   `forms.notify`, with Reply-To set to the visitor. Emails to visitors have Reply-To
-  `himlio.json` `email.reply_to` when it is set (none otherwise). Emails are sent through the platform's `EMAIL` binding with the .ics attached;
-  without `email.from` in `himlio.json` they are written to the log.
-- **Abuse protection**: a honeypot, at most 5 bookings per IP address an hour, 5 per email
-  address a day, 3 upcoming per email address, 30 unconfirmed per site an hour. The first email
-  (to an unproven address) contains nothing the visitor typed.
-- **Personal data**: bookings are deleted 12 months after the appointment; unconfirmed and
-  cancelled-before-confirmation ones after 30 days. Blocked time is deleted a year after it ends.
-- Maintenance (expiring unconfirmed bookings, reminders, deletion, reading the calendar) runs on
-  the platform's minute cron, every 5 minutes.
+  `himlio.json` `email.reply_to` when it is set (none otherwise). Emails are sent through the
+  platform's `EMAIL` binding with the .ics attached; without `email.from` in `himlio.json` they
+  are written to the log.
+- **Abuse protection**: Turnstile when on, a honeypot, at most 5 bookings per IP address an
+  hour, 5 per email address a day, 3 upcoming per email address, 30 unconfirmed per site an
+  hour. The first email to an unproven address contains nothing the visitor typed.
+- **Personal data**: bookings are deleted 12 months after the appointment; unconfirmed,
+  declined and lapsed ones after 30 days. Blocked time is deleted a year after it ends.
+- Maintenance (expiring holds and requests, reminders, deletion, reading calendars) runs on the
+  platform's minute cron, every 5 minutes.
+- Not yet: SMS reminders, payments and deposits.
 
 ## Extension points
 
@@ -200,11 +217,12 @@ and enforces:
   forms rules above apply; recipients, webhook and autoresponder can't be set; nothing deletes
   or exports. Submissions are personal data, and the instructions say so.
 - **Booking** (scope `mcp:tools:himlio-booking` or `mcp:tools`; turned on by the platform):
-  `himlio-booking__list_services`, `__save_service`, `__delete_service`, `__get_schedule`,
-  `__update_schedule`, `__list_blocked_time`, `__block_time`, `__unblock_time` (writes: admins),
-  `__list_bookings`, `__get_booking` (editors and up) and `__cancel_booking` (admins). The
-  notification addresses, the customer's calendar address and the feed address can't be read or
-  set by connectors.
+  `himlio-booking__list_services`, `__save_service`, `__delete_service`, `__list_resources`,
+  `__save_resource`, `__delete_resource`, `__get_schedule`, `__update_schedule`,
+  `__list_blocked_time`, `__block_time`, `__unblock_time` (writes: admins), `__list_bookings`,
+  `__get_booking` (editors and up), `__approve_booking`, `__decline_booking` and
+  `__cancel_booking` (admins). The notification addresses, calendar addresses and feed
+  addresses can't be read or set by connectors.
 
 On connect, connectors receive instructions, among them: **when changing a published item with
 `content_update`, pass `status: "published"` (or call `content_publish`)**, or the change may
