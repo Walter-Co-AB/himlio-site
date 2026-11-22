@@ -112,6 +112,10 @@ in Swedish, without a separate booking service.
   dates with other hours or closed, step between start times, minimum notice and how far ahead
   people can book, and blocked time. Times are Europe/Stockholm, across daylight saving changes.
   Lengths, buffers and times are on whole 5 minutes.
+- **Admin**: Bookings (a week of bookings and blocked time, a booking's details, cancel with or
+  without emailing the visitor, block time, upcoming bookings) and Booking settings (services,
+  opening hours, dates with other hours, rules, notification addresses, the feed address, the
+  customer's calendar with its status).
 - **On a page**: a Booking section (`marketing_booking` in the starter; the section's service
   by name, or empty to let the visitor choose), a Booking block in rich text (a Text section's
   body), or in code `import { Booking } from '@himlio/site/booking'` and

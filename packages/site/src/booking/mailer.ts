@@ -62,11 +62,21 @@ export function mailer(sender: { email: string; name: string } | null) {
 
 /** Reads the customer's calendar address: https only, 15 s, at most 5 MB. */
 export async function fetchCalendar(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: { Accept: 'text/calendar, */*;q=0.5', 'User-Agent': 'Himlio-Booking/1.0' },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(15_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: { Accept: 'text/calendar, */*;q=0.5', 'User-Agent': 'Himlio-Booking/1.0' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (error) {
+    const timeout = error instanceof Error && error.name === 'TimeoutError';
+    throw new Error(
+      timeout
+        ? 'the calendar did not answer within 15 seconds'
+        : `the calendar could not be reached (${new URL(url).host}); check the address`
+    );
+  }
   if (!response.ok)
     throw new Error(`the calendar answered ${response.status} ${response.statusText}`.trim());
   if (!response.url.startsWith('https://'))

@@ -2,7 +2,12 @@
 // `plugins`. Written out like ./forms-plugin.ts: the config is loaded in plain Node, and EmDash's
 // Vite build loads the plugin itself from `entrypoint` (dist/booking/plugin.js).
 import type { PluginDescriptor } from 'emdash';
-import { BOOKING_PLUGIN_ID, BOOKING_PLUGIN_VERSION, BOOKING_STORAGE } from './booking/store.js';
+import {
+  BOOKING_ADMIN_PAGES,
+  BOOKING_PLUGIN_ID,
+  BOOKING_PLUGIN_VERSION,
+  BOOKING_STORAGE,
+} from './booking/store.js';
 
 export const BOOKING_ENTRYPOINT = '@himlio/site/booking/plugin';
 
@@ -12,6 +17,8 @@ export function bookingPlugin(): PluginDescriptor {
     version: BOOKING_PLUGIN_VERSION,
     entrypoint: BOOKING_ENTRYPOINT,
     componentsEntry: '@himlio/site/booking/astro',
+    adminEntry: '@himlio/site/booking/admin',
+    adminPages: BOOKING_ADMIN_PAGES,
     options: {},
     capabilities: ['network:request'],
     allowedHosts: ['*'],

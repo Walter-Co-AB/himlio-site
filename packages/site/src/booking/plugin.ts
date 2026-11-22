@@ -7,7 +7,12 @@ import { facts } from 'virtual:himlio/config';
 import type { Deps } from './core.js';
 import { fetchCalendar, mailer } from './mailer.js';
 import { bookingMcpTools, bookingRoutes, type Ctx } from './routes.js';
-import { BOOKING_PLUGIN_ID, BOOKING_PLUGIN_VERSION, BOOKING_STORAGE } from './store.js';
+import {
+  BOOKING_ADMIN_PAGES,
+  BOOKING_PLUGIN_ID,
+  BOOKING_PLUGIN_VERSION,
+  BOOKING_STORAGE,
+} from './store.js';
 
 const send = mailer(facts.email ? { email: facts.email.from, name: facts.name } : null);
 
@@ -45,6 +50,7 @@ export function createPlugin() {
     routes: bookingRoutes(makeDeps) as never,
     mcp: { tools: bookingMcpTools() },
     admin: {
+      pages: BOOKING_ADMIN_PAGES,
       portableTextBlocks: [
         {
           type: BOOKING_PLUGIN_ID,
