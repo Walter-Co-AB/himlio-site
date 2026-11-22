@@ -187,7 +187,21 @@ export interface PageContentMarketingFormV1Block {
 
 export type PageContentMarketingFormBlock = PageContentMarketingFormV1Block;
 
-export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock;
+export interface PageContentMarketingBookingV1Block {
+  _type: "marketing_booking";
+  _version: 1;
+  _key: string;
+  "headline"?: string | null;
+  "eyebrow"?: string | null;
+  "intro"?: string | null;
+  "service"?: string | null;
+  "show_contact_details"?: boolean | null;
+  "anchor_id"?: string | null;
+}
+
+export type PageContentMarketingBookingBlock = PageContentMarketingBookingV1Block;
+
+export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock | PageContentMarketingBookingBlock;
 
 export interface Page {
   id: string;

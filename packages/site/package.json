@@ -72,10 +72,22 @@
     "./booking/plugin": {
       "types": "./dist/booking/plugin.d.ts",
       "default": "./dist/booking/plugin.js"
+    },
+    "./booking": {
+      "types": "./dist/booking/astro/ui.d.ts",
+      "default": "./dist/booking/astro/ui.js"
+    },
+    "./booking/astro": {
+      "types": "./dist/booking/astro/index.d.ts",
+      "default": "./dist/booking/astro/index.js"
+    },
+    "./booking/client": {
+      "types": "./dist/booking/client.d.ts",
+      "default": "./dist/booking/client.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts src/forms/plugin.js src/forms/plugin.d.ts dist/forms/",
+    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts src/forms/plugin.js src/forms/plugin.d.ts dist/forms/ && mkdir -p dist/booking/astro && cp src/booking/astro/* dist/booking/astro/",
     "test": "node --test \"test/**/*.test.mjs\"",
     "prepack": "npm run build"
   },

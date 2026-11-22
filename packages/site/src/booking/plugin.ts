@@ -44,6 +44,25 @@ export function createPlugin() {
     storage: BOOKING_STORAGE as never,
     routes: bookingRoutes(makeDeps) as never,
     mcp: { tools: bookingMcpTools() },
+    admin: {
+      portableTextBlocks: [
+        {
+          type: BOOKING_PLUGIN_ID,
+          label: 'Booking',
+          icon: 'calendar',
+          description: 'A booking form: the visitor picks a time',
+          fields: [
+            {
+              type: 'select',
+              action_id: 'service',
+              label: 'Service (empty: the visitor chooses)',
+              options: [],
+              optionsRoute: 'services/list',
+            },
+          ],
+        },
+      ],
+    },
   });
 }
 

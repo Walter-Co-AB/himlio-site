@@ -1,0 +1,123 @@
+---
+// Himlio addition: a booking form in its own section ("Booking", marketing_booking), with a
+// headline, intro and the opening hours from Company details. The form is @himlio/site's
+// <Booking />: the visitor picks a service (or the one set here), a date and a time. Not part of
+// EmDash's marketing template.
+import { Icon } from "astro-iconset/components";
+import { contactDetails } from "@himlio/site/runtime";
+import { Booking } from "@himlio/site/booking";
+import type { BlockComponentProps } from "@himlio/site/emdash/ui";
+import type { PageContentBlock } from "../../../emdash-env";
+import { toParagraphs } from "../../utils/text";
+
+type BookingBlock = Extract<PageContentBlock, { _type: "marketing_booking" }>;
+type Props = BlockComponentProps<BookingBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline, service, show_contact_details } = value;
+
+const intro = toParagraphs(value.intro);
+const contact = show_contact_details ? await contactDetails(Astro.cache) : {};
+const aside = contact.address || contact.phone || contact.opening_hours;
+---
+
+<section id={anchor_id || undefined} class:list={["booking", "section", { "booking--single": !aside }]}>
+	<div class="container booking__grid">
+		<div class="booking__main">
+			{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+			{headline && <h2 class="section-headline booking__headline">{headline}</h2>}
+			{intro.map((paragraph) => <p class="booking__intro">{paragraph}</p>)}
+			<div class="booking__form">
+				<Booking service={service || undefined} />
+			</div>
+		</div>
+		{
+			aside && (
+				<aside class="booking__aside">
+					<ul class="booking__details" role="list">
+						{contact.address && (
+							<li>
+								<Icon name="ph:map-pin" aria-hidden="true" />
+								<span>{contact.address}</span>
+							</li>
+						)}
+						{contact.opening_hours && (
+							<li>
+								<Icon name="ph:clock" aria-hidden="true" />
+								<span>{contact.opening_hours}</span>
+							</li>
+						)}
+						{contact.phone && (
+							<li>
+								<Icon name="ph:phone" aria-hidden="true" />
+								<span>{contact.phone}</span>
+							</li>
+						)}
+					</ul>
+				</aside>
+			)
+		}
+	</div>
+</section>
+
+<style>
+	.booking__grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+		gap: clamp(48px, 7vw, 112px);
+		align-items: start;
+	}
+
+	.booking--single .booking__grid {
+		grid-template-columns: minmax(0, 720px);
+	}
+
+	.eyebrow + .booking__headline {
+		margin-block-start: 18px;
+	}
+
+	.booking__intro {
+		max-width: 52ch;
+		margin-block-start: 20px;
+		font-size: 17px;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.booking__form {
+		margin-block-start: 32px;
+	}
+
+	.booking__form :global(.ec-form) {
+		margin-block: 0;
+	}
+
+	.booking__details {
+		display: grid;
+		gap: 14px;
+		list-style: none;
+		font-size: 15.5px;
+		color: var(--color-text-secondary);
+		white-space: pre-line;
+	}
+
+	.booking__details li {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.booking__details :global(svg) {
+		flex: none;
+		width: 20px;
+		height: 20px;
+		margin-block-start: 2px;
+		color: var(--color-text);
+	}
+
+	@media (max-width: 960px) {
+		.booking__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+</style>

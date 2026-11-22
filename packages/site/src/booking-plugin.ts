@@ -11,6 +11,7 @@ export function bookingPlugin(): PluginDescriptor {
     id: BOOKING_PLUGIN_ID,
     version: BOOKING_PLUGIN_VERSION,
     entrypoint: BOOKING_ENTRYPOINT,
+    componentsEntry: '@himlio/site/booking/astro',
     options: {},
     capabilities: ['network:request'],
     allowedHosts: ['*'],
