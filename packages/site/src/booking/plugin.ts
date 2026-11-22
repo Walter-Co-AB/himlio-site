@@ -59,8 +59,16 @@ async function turnstile(ctx: Ctx): Promise<Pick<Deps, 'verifyHuman' | 'turnstil
         body,
         signal: AbortSignal.timeout(10_000),
       });
-      const result = (await res.json()) as { success?: boolean; hostname?: string };
-      return result.success === true && result.hostname === hostname;
+      const result = (await res.json()) as {
+        success?: boolean;
+        hostname?: string;
+        metadata?: { result_with_testing_key?: boolean };
+      };
+      if (result.success !== true) return false;
+      // Cloudflare's test keys answer for example.com; accept them only on localhost (dev).
+      if (result.metadata?.result_with_testing_key)
+        return hostname === 'localhost' || hostname === '127.0.0.1';
+      return result.hostname === hostname;
     },
   };
 }
@@ -107,6 +115,13 @@ export function createPlugin() {
               label: 'Service (empty: the visitor chooses)',
               options: [],
               optionsRoute: 'services/list',
+            },
+            {
+              type: 'select',
+              action_id: 'resource',
+              label: 'Who (empty: the visitor chooses)',
+              options: [],
+              optionsRoute: 'resources/list',
             },
           ],
         },

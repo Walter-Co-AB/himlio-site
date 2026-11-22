@@ -1,12 +1,12 @@
 ---
 // The Booking block in rich text (Portable Text `himlio-booking`, from the booking plugin):
-// { _type: "himlio-booking", _key, service?: "<name or id>" }.
+// { _type: "himlio-booking", _key, service?: "<name or id>", resource?: "<name or id>" }.
 import Booking from './Booking.astro';
 
 interface Props {
-  node: { service?: string; serviceId?: string };
+  node: { service?: string; serviceId?: string; resource?: string };
 }
 const { node } = Astro.props;
 ---
 
-<Booking service={node.service || node.serviceId} />
+<Booking service={node.service || node.serviceId} resource={node.resource} />
