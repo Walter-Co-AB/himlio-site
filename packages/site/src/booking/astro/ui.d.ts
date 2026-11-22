@@ -1,1 +1,5 @@
-export declare const Booking: (props: { service?: string; class?: string }) => unknown;
+export declare const Booking: (props: {
+  service?: string;
+  resource?: string;
+  class?: string;
+}) => unknown;

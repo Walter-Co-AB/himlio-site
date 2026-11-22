@@ -3,18 +3,25 @@
 //   import { Booking } from '@himlio/site/booking';
 //   <Booking />                      (the visitor picks among the active services)
 //   <Booking service="Klippning" />  (one service, by name or id)
+//   <Booking resource="Anna" />      (one person, chair or room, by name or id)
 // The contact fields use the Forms plugin's .ec-form classes, so a site's form styles apply; the
 // date and time picker uses .hb-booking-* classes. Text in Swedish. Needs JavaScript; without
 // it, the visitor is asked to turn it on.
 interface Props {
   service?: string;
+  resource?: string;
   class?: string;
 }
-const { service, class: className } = Astro.props;
+const { service, resource, class: className } = Astro.props;
 const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
-<div class:list={['hb-booking', className]} data-hb-booking data-service={service || undefined}>
+<div
+  class:list={['hb-booking', className]}
+  data-hb-booking
+  data-service={service || undefined}
+  data-resource={resource || undefined}
+>
   <p class="hb-booking-noscript" data-hb-noscript>
     <noscript>Aktivera JavaScript för att boka en tid.</noscript>
   </p>
@@ -22,6 +29,11 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
     <fieldset class="hb-booking-part" data-hb-services hidden>
       <legend class="ec-form-label">Vad vill du boka?</legend>
       <div class="hb-booking-options" data-hb-service-list></div>
+    </fieldset>
+
+    <fieldset class="hb-booking-part" data-hb-resources hidden>
+      <legend class="ec-form-label">Hos vem?</legend>
+      <div class="hb-booking-options" data-hb-resource-list></div>
     </fieldset>
 
     <fieldset class="hb-booking-part" data-hb-dates hidden>
@@ -46,6 +58,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
 
     <fieldset class="hb-booking-part ec-form-page" data-hb-details hidden>
       <legend class="ec-form-label hb-booking-summary" data-hb-summary></legend>
+      <p class="hb-booking-note" data-hb-note hidden></p>
       <div class="ec-form-field">
         <label class="ec-form-label" for={`${id}-name`}>
           Namn
@@ -92,6 +105,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
           maxlength="40"
         />
       </div>
+      <div class="hb-booking-questions" data-hb-questions></div>
       <div class="ec-form-field">
         <label class="ec-form-label" for={`${id}-message`}>
           Meddelande
@@ -109,6 +123,8 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
         <input id={`${id}-website`} name="website" tabindex="-1" autocomplete="off" />
       </div>
     </fieldset>
+
+    <div class="hb-booking-turnstile" data-hb-turnstile hidden></div>
 
     <div class="ec-form-nav">
       <button type="submit" class="ec-form-submit" data-hb-submit hidden>
@@ -233,6 +249,19 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
     }
     .hb-booking-status[data-kind='error'] {
       color: #c62828;
+    }
+    .hb-booking-questions {
+      display: contents;
+    }
+    .hb-booking-note {
+      flex-basis: 100%;
+      margin: 0;
+      font-size: 0.92em;
+      opacity: 0.8;
+    }
+    .hb-booking-note[hidden],
+    .hb-booking-turnstile[hidden] {
+      display: none;
     }
     .hb-booking-done {
       display: grid;
