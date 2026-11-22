@@ -218,3 +218,16 @@ test('readHimlio: email.reply_to becomes email.replyTo; null or absent is none; 
   assert.deepEqual(read({ from: 'noreply@himlio.app' }), { from: 'noreply@himlio.app' });
   assert.throws(() => read({ from: 'noreply@himlio.app', reply_to: 'not an address' }), /reply_to/);
 });
+
+test('readHimlio: turnstile.site_key becomes turnstile.siteKey; null or absent is none; invalid fails', () => {
+  const read = (turnstile) =>
+    readHimlio(site({ 'himlio.json': JSON.stringify({ slug: 'a', name: 'A', turnstile }) }))
+      .turnstile;
+  assert.deepEqual(read({ site_key: '1x00000000000000000000AA' }), {
+    siteKey: '1x00000000000000000000AA',
+  });
+  assert.equal(read(null), undefined);
+  assert.equal(read(undefined), undefined);
+  assert.equal(read({ site_key: null }), undefined);
+  assert.throws(() => read({ site_key: 'no spaces allowed' }), /turnstile\.site_key/);
+});

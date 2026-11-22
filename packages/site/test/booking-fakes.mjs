@@ -93,6 +93,7 @@ export function deps({ now, calendarText } = {}) {
   const d = {
     storage: {
       services: collection(),
+      resources: collection(),
       bookings: collection(),
       locks: collection(),
       blocks: collection(),

@@ -12,10 +12,17 @@
 import { z } from 'astro/zod';
 import { pluginResponse, PluginRouteError } from 'emdash';
 import {
+  approve,
   book,
   BookingError,
   cancel,
   confirm,
+  decline,
+  deleteResource,
+  listResources,
+  rebook,
+  rebookOptions,
+  saveResource,
   createBlock,
   deleteBlock,
   deleteService,
@@ -39,11 +46,11 @@ import {
   type Deps,
 } from './core.js';
 import { swedishWhen } from './messages.js';
-import { TIME_ZONE } from './time.js';
+import { addDays, TIME_ZONE, toLocal } from './time.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- EmDash's RouteContext
 export type Ctx = any;
-export type MakeDeps = (ctx: Ctx) => Deps;
+export type MakeDeps = (ctx: Ctx) => Deps | Promise<Deps>;
 
 interface Route {
   public?: boolean;
@@ -88,6 +95,17 @@ export const scheduleInput = z.object({
   maxDaysAhead: z.number().int().optional(),
 });
 
+const weekHours = z.array(z.array(timeRange).max(6)).length(7);
+const dateExceptions = z
+  .array(
+    z.object({
+      date: z.string(),
+      hours: z.array(timeRange).max(6),
+      note: z.string().max(200).optional(),
+    })
+  )
+  .max(400);
+
 export const serviceInput = z.object({
   id: id.optional(),
   name: z.string().min(1).max(100),
@@ -96,19 +114,50 @@ export const serviceInput = z.object({
   bufferMinutes: z.number().int().optional(),
   active: z.boolean().optional(),
   position: z.number().int().optional(),
+  price: z
+    .object({ kind: z.enum(['fixed', 'from']), amount: z.number().int() })
+    .nullable()
+    .optional(),
+  mode: z.enum(['instant', 'request']).optional(),
+  cancelHours: z.number().int().optional(),
+  questions: z
+    .array(
+      z.object({
+        id: z.string().max(40),
+        label: z.string().max(200),
+        required: z.boolean().optional(),
+        long: z.boolean().optional(),
+      })
+    )
+    .max(5)
+    .optional(),
 });
 
-const status = z.enum(['pending', 'confirmed', 'cancelled', 'expired']);
+export const resourceInput = z.object({
+  id: id.optional(),
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  active: z.boolean().optional(),
+  position: z.number().int().optional(),
+  hours: weekHours.nullable().optional(),
+  exceptions: dateExceptions.optional(),
+  serviceIds: z.array(id).max(50).optional(),
+  durations: z.record(z.string(), z.number().int()).optional(),
+});
+
+const status = z.enum(['pending', 'requested', 'confirmed', 'cancelled', 'declined', 'expired']);
 export const bookingsInput = z.object({
   from: isoTime.optional(),
   to: isoTime.optional(),
   status: z.array(status).optional(),
+  resourceId: id.optional(),
 });
 
 export const blockInput = z.object({
   start: isoTime,
   end: isoTime,
   note: z.string().max(200).optional(),
+  resourceId: id.optional(),
 });
 
 export const cancelInput = z.object({
@@ -116,10 +165,16 @@ export const cancelInput = z.object({
   notifyVisitor: z.boolean().optional(),
 });
 
-const RESULTS = {
+type Pair = readonly [string, string];
+
+const RESULTS: Record<'confirm' | 'cancel' | 'rebook', Record<string, Pair>> = {
   confirm: {
     confirmed: ['Bokningen är bekräftad', 'Du får ett mejl med bokningen och en kalenderfil.'],
-    already: ['Bokningen är redan bekräftad', ''],
+    requested: [
+      'Förfrågan är skickad',
+      'Tiden är reserverad åt dig. Du får ett mejl när den är bekräftad, eller om den inte kan tas emot.',
+    ],
+    already: ['Redan bekräftad', ''],
     gone: [
       'Tiden är inte längre ledig',
       'Bekräftelsen kom för sent och tiden har gått till någon annan. Boka gärna en ny tid.',
@@ -128,15 +183,33 @@ const RESULTS = {
     past: ['Tiden har redan passerat', ''],
   },
   cancel: {
-    cancelled: ['Bokningen är avbokad', 'Du får en bekräftelse på avbokningen med mejl.'],
+    cancelled: ['Avbokat', 'Du får en bekräftelse med mejl.'],
     already: ['Bokningen är redan avbokad', ''],
     gone: ['Bokningen finns inte', 'Den kan redan ha avbokats eller tagits bort.'],
     past: [
       'Tiden har redan passerat',
       'Det går inte att avboka i efterhand. Kontakta oss om något blev fel.',
     ],
+    late: [
+      'Det är för sent att avboka här',
+      'Tiden för att avboka på webben har gått ut. Kontakta oss direkt, så hjälper vi dig.',
+    ],
   },
-} as const;
+  rebook: {
+    moved: ['Bokningen är flyttad', 'Du får ett mejl med den nya tiden och en kalenderfil.'],
+    gone: ['Bokningen finns inte', 'Den kan redan ha avbokats eller tagits bort.'],
+    past: ['Tiden har redan passerat', ''],
+    late: [
+      'Det är för sent att boka om här',
+      'Tiden för att boka om på webben har gått ut. Kontakta oss direkt, så hjälper vi dig.',
+    ],
+    taken: ['Den tiden är inte längre ledig', 'Välj en annan tid.'],
+    limit: [
+      'Bokningen har redan flyttats flera gånger',
+      'Kontakta oss direkt om du behöver flytta den igen.',
+    ],
+  },
+};
 
 export interface LinkView {
   status: number;
@@ -144,16 +217,26 @@ export interface LinkView {
   text: string[];
   /** For a GET: the button that POSTs back (confirm or cancel). */
   button?: string;
+  /** For rebooking: the times to move to, by day (value: the new start), and paging. */
+  groups?: { heading: string; choices: { label: string; value: string }[] }[];
+  more?: { label: string; from: string }[];
 }
 
+const dayHeading = new Intl.DateTimeFormat('sv-SE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'UTC',
+});
+
 /**
- * The confirm and cancel links in emails, as data for the page the platform middleware renders
- * at /_booking (plugin routes may not serve HTML). `act: false` (the GET) only describes the
- * booking; `act: true` (the button's POST) confirms or cancels.
+ * The links in emails, as data for the page the platform middleware renders at /_booking (plugin
+ * routes may not serve HTML). Without `act` (the GET) it only describes the booking, or for
+ * rebooking lists free times; `act: true` (a button's POST) confirms, cancels or moves to `t`.
  */
 async function linkView(
   deps: Deps,
-  q: { a: string; b: string; s: string; act?: boolean }
+  q: { a: string; b: string; s: string; act?: boolean; t?: string; from?: string }
 ): Promise<LinkView> {
   if (!(await verifyLink(deps, q.a, q.b, q.s)))
     return {
@@ -164,55 +247,137 @@ async function linkView(
   const booking = await getBooking(deps, q.b);
   if (!booking)
     return { status: 404, title: 'Bokningen finns inte', text: ['Den kan redan ha tagits bort.'] };
-  const what = `${booking.serviceName}, ${swedishWhen(booking)}`;
-  const confirming = q.a === 'confirm';
+  const what = `${bookingWhat(booking)}, ${swedishWhen(booking)}`;
+  const action = q.a as 'confirm' | 'cancel' | 'rebook';
+  const answer = (result: string): LinkView => {
+    const [title, text] = RESULTS[action][result] ?? ['Klart', ''];
+    return { status: 200, title, text: [what, text].filter(Boolean) };
+  };
+
+  if (action === 'rebook') {
+    if (q.act && q.t) {
+      const result = await rebook(deps, q.b, q.t);
+      if (result !== 'moved') return answer(result);
+      const moved = await getBooking(deps, q.b);
+      const [title, text] = RESULTS.rebook.moved!;
+      return {
+        status: 200,
+        title,
+        text: [moved ? `${bookingWhat(moved)}, ${swedishWhen(moved)}` : what, text],
+      };
+    }
+    const options = await rebookOptions(deps, q.b, q.from);
+    if (options.state !== 'ok') return answer(options.state);
+    const groups = options.days
+      .filter((d) => d.starts.length)
+      .map((d) => ({
+        heading: dayHeading.format(new Date(`${d.date}T12:00:00Z`)),
+        choices: d.starts.map((s) => ({ label: s.time, value: s.start })),
+      }));
+    const last = options.days.at(-1)?.date;
+    const first = options.days[0]?.date;
+    const more: { label: string; from: string }[] = [];
+    if (first && q.from && q.from > toLocal(deps.now()).date)
+      more.push({ label: '← Tidigare datum', from: addDays(first, -14) });
+    if (last && last < options.lastDate)
+      more.push({ label: 'Senare datum →', from: addDays(last, 1) });
+    return {
+      status: 200,
+      title: 'Boka om',
+      text: [
+        `Nu: ${what}`,
+        groups.length ? 'Välj en ny tid:' : 'Inga lediga tider de här dagarna.',
+      ],
+      groups,
+      more,
+    };
+  }
+
+  const confirming = action === 'confirm';
   if (!q.act)
     return {
       status: 200,
-      title: confirming ? 'Bekräfta bokningen' : 'Avboka',
+      title: confirming
+        ? booking.mode === 'request'
+          ? 'Bekräfta förfrågan'
+          : 'Bekräfta bokningen'
+        : 'Avboka',
       text: [what],
-      button: confirming ? 'Bekräfta bokningen' : 'Avboka tiden',
+      button: confirming
+        ? booking.mode === 'request'
+          ? 'Skicka förfrågan'
+          : 'Bekräfta bokningen'
+        : 'Avboka tiden',
     };
-  const result = confirming ? await confirm(deps, q.b) : await cancel(deps, q.b, 'visitor');
-  const [title, text] = (
-    RESULTS[confirming ? 'confirm' : 'cancel'] as Record<string, readonly [string, string]>
-  )[result]!;
-  return { status: 200, title, text: [what, text].filter(Boolean) };
+  return answer(confirming ? await confirm(deps, q.b) : await cancel(deps, q.b, 'visitor'));
 }
+
+const bookingWhat = (b: { serviceName: string; resourceName?: string }) =>
+  b.resourceName ? `${b.serviceName} hos ${b.resourceName}` : b.serviceName;
 
 export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
   const withDeps =
     <I>(fn: (deps: Deps, input: I, ctx: Ctx) => Promise<unknown>) =>
     (ctx: Ctx) =>
-      run(() => fn(makeDeps(ctx), ctx.input as I, ctx));
+      run(async () => fn(await makeDeps(ctx), ctx.input as I, ctx));
 
   return {
     // --- Public ---
     services: {
       public: true,
       input: z.object({}).optional(),
-      handler: withDeps(async (deps) => ({
-        timeZone: TIME_ZONE,
-        items: (await listServices(deps, true)).map(
-          ({ id, name, description, durationMinutes }) => ({
-            id,
-            name,
-            description,
-            durationMinutes,
-          })
-        ),
-      })),
+      handler: withDeps(async (deps) => {
+        const resources = await listResources(deps, true);
+        return {
+          timeZone: TIME_ZONE,
+          ...(deps.turnstileSiteKey ? { turnstileSiteKey: deps.turnstileSiteKey } : {}),
+          items: (await listServices(deps, true))
+            .map((s) => {
+              const by = resources.filter(
+                (r) => !r.serviceIds?.length || r.serviceIds.includes(s.id)
+              );
+              return {
+                id: s.id,
+                name: s.name,
+                ...(s.description ? { description: s.description } : {}),
+                durationMinutes: s.durationMinutes,
+                ...(s.price ? { price: s.price } : {}),
+                mode: s.mode ?? 'instant',
+                ...(s.cancelHours ? { cancelHours: s.cancelHours } : {}),
+                questions: s.questions ?? [],
+                resources: by.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  ...(r.description ? { description: r.description } : {}),
+                  durationMinutes: r.durations?.[s.id] ?? s.durationMinutes,
+                })),
+              };
+            })
+            // With resources, a service nobody offers can't be booked.
+            .filter((s) => resources.length === 0 || s.resources.length > 0),
+        };
+      }),
     },
     slots: {
       public: true,
       input: z.object({
         serviceId: id,
+        resourceId: id.optional(),
         from: z.string().max(10).optional(),
         days: z.number().int().min(1).max(62).optional(),
       }),
       handler: withDeps(
-        async (deps, input: { serviceId: string; from?: string; days?: number }) => {
-          const result = await slots(deps, input.serviceId, input.from, input.days ?? 14);
+        async (
+          deps,
+          input: { serviceId: string; resourceId?: string; from?: string; days?: number }
+        ) => {
+          const result = await slots(
+            deps,
+            input.serviceId,
+            input.from,
+            input.days ?? 14,
+            input.resourceId
+          );
           return {
             timeZone: TIME_ZONE,
             service: {
@@ -220,6 +385,7 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
               name: result.service.name,
               durationMinutes: result.service.durationMinutes,
             },
+            resources: result.resources,
             firstDate: result.firstDate,
             lastDate: result.lastDate,
             days: result.days,
@@ -231,12 +397,15 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
       public: true,
       input: z.object({
         serviceId: id,
+        resourceId: id.optional(),
         start: isoTime,
         name: z.string().max(200),
         email: z.string().max(300),
         phone: z.string().max(100).optional(),
         message: z.string().max(2000).optional(),
+        answers: z.record(z.string().max(40), z.string().max(2000)).optional(),
         website: z.string().max(500).optional(),
+        turnstileToken: z.string().max(4096).optional(),
       }),
       handler: withDeps((deps, input: Parameters<typeof book>[1], ctx) =>
         book(deps, input, ctx.requestMeta?.ip ?? null)
@@ -249,10 +418,10 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
         b: id,
         s: z.string().max(100),
         act: z.boolean().optional(),
+        t: isoTime.optional(),
+        from: z.string().max(10).optional(),
       }),
-      handler: withDeps((deps, input: { a: string; b: string; s: string; act?: boolean }) =>
-        linkView(deps, input)
-      ),
+      handler: withDeps((deps, input: Parameters<typeof linkView>[1]) => linkView(deps, input)),
     },
     feed: {
       public: true,
@@ -260,7 +429,8 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
       request: { body: 'none' },
       response: 'raw',
       handler: async (ctx: Ctx) => {
-        const text = await feed(makeDeps(ctx), String(ctx.input?.k ?? ''));
+        const r = ctx.input?.r ? String(ctx.input.r) : undefined;
+        const text = await feed(await makeDeps(ctx), String(ctx.input?.k ?? ''), r);
         if (text === null)
           return pluginResponse({ status: 404, body: { kind: 'text', value: 'Not found' } });
         return pluginResponse({
@@ -272,6 +442,26 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
           body: { kind: 'text', value: text },
         });
       },
+    },
+
+    // --- Admin: resources (people, chairs, rooms) ---
+    'resources/list': {
+      permission: 'plugins:read',
+      handler: withDeps(async (deps) => ({ items: await listResources(deps) })),
+    },
+    'resources/save': {
+      permission: 'plugins:manage',
+      input: resourceInput,
+      handler: withDeps((deps, input: z.infer<typeof resourceInput>) =>
+        saveResource(deps, input as never)
+      ),
+    },
+    'resources/delete': {
+      permission: 'plugins:manage',
+      input: z.object({ id }),
+      handler: withDeps(async (deps, input: { id: string }) => ({
+        deleted: await deleteResource(deps, input.id),
+      })),
     },
 
     // --- Admin: services, opening hours, blocked time ---
@@ -339,6 +529,20 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
         return booking;
       }),
     },
+    'bookings/approve': {
+      permission: 'plugins:manage',
+      input: z.object({ id }),
+      handler: withDeps(async (deps, input: { id: string }) => ({
+        result: await approve(deps, input.id),
+      })),
+    },
+    'bookings/decline': {
+      permission: 'plugins:manage',
+      input: z.object({ id, reason: z.string().max(500).optional() }),
+      handler: withDeps(async (deps, input: { id: string; reason?: string }) => ({
+        result: await decline(deps, input.id, input.reason),
+      })),
+    },
     'bookings/cancel': {
       permission: 'plugins:manage',
       input: cancelInput,
@@ -353,8 +557,17 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
       handler: withDeps(async (deps) => ({
         ...(await getSettings(deps)),
         platformNotify: deps.platformNotify,
+        turnstile: !!deps.verifyHuman,
         calendar: await getCalendar(deps),
         feedUrl: await feedUrl(deps),
+        resources: await Promise.all(
+          (await listResources(deps)).map(async (r) => ({
+            id: r.id,
+            name: r.name,
+            calendar: await getCalendar(deps, r.id),
+            feedUrl: await feedUrl(deps, r.id),
+          }))
+        ),
       })),
     },
     'settings/update': {
@@ -369,9 +582,9 @@ export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
     },
     'calendar/set': {
       permission: 'plugins:manage',
-      input: z.object({ url: z.string().max(2000).nullable() }),
-      handler: withDeps(async (deps, input: { url: string | null }) => ({
-        calendar: await setCalendar(deps, input.url),
+      input: z.object({ url: z.string().max(2000).nullable(), resourceId: id.optional() }),
+      handler: withDeps(async (deps, input: { url: string | null; resourceId?: string }) => ({
+        calendar: await setCalendar(deps, input.url, input.resourceId),
       })),
     },
     'feed/rotate': {
@@ -397,15 +610,19 @@ export function bookingMcpTools() {
   return {
     list_services: {
       description:
-        'List the bookable services (id, name, description, durationMinutes, bufferMinutes, active, position).',
+        'List the bookable services (id, name, description, durationMinutes, bufferMinutes, active, ' +
+        'position, price, mode, cancelHours, questions).',
       route: 'services/list',
       input: z.object({}),
     },
     save_service: {
       description:
         'Create a service (no id) or change one (id; only what you send changes). Lengths in minutes, ' +
-        'multiples of 5; bufferMinutes is free time kept after each booking. Names in Swedish unless ' +
-        'asked otherwise.',
+        'multiples of 5; bufferMinutes is free time kept after each booking. price: {kind: fixed|from, ' +
+        'amount in whole kronor} or null; mode: instant (booked at once) or request (the business ' +
+        'approves each); cancelHours: visitors can cancel or move until this many hours before; ' +
+        'questions: up to 5 extra form fields {id, label, required, long}. Names and labels in ' +
+        'Swedish unless asked otherwise.',
       route: 'services/save',
       input: serviceInput,
     },
@@ -431,6 +648,30 @@ export function bookingMcpTools() {
       route: 'schedule/update',
       input: scheduleInput,
     },
+    list_resources: {
+      description:
+        'List who or what can be booked: people (stylists, tattoo artists), chairs or rooms, with ' +
+        "their own hours (absent: the site's), time off (exceptions), services (serviceIds; " +
+        'empty: all) and own lengths (durations by service id). No resources: the business as one.',
+      route: 'resources/list',
+      input: z.object({}),
+    },
+    save_resource: {
+      description:
+        'Create a resource (no id) or change one (id; only what you send changes). hours: 7 lists ' +
+        "of {start,end}, Monday first, or null for the site's opening hours; exceptions: dates " +
+        'with other hours (an empty list is time off) and replaces the whole list, so read it ' +
+        'first; serviceIds: what it offers (empty: all); durations: its own length per service id.',
+      route: 'resources/save',
+      input: resourceInput,
+    },
+    delete_resource: {
+      description:
+        'Delete a resource without upcoming bookings. Prefer active: false to stop new bookings.',
+      route: 'resources/delete',
+      input: z.object({ id }),
+      destructive: true,
+    },
     list_blocked_time: {
       description:
         'List blocked time (holidays, other appointments) from now on, or from `from` (ISO).',
@@ -440,8 +681,8 @@ export function bookingMcpTools() {
     block_time: {
       description:
         'Block time so it cannot be booked: start and end as ISO date-times with offset (e.g. ' +
-        '2026-12-24T00:00:00+01:00), an optional note. Existing bookings are not cancelled; the answer ' +
-        'says how many overlap.',
+        "2026-12-24T00:00:00+01:00), an optional note, and resourceId for one person's time off " +
+        '(absent: everyone). Existing bookings are not cancelled; the answer says how many overlap.',
       route: 'blocks/create',
       input: blockInput,
     },
@@ -453,8 +694,9 @@ export function bookingMcpTools() {
     },
     list_bookings: {
       description:
-        'List bookings by start time, optionally from/to (ISO) and status (pending = not yet ' +
-        `confirmed by the visitor, confirmed, cancelled, expired). ${personal}`,
+        'List bookings by start time, optionally from/to (ISO), resourceId and status (pending: ' +
+        'not yet confirmed by the visitor; requested: waiting for the business to approve or ' +
+        `decline; confirmed; cancelled; declined; expired). ${personal}`,
       route: 'bookings/list',
       input: bookingsInput,
     },
@@ -462,6 +704,21 @@ export function bookingMcpTools() {
       description: `Get one booking by id. ${personal}`,
       route: 'bookings/get',
       input: z.object({ id }),
+    },
+    approve_booking: {
+      description:
+        'Approve a requested booking (status requested): it is confirmed and the visitor emailed. ' +
+        'Ask the user first.',
+      route: 'bookings/approve',
+      input: z.object({ id }),
+    },
+    decline_booking: {
+      description:
+        'Decline a requested booking, with an optional reason (Swedish) shown to the visitor. ' +
+        'The time is free again. Ask the user first.',
+      route: 'bookings/decline',
+      input: z.object({ id, reason: z.string().max(500).optional() }),
+      destructive: true,
     },
     cancel_booking: {
       description:
