@@ -103,6 +103,37 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
   confirmation message are set per form, so those can be Swedish. The notification email is
   English, like the admin.
 
+## Booking (Bokning)
+
+Every site has Himlio's booking plugin (`himlio-booking`): visitors book a time for a service,
+in Swedish, without a separate booking service.
+
+- **Setup**: services (name, length, buffer after each booking), opening hours per weekday,
+  dates with other hours or closed, step between start times, minimum notice and how far ahead
+  people can book, and blocked time. Times are Europe/Stockholm, across daylight saving changes.
+  Lengths, buffers and times are on whole 5 minutes.
+- **Booking**: the visitor picks a time and gets an email with a link; the booking counts once
+  they confirm it (within 30 minutes, or later if the time is still free). Then the visitor gets
+  a confirmation with an .ics file and a cancel link, and the customer a notification with an
+  .ics file. Reminders go out a day before (not for bookings made less than 36 hours ahead).
+  Visitors can cancel until the start. The links open a page at `/_booking` (rendered by the
+  platform middleware; a GET only shows the booking, the button confirms or cancels).
+- **No double bookings**: every 5 minutes a booking keeps busy (length and buffer) is stored once,
+  create-if-absent, so of two overlapping bookings only one is made.
+- **Calendars**: a secret iCal feed of the bookings to subscribe to in any calendar app, and the
+  customer's own calendar's secret iCal address in: read every 5 minutes, only busy times are kept
+  (never what the events are), recurring events included, events marked free ignored.
+- **Notifications** go to the addresses set in the booking settings, or else `himlio.json`
+  `forms.notify`. Emails are sent through the platform's `EMAIL` binding with the .ics attached;
+  without `email.from` in `himlio.json` they are written to the log.
+- **Abuse protection**: a honeypot, at most 5 bookings per IP address an hour, 5 per email
+  address a day, 3 upcoming per email address, 30 unconfirmed per site an hour. The first email
+  (to an unproven address) contains nothing the visitor typed.
+- **Personal data**: bookings are deleted 12 months after the appointment; unconfirmed and
+  cancelled-before-confirmation ones after 30 days. Blocked time is deleted a year after it ends.
+- Maintenance (expiring unconfirmed bookings, reminders, deletion, reading the calendar) runs on
+  the platform's minute cron, every 5 minutes.
+
 ## Extension points
 
 This table is the whole public API. A breaking change to it is a major version.
@@ -157,6 +188,12 @@ and enforces:
   builder), `__list_submissions` (per form, paged) and `__get_submission` (editors and up). The
   forms rules above apply; recipients, webhook and autoresponder can't be set; nothing deletes
   or exports. Submissions are personal data, and the instructions say so.
+- **Booking** (scope `mcp:tools:himlio-booking` or `mcp:tools`; turned on by the platform):
+  `himlio-booking__list_services`, `__save_service`, `__delete_service`, `__get_schedule`,
+  `__update_schedule`, `__list_blocked_time`, `__block_time`, `__unblock_time` (writes: admins),
+  `__list_bookings`, `__get_booking` (editors and up) and `__cancel_booking` (admins). The
+  notification addresses, the customer's calendar address and the feed address can't be read or
+  set by connectors.
 
 On connect, connectors receive instructions, among them: **when changing a published item with
 `content_update`, pass `status: "published"` (or call `content_publish`)**, or the change may
