@@ -413,3 +413,23 @@ test('times shown are Stockholm local', async () => {
   const s = await slots(t.deps, t.service.id, '2026-11-24', 1);
   assert.equal(toLocal(Date.parse(s.days[0].starts[0].start)).time, s.days[0].starts[0].time);
 });
+
+test("Reply-To: visitors' emails go to the site's reply-to; the customer's to the visitor", async () => {
+  const t = await setup();
+  t.deps.site.replyTo = 'anton@walterco.se';
+  const id = await bookAndConfirm(t, at('2026-11-26', '10:00'));
+  t.clock.now = fromLocal('2026-11-25', '10:30');
+  await maintenance(t.deps, true); // reminder
+  await cancel(t.deps, id, 'visitor');
+  const byTo = (to) => t.sent.filter((m) => m.to === to);
+  const toVisitor = byTo('anna@example.com');
+  assert.equal(toVisitor.length, 4); // confirm request, confirmed, reminder, cancelled
+  for (const m of toVisitor) assert.equal(m.replyTo, 'anton@walterco.se', m.subject);
+  for (const m of byTo('agare@salong.example'))
+    assert.equal(m.replyTo, 'anna@example.com', m.subject);
+
+  const u = await setup(); // no reply-to set: none on visitors' emails
+  await bookAndConfirm(u, at('2026-11-26', '10:00'));
+  for (const m of u.sent.filter((m) => m.to === 'anna@example.com'))
+    assert.equal(m.replyTo, undefined);
+});

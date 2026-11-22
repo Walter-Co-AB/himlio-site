@@ -204,3 +204,17 @@ test('invalid options are refused', () => {
     /src\/worker\.ts/
   );
 });
+
+test('readHimlio: email.reply_to becomes email.replyTo; null or absent is none; invalid fails', () => {
+  const read = (email) =>
+    readHimlio(site({ 'himlio.json': JSON.stringify({ slug: 'a', name: 'A', email }) })).email;
+  assert.deepEqual(read({ from: 'noreply@himlio.app', reply_to: 'anton@walterco.se' }), {
+    from: 'noreply@himlio.app',
+    replyTo: 'anton@walterco.se',
+  });
+  assert.deepEqual(read({ from: 'noreply@himlio.app', reply_to: null }), {
+    from: 'noreply@himlio.app',
+  });
+  assert.deepEqual(read({ from: 'noreply@himlio.app' }), { from: 'noreply@himlio.app' });
+  assert.throws(() => read({ from: 'noreply@himlio.app', reply_to: 'not an address' }), /reply_to/);
+});

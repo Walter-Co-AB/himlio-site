@@ -134,7 +134,8 @@ in Swedish, without a separate booking service.
   customer's own calendar's secret iCal address in: read every 5 minutes, only busy times are kept
   (never what the events are), recurring events included, events marked free ignored.
 - **Notifications** go to the addresses set in the booking settings, or else `himlio.json`
-  `forms.notify`. Emails are sent through the platform's `EMAIL` binding with the .ics attached;
+  `forms.notify`, with Reply-To set to the visitor. Emails to visitors have Reply-To
+  `himlio.json` `email.reply_to` when it is set (none otherwise). Emails are sent through the platform's `EMAIL` binding with the .ics attached;
   without `email.from` in `himlio.json` they are written to the log.
 - **Abuse protection**: a honeypot, at most 5 bookings per IP address an hour, 5 per email
   address a day, 3 upcoming per email address, 30 unconfirmed per site an hour. The first email
