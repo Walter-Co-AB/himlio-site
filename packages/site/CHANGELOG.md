@@ -1,10 +1,22 @@
 # Changelog
 
-What changed in each version of `@himlio/site`, and under **Sites** what a site needs to do when
+What changed in each version of `@himlio/site`, and under "Sites" what a site needs to do when
 it updates (see "Updating `@himlio/site`" in `docs/site-agents.md`). **Required** steps must be
 done with the update; **Optional** ones are up to the site, usually because they concern code
 the site owns (copied from the starter once). Starter changes are listed so a site can pick them
 up; they never reach a site by themselves.
+
+Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
+version, newest first, each with a `### Sites` subsection.
+
+## 1.14.1
+
+- The changelog's format is fixed for tools: `## X.Y.Z` per version with a `### Sites`
+  subsection.
+
+### Sites
+
+Nothing.
 
 ## 1.14.0
 
@@ -12,7 +24,7 @@ up; they never reach a site by themselves.
   `AGENTS.md` imports them and keeps only notes about the site itself.
 - This changelog, with what sites need to do per version.
 
-**Sites**
+### Sites
 
 - Required: replace the rules in `AGENTS.md` with the import, keeping anything that is only
   about this site under "This site":
@@ -51,7 +63,7 @@ up; they never reach a site by themselves.
   in the site's language, the block gallery, a missing page).
 - Starter: written in English; interface text from `src/utils/strings.ts` (`en`, `sv`).
 
-**Sites**
+### Sites
 
 - Required: anything in the site that names the entry `foretagsuppgifter` (docs, scripts) now
   says `company-details`. `contactDetails()` finds the entry either way.
@@ -63,7 +75,9 @@ up; they never reach a site by themselves.
 
 - The block gallery is `/block-gallery`, with English titles and labels.
 
-**Sites**: nothing.
+### Sites
+
+Nothing.
 
 ## 1.12.0
 
@@ -76,7 +90,7 @@ up; they never reach a site by themselves.
   Hero `layout` (`standard`, `cover`) with migration `0003_hero_layout`; headings hyphenate long
   words; a long pricing badge wraps.
 
-**Sites**
+### Sites
 
 - Optional: in `global.css` (or the site's heading styles), `hyphens: auto` and
   `overflow-wrap: anywhere` on `h1`–`h6`; in `Pricing.astro`, let `.plan__badge` wrap (no
@@ -87,13 +101,17 @@ up; they never reach a site by themselves.
 - Booking for salons, tattoo studios and the like: staff and resources, prices, request mode,
   questions, cancellation deadline, rebooking, Turnstile one-step booking.
 
-**Sites**: nothing. Turnstile turns on when the platform sets its keys.
+### Sites
+
+Nothing. Turnstile turns on when the platform sets its keys.
 
 ## 1.10.0
 
 - Visitors' booking emails get Reply-To from `himlio.json` `email.reply_to`.
 
-**Sites**: nothing.
+### Sites
+
+Nothing.
 
 ## 1.9.0
 
@@ -101,12 +119,12 @@ up; they never reach a site by themselves.
 - Starter: a Booking section (`marketing_booking`, `BookingSection.astro`, migration
   `0002_booking_section`).
 
-**Sites**
+### Sites
 
 - Optional: to place booking in its own section, copy `BookingSection.astro`, its registration
   in `blocks/index.ts` and `MarketingBlocks.astro`, the migration and the seed entry from the
   starter. Without it, booking can be placed as a Booking block in a Text section.
 
-## 1.8.0 and earlier
+## Earlier versions
 
-See the git history of `Walter-Co-AB/himlio-site`.
+Versions 1.8.0 and earlier: see the git history of `Walter-Co-AB/himlio-site`.

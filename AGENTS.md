@@ -31,7 +31,9 @@ Rules for AI coding tools and people working on the Himlio platform repo.
 5. **Pin what sites depend on:** EmDash and `@emdash-cms/cloudflare` exactly, actions by commit
    SHA, new npm packages at a version at least 7 days old.
 6. **Releases go through a tag.** Bump `packages/site/package.json`, add its entry to
-   `packages/site/CHANGELOG.md` (with what sites need to do), merge, then ask Anton or the
+   `packages/site/CHANGELOG.md` (`## X.Y.Z` with a `### Sites` subsection: infra's upgrade pull
+   requests parse it), and keep the npm version, the git tag and the starter's `build.yml@vX.Y.Z`
+   the same (publish.yml and a test check), merge, then ask Anton or the
    infrastructure agent to push `vX.Y.Z` (only org admins may create `v*` tags). `publish.yml`
    publishes it with npm Trusted Publishing. Never publish by hand.
 

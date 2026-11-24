@@ -70,3 +70,20 @@ test('the changelog has an entry for this version, and the starter AGENTS.md imp
   const agents = readFileSync(new URL('../../../starter/AGENTS.md', import.meta.url), 'utf8');
   assert.match(agents, /^@node_modules\/@himlio\/site\/docs\/site-agents\.md$/m);
 });
+
+test('changelog format: ## X.Y.Z per version, newest first, each with a ### Sites subsection', () => {
+  const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  const sections = changelog.split(/^## /m).slice(1);
+  const versions = sections.filter((s) => /^\d+\.\d+\.\d+\n/.test(s)).map((s) => s.split('\n')[0]);
+  assert.ok(versions.length > 0);
+  for (const section of sections.filter((s) => /^\d+\.\d+\.\d+\n/.test(s)))
+    assert.match(section, /^### Sites$/m, `## ${section.split('\n')[0]} has no ### Sites`);
+  const key = (v) => v.split('.').map(Number);
+  for (let i = 1; i < versions.length; i++) {
+    const [a, b] = [key(versions[i - 1]), key(versions[i])];
+    assert.ok(
+      a[0] > b[0] || (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && a[2] > b[2]))),
+      `${versions[i - 1]} before ${versions[i]}`
+    );
+  }
+});
