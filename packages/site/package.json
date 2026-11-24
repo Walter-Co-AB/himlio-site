@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.12.1",
+  "version": "1.13.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",
@@ -84,6 +84,10 @@
     "./booking/client": {
       "types": "./dist/booking/client.d.ts",
       "default": "./dist/booking/client.js"
+    },
+    "./booking/text": {
+      "types": "./dist/booking/strings.d.ts",
+      "default": "./dist/booking/strings.js"
     },
     "./booking/admin": {
       "types": "./dist/booking/admin.d.ts",

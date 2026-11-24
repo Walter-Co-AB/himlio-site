@@ -2,17 +2,22 @@
 // Himlio's booking form: service, date, time, contact details. Place it in a page or component:
 //   import { Booking } from '@himlio/site/booking';
 //   <Booking />                      (the visitor picks among the active services)
-//   <Booking service="Klippning" />  (one service, by name or id)
+//   <Booking service="Haircut" />    (one service, by name or id)
 //   <Booking resource="Anna" />      (one person, chair or room, by name or id)
 // The contact fields use the Forms plugin's .ec-form classes, so a site's form styles apply; the
-// date and time picker uses .hb-booking-* classes. Text in Swedish. Needs JavaScript; without
+// date and time picker uses .hb-booking-* classes. Text in the site's language (himlio.json
+// locale; @himlio/site/booking/text). Needs JavaScript; without
 // it, the visitor is asked to turn it on.
 interface Props {
   service?: string;
   resource?: string;
   class?: string;
 }
+import { himlio } from '@himlio/site/runtime';
+import { bookingText } from '@himlio/site/booking/text';
+
 const { service, resource, class: className } = Astro.props;
+const t = bookingText(himlio.locale);
 const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
 ---
 
@@ -21,29 +26,30 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
   data-hb-booking
   data-service={service || undefined}
   data-resource={resource || undefined}
+  data-lang={t.lang}
 >
   <p class="hb-booking-noscript" data-hb-noscript>
-    <noscript>Aktivera JavaScript för att boka en tid.</noscript>
+    <noscript>{t.noScript}</noscript>
   </p>
   <form class="ec-form hb-booking-form" novalidate={false} hidden>
     <fieldset class="hb-booking-part" data-hb-services hidden>
-      <legend class="ec-form-label">Vad vill du boka?</legend>
+      <legend class="ec-form-label">{t.whatLegend}</legend>
       <div class="hb-booking-options" data-hb-service-list></div>
     </fieldset>
 
     <fieldset class="hb-booking-part" data-hb-resources hidden>
-      <legend class="ec-form-label">Hos vem?</legend>
+      <legend class="ec-form-label">{t.whoLegend}</legend>
       <div class="hb-booking-options" data-hb-resource-list></div>
     </fieldset>
 
     <fieldset class="hb-booking-part" data-hb-dates hidden>
-      <legend class="ec-form-label">Datum</legend>
+      <legend class="ec-form-label">{t.dateLegend}</legend>
       <div class="hb-booking-dates-nav">
-        <button type="button" class="hb-booking-nav" data-hb-prev aria-label="Tidigare datum">
+        <button type="button" class="hb-booking-nav" data-hb-prev aria-label={t.earlierDates}>
           ‹
         </button>
         <div class="hb-booking-dates" data-hb-date-list></div>
-        <button type="button" class="hb-booking-nav" data-hb-next aria-label="Senare datum">
+        <button type="button" class="hb-booking-nav" data-hb-next aria-label={t.laterDates}>
           ›
         </button>
       </div>
@@ -51,7 +57,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
 
     <fieldset class="hb-booking-part" data-hb-times hidden>
       <legend class="ec-form-label" data-hb-time-legend>
-        Tid
+        {t.timeLegend}
       </legend>
       <div class="hb-booking-times" data-hb-time-list></div>
     </fieldset>
@@ -61,7 +67,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
       <p class="hb-booking-note" data-hb-note hidden></p>
       <div class="ec-form-field">
         <label class="ec-form-label" for={`${id}-name`}>
-          Namn
+          {t.name}
           <span class="ec-form-required" aria-hidden="true">
             *
           </span>
@@ -77,7 +83,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
       </div>
       <div class="ec-form-field ec-form-field--half">
         <label class="ec-form-label" for={`${id}-email`}>
-          E-post
+          {t.email}
           <span class="ec-form-required" aria-hidden="true">
             *
           </span>
@@ -94,7 +100,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
       </div>
       <div class="ec-form-field ec-form-field--half">
         <label class="ec-form-label" for={`${id}-phone`}>
-          Telefon
+          {t.phone}
         </label>
         <input
           class="ec-form-input"
@@ -108,7 +114,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
       <div class="hb-booking-questions" data-hb-questions></div>
       <div class="ec-form-field">
         <label class="ec-form-label" for={`${id}-message`}>
-          Meddelande
+          {t.message}
         </label>
         <textarea
           class="ec-form-input"
@@ -119,7 +125,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
         ></textarea>
       </div>
       <div class="ec-form-field" style="position:absolute;left:-9999px;" aria-hidden="true">
-        <label for={`${id}-website`}>Lämna tomt</label>
+        <label for={`${id}-website`}>{t.honeypot}</label>
         <input id={`${id}-website`} name="website" tabindex="-1" autocomplete="off" />
       </div>
     </fieldset>
@@ -128,7 +134,7 @@ const id = `hb-${Math.random().toString(36).slice(2, 8)}`;
 
     <div class="ec-form-nav">
       <button type="submit" class="ec-form-submit" data-hb-submit hidden>
-        Boka
+        {t.book}
       </button>
     </div>
   </form>

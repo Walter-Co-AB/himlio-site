@@ -45,7 +45,8 @@ import {
   verifyLink,
   type Deps,
 } from './core.js';
-import { swedishWhen } from './messages.js';
+import { visitorWhen, what } from './messages.js';
+import { intlLocale, type BookingText } from './strings.js';
 import { addDays, TIME_ZONE, toLocal } from './time.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- EmDash's RouteContext
@@ -165,52 +166,6 @@ export const cancelInput = z.object({
   notifyVisitor: z.boolean().optional(),
 });
 
-type Pair = readonly [string, string];
-
-const RESULTS: Record<'confirm' | 'cancel' | 'rebook', Record<string, Pair>> = {
-  confirm: {
-    confirmed: ['Bokningen är bekräftad', 'Du får ett mejl med bokningen och en kalenderfil.'],
-    requested: [
-      'Förfrågan är skickad',
-      'Tiden är reserverad åt dig. Du får ett mejl när den är bekräftad, eller om den inte kan tas emot.',
-    ],
-    already: ['Redan bekräftad', ''],
-    gone: [
-      'Tiden är inte längre ledig',
-      'Bekräftelsen kom för sent och tiden har gått till någon annan. Boka gärna en ny tid.',
-    ],
-    cancelled: ['Bokningen är avbokad', 'Den här bokningen har avbokats. Boka gärna en ny tid.'],
-    past: ['Tiden har redan passerat', ''],
-  },
-  cancel: {
-    cancelled: ['Avbokat', 'Du får en bekräftelse med mejl.'],
-    already: ['Bokningen är redan avbokad', ''],
-    gone: ['Bokningen finns inte', 'Den kan redan ha avbokats eller tagits bort.'],
-    past: [
-      'Tiden har redan passerat',
-      'Det går inte att avboka i efterhand. Kontakta oss om något blev fel.',
-    ],
-    late: [
-      'Det är för sent att avboka här',
-      'Tiden för att avboka på webben har gått ut. Kontakta oss direkt, så hjälper vi dig.',
-    ],
-  },
-  rebook: {
-    moved: ['Bokningen är flyttad', 'Du får ett mejl med den nya tiden och en kalenderfil.'],
-    gone: ['Bokningen finns inte', 'Den kan redan ha avbokats eller tagits bort.'],
-    past: ['Tiden har redan passerat', ''],
-    late: [
-      'Det är för sent att boka om här',
-      'Tiden för att boka om på webben har gått ut. Kontakta oss direkt, så hjälper vi dig.',
-    ],
-    taken: ['Den tiden är inte längre ledig', 'Välj en annan tid.'],
-    limit: [
-      'Bokningen har redan flyttats flera gånger',
-      'Kontakta oss direkt om du behöver flytta den igen.',
-    ],
-  },
-};
-
 export interface LinkView {
   status: number;
   title: string;
@@ -222,12 +177,21 @@ export interface LinkView {
   more?: { label: string; from: string }[];
 }
 
-const dayHeading = new Intl.DateTimeFormat('sv-SE', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-});
+const dayHeadings = new Map<string, Intl.DateTimeFormat>();
+const dayHeading = (text: BookingText, date: string) => {
+  let f = dayHeadings.get(text.lang);
+  if (!f)
+    dayHeadings.set(
+      text.lang,
+      (f = new Intl.DateTimeFormat(intlLocale(text.lang), {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        timeZone: 'UTC',
+      }))
+    );
+  return f.format(new Date(`${date}T12:00:00Z`));
+};
 
 /**
  * The links in emails, as data for the page the platform middleware renders at /_booking (plugin
@@ -238,20 +202,23 @@ async function linkView(
   deps: Deps,
   q: { a: string; b: string; s: string; act?: boolean; t?: string; from?: string }
 ): Promise<LinkView> {
+  const t = deps.site.text;
+  const page = t.page;
   if (!(await verifyLink(deps, q.a, q.b, q.s)))
-    return {
-      status: 404,
-      title: 'Länken fungerar inte',
-      text: ['Kontrollera att hela länken från mejlet kom med.'],
-    };
+    return { status: 404, title: page.badLink[0], text: [page.badLink[1]] };
   const booking = await getBooking(deps, q.b);
-  if (!booking)
-    return { status: 404, title: 'Bokningen finns inte', text: ['Den kan redan ha tagits bort.'] };
-  const what = `${bookingWhat(booking)}, ${swedishWhen(booking)}`;
+  if (!booking) return { status: 404, title: page.notFound[0], text: [page.notFound[1]] };
+  const whatWhen = (b: {
+    serviceName: string;
+    resourceName?: string;
+    start: string;
+    end: string;
+  }) => `${what(t, b)}, ${visitorWhen(t, b)}`;
+  const current = whatWhen(booking);
   const action = q.a as 'confirm' | 'cancel' | 'rebook';
   const answer = (result: string): LinkView => {
-    const [title, text] = RESULTS[action][result] ?? ['Klart', ''];
-    return { status: 200, title, text: [what, text].filter(Boolean) };
+    const [title, text] = page.results[action][result] ?? [page.done, ''];
+    return { status: 200, title, text: [current, text].filter(Boolean) };
   };
 
   if (action === 'rebook') {
@@ -259,35 +226,27 @@ async function linkView(
       const result = await rebook(deps, q.b, q.t);
       if (result !== 'moved') return answer(result);
       const moved = await getBooking(deps, q.b);
-      const [title, text] = RESULTS.rebook.moved!;
-      return {
-        status: 200,
-        title,
-        text: [moved ? `${bookingWhat(moved)}, ${swedishWhen(moved)}` : what, text],
-      };
+      const [title, text] = page.results.rebook.moved!;
+      return { status: 200, title, text: [moved ? whatWhen(moved) : current, text] };
     }
     const options = await rebookOptions(deps, q.b, q.from);
     if (options.state !== 'ok') return answer(options.state);
     const groups = options.days
       .filter((d) => d.starts.length)
       .map((d) => ({
-        heading: dayHeading.format(new Date(`${d.date}T12:00:00Z`)),
+        heading: dayHeading(t, d.date),
         choices: d.starts.map((s) => ({ label: s.time, value: s.start })),
       }));
     const last = options.days.at(-1)?.date;
     const first = options.days[0]?.date;
     const more: { label: string; from: string }[] = [];
     if (first && q.from && q.from > toLocal(deps.now()).date)
-      more.push({ label: '← Tidigare datum', from: addDays(first, -14) });
-    if (last && last < options.lastDate)
-      more.push({ label: 'Senare datum →', from: addDays(last, 1) });
+      more.push({ label: page.earlier, from: addDays(first, -14) });
+    if (last && last < options.lastDate) more.push({ label: page.later, from: addDays(last, 1) });
     return {
       status: 200,
-      title: 'Boka om',
-      text: [
-        `Nu: ${what}`,
-        groups.length ? 'Välj en ny tid:' : 'Inga lediga tider de här dagarna.',
-      ],
+      title: page.rebookTitle,
+      text: [page.now(current), groups.length ? page.pickNewTime : page.noTimes],
       groups,
       more,
     };
@@ -299,21 +258,18 @@ async function linkView(
       status: 200,
       title: confirming
         ? booking.mode === 'request'
-          ? 'Bekräfta förfrågan'
-          : 'Bekräfta bokningen'
-        : 'Avboka',
-      text: [what],
+          ? page.confirmRequest
+          : page.confirmBooking
+        : page.cancelTitle,
+      text: [current],
       button: confirming
         ? booking.mode === 'request'
-          ? 'Skicka förfrågan'
-          : 'Bekräfta bokningen'
-        : 'Avboka tiden',
+          ? t.sendRequest
+          : page.confirmBooking
+        : page.cancelButton,
     };
   return answer(confirming ? await confirm(deps, q.b) : await cancel(deps, q.b, 'visitor'));
 }
-
-const bookingWhat = (b: { serviceName: string; resourceName?: string }) =>
-  b.resourceName ? `${b.serviceName} hos ${b.resourceName}` : b.serviceName;
 
 export function bookingRoutes(makeDeps: MakeDeps): Record<string, Route> {
   const withDeps =
@@ -621,8 +577,8 @@ export function bookingMcpTools() {
         'multiples of 5; bufferMinutes is free time kept after each booking. price: {kind: fixed|from, ' +
         'amount in whole kronor} or null; mode: instant (booked at once) or request (the business ' +
         'approves each); cancelHours: visitors can cancel or move until this many hours before; ' +
-        'questions: up to 5 extra form fields {id, label, required, long}. Names and labels in ' +
-        'Swedish unless asked otherwise.',
+        'questions: up to 5 extra form fields {id, label, required, long}. Names and labels are ' +
+        "shown to visitors: in the site's language unless asked otherwise; ids in English.",
       route: 'services/save',
       input: serviceInput,
     },
@@ -714,7 +670,7 @@ export function bookingMcpTools() {
     },
     decline_booking: {
       description:
-        'Decline a requested booking, with an optional reason (Swedish) shown to the visitor. ' +
+        "Decline a requested booking, with an optional reason shown to the visitor (in the site's language). " +
         'The time is free again. Ask the user first.',
       route: 'bookings/decline',
       input: z.object({ id, reason: z.string().max(500).optional() }),

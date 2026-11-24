@@ -35,10 +35,10 @@ const hasHero = blocks.some((block) => block._type === "marketing_hero");
 			<h1 class="display empty-state__title">{title}</h1>
 			{Astro.locals.user && (
 				<>
-					<p class="lead">Sidan har inga sektioner än. Lägg till några i redigeraren och publicera.</p>
+					<p class="lead">This page has no sections yet. Add some in the editor and publish.</p>
 					<div class="actions">
 						<a href={`/_emdash/admin/content/pages/${page.data.id}`} class="btn btn-lg">
-							Redigera sida
+							Edit page
 						</a>
 					</div>
 				</>

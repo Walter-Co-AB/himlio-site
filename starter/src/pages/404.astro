@@ -1,16 +1,17 @@
 ---
 import Base from "../layouts/Base.astro";
+import { t } from "../utils/strings";
 ---
 
-<Base title="Sidan finns inte">
+<Base title={t.notFoundTitle}>
 	<section class="container empty-state">
 		<p class="display not-found__code">404</p>
-		<h1 class="display empty-state__title">Sidan finns inte</h1>
+		<h1 class="display empty-state__title">{t.notFoundTitle}</h1>
 		<p class="lead">
-			Sidan du letar efter finns inte, eller har flyttats.
+			{t.notFoundText}
 		</p>
 		<div class="actions">
-			<a href="/" class="btn btn-lg">Till startsidan</a>
+			<a href="/" class="btn btn-lg">{t.toHomePage}</a>
 		</div>
 	</section>
 </Base>

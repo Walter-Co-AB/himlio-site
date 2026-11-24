@@ -3,7 +3,7 @@
 	"version": "1",
 	"meta": {
 		"name": "Himlio",
-		"description": "Himlio-sajt på EmDashs marknadsmall: sidor byggda av sektioner (block types).",
+		"description": "A Himlio site on EmDash's marketing template: pages built from sections (block types).",
 		"author": "Walter & Co"
 	},
 	"blockTypes": [

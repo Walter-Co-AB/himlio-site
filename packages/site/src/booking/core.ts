@@ -59,6 +59,7 @@ import {
   type Kv,
   type Storage,
 } from './store.js';
+import type { BookingText } from './strings.js';
 import { addDays, DAY_MS, isDate, MINUTE_MS, toLocal } from './time.js';
 import { newSecret, sign, verify } from './tokens.js';
 
@@ -108,8 +109,8 @@ export interface Deps {
   kv: Kv;
   now(): number;
   send(mail: Mail): Promise<void>;
-  /** The site's name and public origin (links in emails). */
-  site: { name: string; url: string; replyTo?: string };
+  /** The site's name, public origin (links in emails) and visitor texts in its language. */
+  site: { name: string; url: string; replyTo?: string; text: BookingText };
   /** Recipients from himlio.json when the admin has set none. */
   platformNotify: readonly string[];
   /** Reads a calendar address (https). */
@@ -121,7 +122,7 @@ export interface Deps {
   log: Log;
 }
 
-/** A refusal meant for the caller: message in Swedish for visitors, English for the admin. */
+/** A refusal meant for the caller: message in the site's language for visitors, English for the admin. */
 export class BookingError extends Error {
   constructor(
     readonly code: string,
@@ -137,8 +138,7 @@ const base = (deps: Deps) => deps.site.url.replace(/\/$/, '');
 const routeUrl = (deps: Deps, route: string, params: Record<string, string>) =>
   `${base(deps)}/_emdash/api/plugins/${BOOKING_PLUGIN_ID}/${route}?${new URLSearchParams(params)}`;
 const adminUrl = (deps: Deps) => `${base(deps)}/_emdash/admin/plugins/${BOOKING_PLUGIN_ID}/`;
-const taken = () =>
-  new BookingError('TAKEN', 'Tiden är inte längre ledig. Välj en annan tid.', 409);
+const taken = (deps: Deps) => new BookingError('TAKEN', deps.site.text.errors.taken, 409);
 
 // --- Settings ---
 
@@ -270,7 +270,7 @@ export async function deleteService(deps: Pick<Deps, 'storage'>, id: string): Pr
 async function activeService(deps: Deps, id: string): Promise<Service> {
   const service = await deps.storage.services.get(id);
   if (!service || !service.active)
-    throw new BookingError('NO_SERVICE', 'Tjänsten finns inte.', 404);
+    throw new BookingError('NO_SERVICE', deps.site.text.errors.noService, 404);
   return { ...service, id };
 }
 
@@ -607,20 +607,20 @@ const text = (value: unknown, max: number) =>
 const longText = (value: unknown, max: number) =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-function answersFor(service: Service, input: Record<string, string> | undefined) {
+function answersFor(deps: Deps, service: Service, input: Record<string, string> | undefined) {
   const out: { label: string; value: string }[] = [];
   for (const q of service.questions ?? []) {
     const raw = input?.[q.id];
     const value = q.long ? longText(raw, LIMITS.longAnswer) : text(raw, LIMITS.answer);
-    if (!value && q.required) throw new BookingError('INVALID', `Fyll i ”${q.label}”.`);
+    if (!value && q.required)
+      throw new BookingError('INVALID', deps.site.text.errors.missingAnswer(q.label));
     if (value) out.push({ label: q.label, value });
   }
   return out;
 }
 
 async function checkLimits(deps: Deps, email: string, hash: string | undefined, now: number) {
-  const busy = () =>
-    new BookingError('RATE_LIMITED', 'För många bokningar på kort tid. Försök igen senare.', 429);
+  const busy = () => new BookingError('RATE_LIMITED', deps.site.text.errors.rateLimited, 429);
   if (hash) {
     const recent = await deps.storage.bookings.count({
       ipHash: hash,
@@ -633,22 +633,14 @@ async function checkLimits(deps: Deps, email: string, hash: string | undefined, 
     createdAt: { gt: iso(now - 3_600_000) },
   });
   if (lastHour >= LIMITS.pendingPerHour)
-    throw new BookingError(
-      'RATE_LIMITED',
-      'Det går inte att boka just nu. Försök igen om en stund.',
-      429
-    );
+    throw new BookingError('RATE_LIMITED', deps.site.text.errors.busy, 429);
   const today = await deps.storage.bookings.count({ email, createdAt: { gt: iso(now - DAY_MS) } });
   if (today >= LIMITS.perEmailPerDay) throw busy();
   const upcoming = (
     await all(deps.storage.bookings, { email, createdAt: { gt: iso(now - 400 * DAY_MS) } })
   ).filter(({ data }) => isActive(data, now) && Date.parse(data.start) > now);
   if (upcoming.length >= LIMITS.activePerEmail)
-    throw new BookingError(
-      'TOO_MANY',
-      `Du har redan ${upcoming.length} kommande bokningar. Avboka någon av dem först.`,
-      409
-    );
+    throw new BookingError('TOO_MANY', deps.site.text.errors.tooMany(upcoming.length), 409);
 }
 
 /**
@@ -662,13 +654,13 @@ export async function book(deps: Deps, input: BookInput, ip: string | null): Pro
   const email = text(input.email, LIMITS.email).toLowerCase();
   const phone = text(input.phone, LIMITS.phone) || undefined;
   const message = longText(input.message, LIMITS.message) || undefined;
-  if (!name) throw new BookingError('INVALID', 'Fyll i ditt namn.');
-  if (!EMAIL.test(email)) throw new BookingError('INVALID', 'Fyll i en giltig e-postadress.');
+  if (!name) throw new BookingError('INVALID', deps.site.text.errors.missingName);
+  if (!EMAIL.test(email)) throw new BookingError('INVALID', deps.site.text.errors.invalidEmail);
 
   const service = await activeService(deps, input.serviceId);
-  const answers = answersFor(service, input.answers);
+  const answers = answersFor(deps, service, input.answers);
   const start = Date.parse(input.start);
-  if (!Number.isFinite(start)) throw new BookingError('INVALID', 'Välj en tid.');
+  if (!Number.isFinite(start)) throw new BookingError('INVALID', deps.site.text.errors.noTime);
 
   const now = deps.now();
   const hash = await ipHash(deps, ip);
@@ -676,7 +668,7 @@ export async function book(deps: Deps, input: BookInput, ip: string | null): Pro
 
   const candidates = await resourcesFor(deps, service, input.resourceId);
   if (candidates.length === 0)
-    throw new BookingError('NO_RESOURCE', 'Det går inte att boka det här just nu.', 404);
+    throw new BookingError('NO_RESOURCE', deps.site.text.errors.noResource, 404);
   const schedule = await getSchedule(deps);
   const id = crypto.randomUUID();
   let chosen: { resource: Resource; need: Interval; durationMinutes: number } | undefined;
@@ -690,7 +682,7 @@ export async function book(deps: Deps, input: BookInput, ip: string | null): Pro
       break;
     }
   }
-  if (!chosen) throw taken();
+  if (!chosen) throw taken(deps);
 
   const { resource, need } = chosen;
   const booking: Booking = {
@@ -733,11 +725,7 @@ export async function book(deps: Deps, input: BookInput, ip: string | null): Pro
     deps.log.error('booking: the confirmation email failed', { error: String(error) });
     await releaseLocks(deps, id);
     await deps.storage.bookings.delete(id);
-    throw new BookingError(
-      'EMAIL_FAILED',
-      'Bekräftelsemejlet kunde inte skickas. Försök igen senare.',
-      502
-    );
+    throw new BookingError('EMAIL_FAILED', deps.site.text.errors.mailFailed, 502);
   }
   return { status: 'pending', holdMinutes: HOLD_MINUTES, ...resourceName };
 }
@@ -1192,7 +1180,7 @@ export async function feed(deps: Deps, key: string, resourceId?: string): Promis
     }));
   const resource = resourceId ? await deps.storage.resources.get(resourceId) : null;
   return calendar(events, {
-    name: `Bokningar – ${resource ? `${resource.name}, ` : ''}${deps.site.name}`,
+    name: `Bookings – ${resource ? `${resource.name}, ` : ''}${deps.site.name}`,
     now,
   });
 }

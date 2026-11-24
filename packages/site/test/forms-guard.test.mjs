@@ -97,7 +97,7 @@ test('the request body is rewritten, headers kept', async () => {
   const out = await guardFormsRequest(
     post('forms/create', {
       name: 'Kontakt',
-      slug: 'kontakt',
+      slug: 'contact',
       pages: [],
       settings: { autoresponder: { subject: 's', body: 'b' }, retentionDays: 0 },
     })

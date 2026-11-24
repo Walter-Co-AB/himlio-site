@@ -54,8 +54,8 @@ function fakePlugin() {
 
 const FORM = {
   name: 'Kontakt',
-  slug: 'kontakt',
-  pages: [{ fields: [{ id: 'f1', type: 'text', label: 'Namn', name: 'namn', required: true }] }],
+  slug: 'contact',
+  pages: [{ fields: [{ id: 'f1', type: 'text', label: 'Name', name: 'name', required: true }] }],
 };
 
 test('the tools: forms list/create/update and reading submissions, nothing that deletes or exports', () => {

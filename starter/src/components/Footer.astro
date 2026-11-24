@@ -3,6 +3,7 @@
 // footer menus, the theme switcher and the wordmark. Data comes from Base.astro.
 import { hasContactDetails, telHref, type ContactDetails } from "@himlio/site/runtime";
 import type { MenuItem, SiteLogo } from "../utils/site";
+import { t } from "../utils/strings";
 
 interface Props {
 	siteTitle: string;
@@ -41,7 +42,7 @@ const wordmarkLength = [...siteTitle].length;
 			{
 				hasContactDetails(contact) && (
 					<div class="footer__column">
-						<h2 class="footer__heading">Kontakt</h2>
+						<h2 class="footer__heading">{t.contact}</h2>
 						<ul class="footer__links">
 							{contact.email && (
 								<li>
@@ -62,7 +63,7 @@ const wordmarkLength = [...siteTitle].length;
 								<li class="footer__contact-text">{contact.opening_hours}</li>
 							)}
 							{contact.org_number && (
-								<li class="footer__contact-text">Org.nr {contact.org_number}</li>
+								<li class="footer__contact-text">{t.orgNumber} {contact.org_number}</li>
 							)}
 						</ul>
 					</div>
@@ -91,32 +92,32 @@ const wordmarkLength = [...siteTitle].length;
 			}
 		</div>
 		<div class="footer__legal">
-			<p>&copy; {year} {siteTitle}. Alla rättigheter förbehållna.</p>
-			<div class="theme-switcher" role="group" aria-label="Tema">
+			<p>&copy; {year} {siteTitle}. {t.allRightsReserved}</p>
+			<div class="theme-switcher" role="group" aria-label={t.theme}>
 				<button
 					type="button"
 					class="theme-btn"
 					data-theme="light"
 					aria-pressed="false"
-					aria-label="Ljust läge">Ljust</button
+					aria-label={t.lightMode}>{t.light}</button
 				>
 				<button
 					type="button"
 					class="theme-btn"
 					data-theme="dark"
 					aria-pressed="false"
-					aria-label="Mörkt läge">Mörkt</button
+					aria-label={t.darkMode}>{t.dark}</button
 				>
 				<button
 					type="button"
 					class="theme-btn"
 					data-theme="system"
 					aria-pressed="false"
-					aria-label="Följ systemet">System</button
+					aria-label={t.followSystem}>{t.system}</button
 				>
 			</div>
 			<p class="footer__powered">
-				Drivs med <a href="https://emdashcms.com">EmDash</a>
+				{t.poweredBy} <a href="https://emdashcms.com">EmDash</a>
 			</p>
 		</div>
 	</div>

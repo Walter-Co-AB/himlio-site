@@ -1,5 +1,6 @@
 // In-memory stand-ins for EmDash plugin storage and KV, with the query semantics booking uses
 // (equality, `in`, ranges, orderBy, cursor pages, create-if-absent).
+import { bookingText } from '../dist/booking/strings.js';
 
 function matches(data, where = {}) {
   return Object.entries(where).every(([key, cond]) => {
@@ -86,7 +87,7 @@ export function kv() {
 }
 
 /** Deps for core.ts with a settable clock, captured emails and logs. */
-export function deps({ now, calendarText } = {}) {
+export function deps({ now, calendarText, locale = 'sv' } = {}) {
   const sent = [];
   const logs = [];
   const clock = { now };
@@ -104,7 +105,7 @@ export function deps({ now, calendarText } = {}) {
       if (d.failSend) throw new Error('email down');
       sent.push(mail);
     },
-    site: { name: 'Salong Test', url: 'https://salong.example' },
+    site: { name: 'Salong Test', url: 'https://salong.example', text: bookingText(locale) },
     platformNotify: ['agare@salong.example'],
     async fetchCalendar() {
       if (typeof d.calendarText === 'function') return d.calendarText();

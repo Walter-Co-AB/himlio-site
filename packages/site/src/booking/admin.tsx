@@ -616,7 +616,7 @@ function BookingDetails({
       {booking.status === 'requested' && (
         <div style={stack(8)}>
           <Input
-            label="Reason if you decline (optional, sent to the visitor, in Swedish)"
+            label="Reason if you decline (optional, sent to the visitor, in the site's language)"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
@@ -896,7 +896,7 @@ function Services() {
       {editing ? (
         <div style={{ ...stack(10), ...card }}>
           <Input
-            label="Name (shown to visitors, Swedish)"
+            label="Name (shown to visitors, in the site's language)"
             value={editing.name}
             onChange={(e) => setEditing({ ...editing, name: e.target.value })}
           />
@@ -965,7 +965,9 @@ function Services() {
             />
           </div>
           <div style={stack(6)}>
-            <strong style={{ fontSize: 14 }}>Questions in the booking form (Swedish)</strong>
+            <strong style={{ fontSize: 14 }}>
+              Questions in the booking form (in the site's language)
+            </strong>
             {editing.questions.map((q, i) => (
               <div key={q.id} style={row(8)}>
                 <Input
@@ -1614,7 +1616,7 @@ function Resources() {
               onChange={(e) => setEditing({ ...editing, name: e.target.value })}
             />
             <Input
-              label="Description (optional, e.g. Frisör)"
+              label="Description (optional, e.g. Hairdresser)"
               value={editing.description ?? ''}
               onChange={(e) => setEditing({ ...editing, description: e.target.value })}
             />

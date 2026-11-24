@@ -5,6 +5,7 @@
 import { LINK_PATH } from '../booking/core.js';
 import { linkPage } from '../booking/messages.js';
 import { BOOKING_PLUGIN_ID } from '../booking/store.js';
+import { bookingText } from '../booking/strings.js';
 
 interface Runtime {
   handlePublicPluginApiRoute(
@@ -21,10 +22,12 @@ export const isBookingPage = (url: URL) =>
 export async function bookingPage(
   request: Request,
   runtime: Runtime | undefined,
-  siteName: string
+  siteName: string,
+  locale?: string
 ) {
   const url = new URL(request.url);
-  const site = { name: siteName };
+  const site = { name: siteName, text: bookingText(locale) };
+  const page = site.text.page;
   const home = url.origin;
   const headers = {
     'Content-Type': 'text/html; charset=utf-8',
@@ -39,8 +42,8 @@ export async function bookingPage(
     return new Response(
       linkPage({
         site,
-        title: 'Länken fungerar inte',
-        text: ['Kontrollera att hela länken från mejlet kom med.'],
+        title: page.badLink[0],
+        text: [page.badLink[1]],
         home,
       }),
       { status: 404, headers }
@@ -74,10 +77,10 @@ export async function bookingPage(
   };
   if (!result?.success || !result.data) {
     console.error('[himlio] booking link failed:', JSON.stringify(result).slice(0, 300));
-    return new Response(
-      linkPage({ site, title: 'Något gick fel', text: ['Försök igen om en stund.'], home }),
-      { status: 500, headers }
-    );
+    return new Response(linkPage({ site, title: page.failed[0], text: [page.failed[1]], home }), {
+      status: 500,
+      headers,
+    });
   }
   const { status, title, text, button, groups, more } = result.data;
   // Links keep the signed part (a, b, s) and add a new start (t) or the dates to show (from).

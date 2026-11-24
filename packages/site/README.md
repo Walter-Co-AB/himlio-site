@@ -34,7 +34,7 @@ const details = await contactDetails(Astro.cache);
 `defineHimlioConfig()` adds:
 
 - EmDash on D1 (`DB`) and R2 (`MEDIA`), set up from `himlio.json` (name, locale, URL, email
-  sender), with the admin in English (the site itself is Swedish);
+  sender), with the admin in English (the site itself is in its `locale`, e.g. `sv`; English when unset);
 - sessions in D1, and email through the platform's `EMAIL` binding once `himlio.json` has
   `email.from`;
 - the Cloudflare adapter with a generated Worker config (`.himlio/wrangler.json`; there is no
@@ -49,12 +49,13 @@ EmDash is pinned by this package, so a site can't drift to another EmDash versio
 
 ## Runtime helpers (`@himlio/site/runtime`)
 
-| Export                                         | What                                                                                                                     |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `himlio`                                       | Platform facts from `himlio.json`: slug, name, locale, url, email.                                                       |
-| `contactDetails(Astro.cache)`                  | Phone, email, address, org number and opening hours from the admin (the one `company` entry). Empty fields are left out. |
-| `hasContactDetails(details)`, `telHref(phone)` | Helpers for the above.                                                                                                   |
-| `siteDescription(Astro.cache)`                 | The Tagline from the admin (Settings → General), or `undefined`.                                                         |
+| Export                                         | What                                                                                                                            |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `himlio`                                       | Platform facts from `himlio.json`: slug, name, locale, url, email.                                                              |
+| `localized({ en, sv })`                        | The object for the site's language (`locale`; `sv-SE` → `sv`, unknown → `en`): interface text visitors read that isn't content. |
+| `contactDetails(Astro.cache)`                  | Phone, email, address, org number and opening hours from the admin (the one `company` entry). Empty fields are left out.        |
+| `hasContactDetails(details)`, `telHref(phone)` | Helpers for the above.                                                                                                          |
+| `siteDescription(Astro.cache)`                 | The Tagline from the admin (Settings → General), or `undefined`.                                                                |
 
 Pass `Astro.cache` so cached pages are purged when the content changes.
 
@@ -81,7 +82,7 @@ pinned): the customer builds forms in the admin under Forms and reads the submis
 A form goes on a page as a Form block in rich text (a Text section's body), rendered by the
 plugin with `.ec-form` classes for the site to style (the starter does it in
 `src/styles/forms.css`). Outside rich text: `import { Form } from '@himlio/site/forms'`, then
-`<Form id="kontakt" />` (the form's slug or id).
+`<Form id="contact" />` (the form's slug or id).
 
 - Spam protection is a honeypot by default. Turnstile needs a key pair per site; ask Walter & Co.
 - Notifications go to the form's addresses through the platform's email, with Reply-To set to the
@@ -106,19 +107,24 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
   confirmation message are set per form, so those can be Swedish. The notification email is
   English, like the admin.
 
-## Booking (Bokning)
+## Booking
 
-Every site has Himlio's booking plugin (`himlio-booking`): visitors book a time, in Swedish,
+Every site has Himlio's booking plugin (`himlio-booking`): visitors book a time, in the site's language,
 without a separate booking service. It fits salons, tattoo studios, therapists and the like.
 
-- **Services**: name, length, buffer after each booking, price (fixed or "från"), up to 5
+- **Language**: everything visitors read (the form, its messages, the emails to them and the
+  link pages) is in the site's language, `locale` in `himlio.json`: Swedish for `sv`, English
+  otherwise (`src/booking/strings.ts`, also `@himlio/site/booking/text`). Code, admin and the
+  business's notifications are English.
+
+- **Services**: name, length, buffer after each booking, price (fixed or "from"), up to 5
   questions in the form (e.g. placement and size for a tattoo), a cancellation deadline in
   hours, and a mode: **instant** (booked at once) or **request** (the business approves or
   declines each one; the time is held up to 72 hours, then the request lapses and the visitor is
   told).
 - **Staff and resources**: people, chairs or rooms. Each can have its own working hours (or the
   site's opening hours), time off, services, own lengths per service, its own calendar in and
-  its own feed out. Visitors pick one or "Vem som helst" (whoever is free). A site without
+  its own feed out. Visitors pick one or "anyone" (whoever is free). A site without
   resources books the business as a whole; bookings made before resources were added block
   everyone.
 - **Opening hours**: per weekday, dates with other hours or closed (they apply to everyone),
@@ -131,10 +137,10 @@ without a separate booking service. It fits salons, tattoo studios, therapists a
 - **On a page**: a Booking section (`marketing_booking` in the starter; the section's service by
   name, or empty to let the visitor choose), a Booking block in rich text (service and person
   optional), or in code `import { Booking } from '@himlio/site/booking'` and
-  `<Booking service="Klippning" resource="Anna" />` (both optional, by name or id). The contact
+  `<Booking service="Haircut" resource="Anna" />` (both optional, by name or id). The contact
   fields use the Forms classes (`.ec-form-*`), so a site's form styles apply; the picker uses
   `.hb-booking-*`, and the picked date and time take `--hb-booking-selected` /
-  `--hb-booking-on-selected`. Swedish; needs JavaScript.
+  `--hb-booking-on-selected`. Needs JavaScript.
 - **One step or two**: with Cloudflare Turnstile (`himlio.json` `turnstile.site_key` and the
   Worker secret `TURNSTILE_SECRET`, both set by the platform), the form has a bot check and the
   booking counts at once. Without it, or if the check fails, the visitor confirms by a link in

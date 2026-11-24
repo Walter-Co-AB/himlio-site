@@ -130,7 +130,7 @@
 		line-height: 1.3;
 		letter-spacing: -0.01em;
 		text-wrap: balance;
-		/* Himlio: long Swedish compound words hyphenate, or break, rather than overflow */
+		/* Himlio: long compound words (Swedish, German, ...) hyphenate, or break, rather than overflow */
 		hyphens: auto;
 		overflow-wrap: anywhere;
 	}
