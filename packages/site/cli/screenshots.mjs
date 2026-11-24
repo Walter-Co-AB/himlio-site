@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { devPort, readHimlio } from '../dist/config.js';
+import { privacyPage } from '../dist/site/privacy.js';
 import { samples } from './samples.mjs';
 
 const args = process.argv.slice(3);
@@ -20,7 +21,13 @@ const flagValues = new Set([value('--url'), value('--out')]);
 const pages = args.filter((a) => a.startsWith('/') && !flagValues.has(a));
 if (pages.length === 0) {
   const { pages: sample } = samples(himlio.locale);
-  pages.push('/', `/${sample.about}`, `/${sample.contact}`, '/block-gallery');
+  pages.push(
+    '/',
+    `/${sample.about}`,
+    `/${sample.contact}`,
+    `/${privacyPage(himlio.locale).slug}`,
+    '/block-gallery'
+  );
   // The block gallery's further pages, as many as fixtures made.
   for (let i = 2; (await fetch(`${base}/block-gallery-${i}`)).ok; i++)
     pages.push(`/block-gallery-${i}`);

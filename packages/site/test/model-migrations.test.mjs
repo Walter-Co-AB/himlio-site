@@ -31,6 +31,7 @@ test('model migrations only touch the content model and content, never settings 
           'allowBlockTypes',
           'addBlockFields',
           'renameEntries',
+          'privacyPage',
         ].includes(key),
         `${file}: ${key}`
       );

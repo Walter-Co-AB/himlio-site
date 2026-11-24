@@ -26,6 +26,8 @@ export const t = localized({
 		toHomePage: "Go to the home page",
 		popularPlan: "Most popular",
 		pauseLogos: "Pause the logo animation",
+		followUs: "Follow us",
+		privacyPolicy: "Privacy policy",
 	},
 	sv: {
 		skipToContent: "Hoppa till innehållet",
@@ -47,5 +49,7 @@ export const t = localized({
 		toHomePage: "Till startsidan",
 		popularPlan: "Populärast",
 		pauseLogos: "Pausa logotypernas animation",
+		followUs: "Följ oss",
+		privacyPolicy: "Integritetspolicy",
 	},
 });

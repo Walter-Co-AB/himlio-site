@@ -3,7 +3,8 @@
 //
 //   himlio-site fixtures             tagline, company details, a home page, "About us" and
 //                                    "Contact" with a sample contact form (in the site's language,
-//                                    cli/samples.mjs: /om-oss and /kontakt on a Swedish site), and
+//                                    cli/samples.mjs: /om-oss and /kontakt on a Swedish site), the
+//                                    privacy policy published, placeholder social links, and
 //                                    "Block gallery"
 //                                    (/block-gallery, -2, ...): every section type the pages allow, with
 //                                    all fields filled (long text), only the required ones,
@@ -15,6 +16,7 @@
 import { execFileSync } from 'node:child_process';
 import { deflateSync } from 'node:zlib';
 import { devPort, readHimlio } from '../dist/config.js';
+import { privacyPage } from '../dist/site/privacy.js';
 import { samples } from './samples.mjs';
 
 const args = process.argv.slice(3);
@@ -153,6 +155,13 @@ async function samplePages() {
         body: [block(S.contact.intro), { _type: 'emdash-form', _key: key(), formId: FORM_SLUG }],
       };
   const only = (blocks) => blocks.filter((b) => allowed.size === 0 || allowed.has(b._type));
+  // The platform adds the privacy policy page as a draft; publish it, so the footer links to it.
+  const privacy = privacyPage(himlio.locale);
+  const policy = {
+    _type: 'marketing_text',
+    _key: key(),
+    body: [{ _type: 'himlio-privacy', _key: key() }],
+  };
   return {
     ...(await galleryPages(allowed, content.validation?.maxItems ?? 20)),
     home: {
@@ -164,6 +173,7 @@ async function samplePages() {
       content: only([text(undefined, [S.aboutText, S.moreText])]),
     },
     [S.pages.contact]: { title: S.titles.contact, content: only([contact]) },
+    [privacy.slug]: { title: privacy.title, content: only([policy]) },
   };
 }
 
@@ -476,17 +486,26 @@ await fetch(base + '/'); // first request applies content-model migrations
 ok(await api('POST', '/_emdash/api/setup/dev-bypass'), 'dev bypass');
 
 if (empty) {
-  ok(await api('POST', '/_emdash/api/settings', { tagline: '' }), 'tagline');
+  ok(await api('POST', '/_emdash/api/settings', { tagline: '', social: {} }), 'settings');
   await setCompany({ phone: '', email: '', address: '', org_number: '', opening_hours: '' });
-  for (const slug of ['home', 'start', S.pages.about, S.pages.contact]) await removePage(slug);
+  for (const slug of [
+    'home',
+    'start',
+    S.pages.about,
+    S.pages.contact,
+    privacyPage(himlio.locale).slug,
+  ])
+    await removePage(slug);
   for (let i = 1; await removePage(i > 1 ? `block-gallery-${i}` : 'block-gallery'); i++);
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
     await api('POST', '/_emdash/api/settings', {
       tagline: S.tagline,
+      // Placeholder profiles, so the footer shows its social links.
+      social: { instagram: 'example', facebook: 'example', linkedin: 'example' },
     }),
-    'tagline'
+    'settings'
   );
   await setCompany({ ...S.company, email: 'info@example.com' });
   const pages = await samplePages();

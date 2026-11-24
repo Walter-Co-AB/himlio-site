@@ -28,6 +28,8 @@ export interface HimlioFacts {
   forms: { notify: string[] };
   /** Cloudflare Turnstile's public site key; its secret is the Worker secret TURNSTILE_SECRET. */
   turnstile?: { siteKey: string };
+  /** Cloudflare Web Analytics (cookieless visitor statistics): the site's beacon token. */
+  analytics?: { cloudflareToken: string };
 }
 
 export interface HimlioOptions {
@@ -74,6 +76,7 @@ export function readHimlio(root: string): HimlioFacts {
   ) as Partial<HimlioFacts> & {
     email?: { from: string; reply_to?: unknown };
     turnstile?: unknown;
+    analytics?: unknown;
   };
   return {
     slug: raw.slug ?? '',
@@ -83,6 +86,7 @@ export function readHimlio(root: string): HimlioFacts {
     ...(raw.email?.from ? { email: emailFacts(raw.email) } : {}),
     forms: { notify: formRecipients(raw.forms) },
     ...turnstileFacts(raw.turnstile),
+    ...analyticsFacts(raw.analytics),
   };
 }
 
@@ -98,6 +102,18 @@ function turnstileFacts(raw: unknown): { turnstile?: { siteKey: string } } {
       `himlio.json: turnstile.site_key is not a Turnstile site key: ${JSON.stringify(key)}`
     );
   return { turnstile: { siteKey: key } };
+}
+
+/** himlio.json `analytics`: { cloudflare_token } or null/absent (no visitor statistics). */
+function analyticsFacts(raw: unknown): { analytics?: { cloudflareToken: string } } {
+  if (raw === undefined || raw === null) return {};
+  const token = (raw as { cloudflare_token?: unknown }).cloudflare_token;
+  if (token === undefined || token === null || token === '') return {};
+  if (typeof token !== 'string' || !/^[A-Za-z0-9]{16,64}$/.test(token))
+    return fail(
+      `himlio.json: analytics.cloudflare_token is not a Web Analytics token: ${JSON.stringify(token)}`
+    );
+  return { analytics: { cloudflareToken: token } };
 }
 
 /** himlio.json `email`: the sender, and `reply_to` (an address, or null/absent for none). */
@@ -338,7 +354,7 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
         fail(`${dir}/${file}: name must look like 0001_add_fields.json`);
       const seed = JSON.parse(readFileSync(join(dir, file), 'utf8'));
       for (const key of Object.keys(seed))
-        if (!MODEL_MIGRATION_KEYS.includes(key))
+        if (!MODEL_MIGRATION_KEYS.includes(key) && !(key === 'privacyPage' && prefix === ''))
           fail(
             `${dir}/${file}: only blockTypes, collections, content, relabel, allowBlockTypes, addBlockFields and renameEntries are allowed (found "${key}")`
           );
@@ -356,6 +372,7 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
         allowBlockTypes: _allow,
         addBlockFields: _add,
         renameEntries: _rename,
+        privacyPage: _privacy,
         ...plain
       } = seed;
       const validation = validateSeed(plain);

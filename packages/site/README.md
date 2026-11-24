@@ -50,13 +50,15 @@ EmDash is pinned by this package, so a site can't drift to another EmDash versio
 
 ## Runtime helpers (`@himlio/site/runtime`)
 
-| Export                                         | What                                                                                                                            |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `himlio`                                       | Platform facts from `himlio.json`: slug, name, locale, url, email.                                                              |
-| `localized({ en, sv })`                        | The object for the site's language (`locale`; `sv-SE` → `sv`, unknown → `en`): interface text visitors read that isn't content. |
-| `contactDetails(Astro.cache)`                  | Phone, email, address, org number and opening hours from the admin (the one `company` entry). Empty fields are left out.        |
-| `hasContactDetails(details)`, `telHref(phone)` | Helpers for the above.                                                                                                          |
-| `siteDescription(Astro.cache)`                 | The Tagline from the admin (Settings → General), or `undefined`.                                                                |
+| Export                                                         | What                                                                                                                            |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `himlio`                                                       | Platform facts from `himlio.json`: slug, name, locale, url, email.                                                              |
+| `localized({ en, sv })`                                        | The object for the site's language (`locale`; `sv-SE` → `sv`, unknown → `en`): interface text visitors read that isn't content. |
+| `contactDetails(Astro.cache)`                                  | Phone, email, address, org number and opening hours from the admin (the one `company` entry). Empty fields are left out.        |
+| `hasContactDetails(details)`, `telHref(phone)`                 | Helpers for the above.                                                                                                          |
+| `siteDescription(Astro.cache)`                                 | The Tagline from the admin (Settings → General), or `undefined`.                                                                |
+| `socialLinks(Astro.cache)`, `socialLinksFrom(settings.social)` | The social profiles from Settings → Social as `{ network, label, url }`; a username or a full URL both work.                    |
+| `privacyPolicyPath()`                                          | The path of the published page with the Privacy policy block (for a footer link), or `undefined`.                               |
 
 Pass `Astro.cache` so cached pages are purged when the content changes.
 
@@ -171,6 +173,27 @@ without a separate booking service. It fits salons, tattoo studios, therapists a
 - Maintenance (expiring holds and requests, reminders, deletion, reading calendars) runs on the
   platform's minute cron, every 5 minutes.
 - Not yet: SMS reminders, payments and deposits.
+
+## Built in for every site
+
+The platform's site plugin (`himlio-site`) adds these to every site, with no code in the site:
+
+- **Business info for search engines.** On the home page, schema.org JSON-LD (`LocalBusiness`
+  or the Company details' Business type) with the site title, tagline, logo, phone, email,
+  address (Swedish postcodes are parsed) and the social profiles. Google uses it for the
+  business's search result and map listing.
+- **Visitor statistics.** Cloudflare Web Analytics, cookieless, on every public page when
+  `himlio.json` has `analytics.cloudflare_token` (set by the platform).
+- **Privacy policy.** A rich-text block, Privacy policy (`himlio-privacy`), that renders a
+  policy in the site's language from what the site uses: forms, booking (with its retention
+  times), Turnstile, analytics, cookies, Cloudflare as processor, the visitor's rights. The
+  platform adds the page (`/integritetspolicy` or `/privacy-policy`) as a draft with the block
+  in a Text section, unless a page has the block already or the slug is taken. The company
+  reads it, adds what else it does around the block and publishes it; it is responsible for
+  the text. Outside content: `import { PrivacyPolicy } from '@himlio/site/site'`.
+
+EmDash itself handles the favicon (Settings → General), the default share image for social
+media (Settings → SEO), redirects, `sitemap.xml` and `robots.txt`.
 
 ## Extension points
 

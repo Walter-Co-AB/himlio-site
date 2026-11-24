@@ -15,6 +15,7 @@ export interface Company {
   address?: string;
   org_number?: string;
   opening_hours?: string;
+  business_type?: "LocalBusiness" | "HairSalon" | "BeautySalon" | "NailSalon" | "DaySpa" | "TattooParlor" | "HealthAndBeautyBusiness" | "ProfessionalService" | "Restaurant" | "CafeOrCoffeeShop" | "Store" | "AutoRepair" | "HomeAndConstructionBusiness" | "MedicalBusiness" | "Organization";
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
