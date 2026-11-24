@@ -48,7 +48,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: v${{ steps.version.outputs.version }}
         run: |
-          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null || true)
+          # On a missing tag gh prints the 404 body and fails: only a success is a tag.
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null) || sha=""
           if [ -n "$sha" ] && [ "$sha" != "$GITHUB_SHA" ]; then
             echo "$TAG already exists at $sha, not at this commit ($GITHUB_SHA)"; exit 1
           fi
@@ -80,7 +81,8 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           PUBLISHED_BEFORE: ${{ steps.version.outputs.published }}
         run: |
-          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null || true)
+          # On a missing tag gh prints the 404 body and fails: only a success is a tag.
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null) || sha=""
           if [ "$sha" = "$GITHUB_SHA" ]; then echo "$TAG is already on this commit"; exit 0; fi
           if [ "$PUBLISHED_BEFORE" = "true" ]; then
             [ -z "$sha" ] || exit 0
