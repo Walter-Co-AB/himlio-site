@@ -1,20 +1,29 @@
 name: Publish
 
-# Publishes @himlio/site to npm when a version tag (v1.2.3) is pushed, with npm Trusted
-# Publishing (GitHub OIDC, provenance): no npm token is stored anywhere. The trusted publisher
-# for this repo and workflow is configured on npmjs.com after the first, manual 1.0.0.
+# Releases @himlio/site on merge: on every push to main, if packages/site/package.json has a
+# version that isn't on npm yet, it is built, tested, published with npm Trusted Publishing
+# (GitHub OIDC, provenance; no npm token is stored anywhere) and tagged v<version> on that commit.
+# A push that doesn't change the version does nothing. Nobody pushes tags by hand. The file name
+# must stay publish.yml: npm's trusted publisher is configured for it.
 on:
   push:
-    tags: ['v*.*.*']
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     environment: npm
+    permissions:
+      contents: write # the release tag
+      id-token: write # npm Trusted Publishing
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -24,25 +33,58 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
-      - name: npm must support trusted publishing (11.5.1 or later)
-        run: npx --yes semver@7.7.2 -r '>=11.5.1' "$(npm --version)"
-      - run: npm ci
-      - name: The tag matches the package version
+      - name: The version, and whether it is on npm already
+        id: version
         run: |
           version=$(node -p 'require("./packages/site/package.json").version')
-          test "v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$version"; exit 1; }
-      - name: Skip a version that is already on npm (1.0.0 was published by hand)
-        id: published
-        run: |
-          version=$(node -p 'require("./packages/site/package.json").version')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           if npm view "@himlio/site@$version" version >/dev/null 2>&1; then
-            echo "@himlio/site@$version is already on npm; nothing to publish"
-            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "@himlio/site@$version is already on npm; nothing to release"
+            echo "published=true" >> "$GITHUB_OUTPUT"
           fi
-      - if: steps.published.outputs.exists != 'true'
+      - name: The tag, if it exists, is on this commit
+        if: steps.version.outputs.published != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null || true)
+          if [ -n "$sha" ] && [ "$sha" != "$GITHUB_SHA" ]; then
+            echo "$TAG already exists at $sha, not at this commit ($GITHUB_SHA)"; exit 1
+          fi
+      - name: The starter's CI uses the same version of the build workflow
+        if: steps.version.outputs.published != 'true'
+        env:
+          TAG: v${{ steps.version.outputs.version }}
+        run: |
+          grep -q "build.yml@$TAG\$" starter/.github/workflows/ci.yml ||
+            { echo "starter/.github/workflows/ci.yml must call build.yml@$TAG"; exit 1; }
+      - name: npm must support trusted publishing (11.5.1 or later)
+        if: steps.version.outputs.published != 'true'
+        run: npx --yes semver@7.7.2 -r '>=11.5.1' "$(npm --version)"
+      - if: steps.version.outputs.published != 'true'
+        run: npm ci
+      - if: steps.version.outputs.published != 'true'
         run: npm run build
-      - if: steps.published.outputs.exists != 'true'
+      - if: steps.version.outputs.published != 'true'
         run: npm test
-      - if: steps.published.outputs.exists != 'true'
+      - if: steps.version.outputs.published != 'true'
         run: npm publish --provenance --access public
         working-directory: packages/site
+      - name: Tag the release
+        # Also when the version was on npm already but its tag is missing (a re-run after the
+        # tagging failed), if npm recorded this commit for it.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PUBLISHED_BEFORE: ${{ steps.version.outputs.published }}
+        run: |
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha 2>/dev/null || true)
+          if [ "$sha" = "$GITHUB_SHA" ]; then echo "$TAG is already on this commit"; exit 0; fi
+          if [ "$PUBLISHED_BEFORE" = "true" ]; then
+            [ -z "$sha" ] || exit 0
+            head=$(npm view "@himlio/site@$VERSION" gitHead 2>/dev/null || true)
+            [ "$head" = "$GITHUB_SHA" ] || { echo "$VERSION was published from another commit"; exit 0; }
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"

@@ -30,12 +30,12 @@ Rules for AI coding tools and people working on the Himlio platform repo.
 4. **No secrets in git.** The repo is public.
 5. **Pin what sites depend on:** EmDash and `@emdash-cms/cloudflare` exactly, actions by commit
    SHA, new npm packages at a version at least 7 days old.
-6. **Releases go through a tag.** Bump `packages/site/package.json`, add its entry to
-   `packages/site/CHANGELOG.md` (`## X.Y.Z` with a `### Sites` subsection: infra's upgrade pull
-   requests parse it), and keep the npm version, the git tag and the starter's `build.yml@vX.Y.Z`
-   the same (publish.yml and a test check), merge, then ask Anton or the
-   infrastructure agent to push `vX.Y.Z` (only org admins may create `v*` tags). `publish.yml`
-   publishes it with npm Trusted Publishing. Never publish by hand.
+6. **Releases happen on merge.** In the pull request, bump `packages/site/package.json`, add
+   its entry to `packages/site/CHANGELOG.md` (`## X.Y.Z` with a `### Sites` subsection: infra's
+   upgrade pull requests parse it) and set the starter's `build.yml@vX.Y.Z` and `@himlio/site` to
+   the same version (a test checks). Merging to `main` runs `publish.yml`: a version not on npm
+   yet is built, tested, published with npm Trusted Publishing and tagged `vX.Y.Z` on that
+   commit. A merge without a version bump releases nothing. Never push tags or publish by hand.
 
 ## Working alongside other agents
 
