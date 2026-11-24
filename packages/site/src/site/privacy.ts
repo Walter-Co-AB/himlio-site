@@ -14,6 +14,11 @@ export interface PrivacyFacts {
   email?: string;
   phone?: string;
   forms: boolean;
+  /**
+   * How long form messages are kept: the longest retention of the active forms, when every one
+   * deletes its messages (Forms plugin, weekly cleanup); undefined when any keeps them.
+   */
+  formsRetentionDays?: number;
   booking: boolean;
   turnstile: boolean;
   analytics: boolean;
@@ -43,7 +48,9 @@ function en(f: PrivacyFacts): PolicySection[] {
       heading: 'When you contact us',
       paragraphs: [
         'When you send a message through a form on the website, we receive what you write in it, usually your name, your contact details and your message. We use it to answer you and to follow up on your request, based on our legitimate interest in answering those who contact us.',
-        'We keep the message as long as we need it for that, and then delete it.',
+        f.formsRetentionDays
+          ? `We keep the message as long as we need it to handle your request. It is deleted automatically about ${f.formsRetentionDays} days after it arrives.`
+          : 'We keep the message as long as we need it to handle your request, and then delete it.',
       ],
     });
   if (f.booking)
@@ -72,7 +79,7 @@ function en(f: PrivacyFacts): PolicySection[] {
     {
       heading: 'Cookies',
       paragraphs: [
-        'The website only uses cookies it needs to work, for example to remember whether you chose a light or dark look, and to keep those who edit the website logged in. They are not used to track you or for advertising.',
+        'The website only uses cookies it needs to work, for example to keep those who edit the website logged in, or to remember a choice you made on the page. They are not used to track you or for advertising.',
       ],
     },
     {
@@ -108,7 +115,9 @@ function sv(f: PrivacyFacts): PolicySection[] {
       heading: 'När du kontaktar oss',
       paragraphs: [
         'När du skickar ett meddelande via ett formulär på webbplatsen får vi det du skriver, oftast ditt namn, dina kontaktuppgifter och ditt meddelande. Vi använder det för att svara dig och följa upp ditt ärende, med stöd av vårt berättigade intresse av att kunna svara den som kontaktar oss.',
-        'Vi sparar meddelandet så länge vi behöver det för det, och raderar det sedan.',
+        f.formsRetentionDays
+          ? `Vi sparar meddelandet så länge vi behöver det för att hantera ditt ärende. Det raderas automatiskt ungefär ${f.formsRetentionDays} dagar efter att det kom in.`
+          : 'Vi sparar meddelandet så länge vi behöver det för att hantera ditt ärende, och raderar det sedan.',
       ],
     });
   if (f.booking)
@@ -137,7 +146,7 @@ function sv(f: PrivacyFacts): PolicySection[] {
     {
       heading: 'Kakor (cookies)',
       paragraphs: [
-        'Webbplatsen använder bara kakor som behövs för att den ska fungera, till exempel för att komma ihåg om du valt ljust eller mörkt utseende och för att hålla de som redigerar webbplatsen inloggade. De används inte för att spåra dig eller för reklam.',
+        'Webbplatsen använder bara kakor som behövs för att den ska fungera, till exempel för att hålla de som redigerar webbplatsen inloggade eller för att komma ihåg ett val du gjort på sidan. De används inte för att spåra dig eller för reklam.',
       ],
     },
     {

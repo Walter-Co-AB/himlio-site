@@ -10,6 +10,25 @@ import { contactDetails } from './contact.js';
 
 const db = () => (env as unknown as { DB: D1Database }).DB;
 
+/**
+ * The longest retention (days) of the active forms, or undefined when there are none or any of
+ * them keeps its messages (retentionDays 0 or unset).
+ */
+async function formsRetentionDays(): Promise<number | undefined> {
+  try {
+    const { results } = await db()
+      .prepare(
+        "SELECT json_extract(data, '$.settings.retentionDays') AS days FROM _plugin_storage WHERE plugin_id = 'emdash-forms' AND collection = 'forms' AND json_extract(data, '$.status') = 'active'"
+      )
+      .all<{ days: number | null }>();
+    if (results.length === 0) return undefined;
+    const days = results.map((r) => Number(r.days) || 0);
+    return days.every((d) => d > 0) ? Math.max(...days) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function exists(sql: string): Promise<boolean> {
   try {
     return (await db().prepare(sql).first()) !== null;
@@ -19,7 +38,7 @@ async function exists(sql: string): Promise<boolean> {
 }
 
 export async function privacyFacts(): Promise<PrivacyFacts> {
-  const [settings, details, forms, booking] = await Promise.all([
+  const [settings, details, forms, booking, retention] = await Promise.all([
     getSiteSettings(),
     contactDetails(),
     exists(
@@ -28,6 +47,7 @@ export async function privacyFacts(): Promise<PrivacyFacts> {
     exists(
       "SELECT 1 FROM _plugin_storage WHERE plugin_id = 'himlio-booking' AND collection = 'services' AND json_extract(data, '$.active') = 1 LIMIT 1"
     ),
+    formsRetentionDays(),
   ]);
   return {
     name: settings.title?.trim() || facts.name,
@@ -36,6 +56,7 @@ export async function privacyFacts(): Promise<PrivacyFacts> {
     ...(details.email ? { email: details.email } : {}),
     ...(details.phone ? { phone: details.phone } : {}),
     forms,
+    ...(forms && retention ? { formsRetentionDays: retention } : {}),
     booking,
     turnstile: !!facts.turnstile,
     analytics: !!facts.analytics,
