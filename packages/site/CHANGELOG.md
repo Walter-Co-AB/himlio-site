@@ -9,6 +9,17 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.17.1
+
+- Privacy policy: the cookie example no longer assumes a light/dark switcher; form messages say
+  when they are deleted (about N days after they arrive) when every active form has a
+  retention, and the sentence reads better otherwise.
+- Site rules: give the company's full address, postcode and city on the last line.
+
+### Sites
+
+Nothing. Check that Company details has the full address.
+
 ## 1.17.0
 
 - Content-model migrations: a collection's `urlPattern` may be given per language

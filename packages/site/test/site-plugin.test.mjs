@@ -94,3 +94,14 @@ test('the site plugin descriptor matches the plugin', async () => {
   assert.equal(d.entrypoint, '@himlio/site/site/plugin');
   assert.deepEqual(d.capabilities, ['hooks.page-fragments:register']);
 });
+
+test('the privacy policy states the forms retention only when every form deletes', () => {
+  const contact = (facts, locale) =>
+    privacyPolicy({ ...base, forms: true, ...facts }, locale)[1].paragraphs[1];
+  assert.match(contact({ formsRetentionDays: 365 }, 'sv'), /ungefär 365 dagar efter/);
+  assert.match(contact({ formsRetentionDays: 30 }, 'en'), /about 30 days after/);
+  assert.doesNotMatch(contact({}, 'sv'), /dagar/);
+  assert.doesNotMatch(contact({}, 'sv'), /för det,/);
+  const cookies = privacyPolicy(base, 'sv').find((s) => s.heading === 'Kakor (cookies)');
+  assert.doesNotMatch(cookies.paragraphs[0], /ljust eller mörkt/);
+});
