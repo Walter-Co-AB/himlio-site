@@ -9,6 +9,37 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.15.0
+
+- A built-in site plugin (`himlio-site`) for what every site needs:
+  - business info for search engines (schema.org JSON-LD) on the home page, from the site
+    settings, Company details and social links;
+  - Cloudflare Web Analytics (cookieless) when `himlio.json` has `analytics.cloudflare_token`;
+  - the Privacy policy block (`himlio-privacy`): a policy in the site's language, generated
+    from what the site uses (forms, booking, Turnstile, analytics).
+- Platform migration 0004: Company details get a Business type, and the site gets the privacy
+  policy page as a draft (`/integritetspolicy` or `/privacy-policy`) unless it has one.
+- `socialLinks()` and `privacyPolicyPath()` in `@himlio/site/runtime`.
+- Fixtures publish the privacy page and set placeholder social links; screenshots include the
+  privacy page.
+- Site rules: where social links, favicon, share image, privacy policy and statistics live; a
+  new version can take a few minutes to reach npm.
+- Starter: the footer shows the social links (Settings → Social) and links to the privacy
+  policy once it is published; `/favicon.svg` until a favicon is set in Settings.
+
+### Sites
+
+- Required: read the draft privacy policy page with the company, add what else the company
+  does with personal data around the block, and publish it. If the site already has its own
+  policy page, the platform added no draft: add the Privacy policy block to it or keep it as
+  it is.
+- Optional: in the footer, show the social links and link to the privacy policy, as in the
+  starter (`Base.astro`: `socialLinksFrom(settings.social)`, `privacyPolicyPath()`;
+  `Footer.astro`; `strings.ts`: `followUs`, `privacyPolicy`). In `emdash-env.d.ts`, add
+  `business_type` to `Company`.
+- Optional, in the admin: Company details → Business type; Settings → Social; Settings →
+  General → Favicon; Settings → SEO → default share image.
+
 ## 1.14.1
 
 - The changelog's format is fixed for tools: `## X.Y.Z` per version with a `### Sites`

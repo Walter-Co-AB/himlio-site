@@ -284,3 +284,16 @@ test('readHimlio: turnstile.site_key becomes turnstile.siteKey; null or absent i
   assert.equal(read({ site_key: null }), undefined);
   assert.throws(() => read({ site_key: 'no spaces allowed' }), /turnstile\.site_key/);
 });
+
+test('readHimlio: analytics.cloudflare_token becomes analytics.cloudflareToken; absent is none', () => {
+  const read = (analytics) =>
+    readHimlio(site({ 'himlio.json': JSON.stringify({ slug: 'a', name: 'A', analytics }) }))
+      .analytics;
+  assert.equal(read(undefined), undefined);
+  assert.equal(read(null), undefined);
+  assert.equal(read({ cloudflare_token: null }), undefined);
+  assert.deepEqual(read({ cloudflare_token: '0123456789abcdef0123456789abcdef' }), {
+    cloudflareToken: '0123456789abcdef0123456789abcdef',
+  });
+  assert.throws(() => read({ cloudflare_token: '"><script>' }), /analytics\.cloudflare_token/);
+});

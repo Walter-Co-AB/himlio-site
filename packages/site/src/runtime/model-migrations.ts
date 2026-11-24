@@ -9,7 +9,8 @@
 // `allowBlockTypes` adds block types to a blocks field's allowed list (applyAllowBlockTypes).
 // `addBlockFields` adds optional fields to an existing block type (applyAddBlockFields), e.g. a
 // `layout` select for a design variant. `renameEntries` renames an entry's slug, and its title
-// while it still has the old one (applyRenameEntries).
+// while it still has the old one (applyRenameEntries). `privacyPage` (platform only) adds the
+// privacy policy page as a draft (applyPrivacyPage).
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -31,7 +32,8 @@ import {
   validateSeed,
 } from 'emdash';
 import { Kysely } from 'kysely';
-import { modelMigrations } from 'virtual:himlio/config';
+import { facts, modelMigrations } from 'virtual:himlio/config';
+import { privacyPage } from '../site/privacy.js';
 
 type Seed = Parameters<typeof applySeed>[1];
 type LabelChange = [from: string, to: string];
@@ -68,6 +70,7 @@ type Migration = Seed & {
   allowBlockTypes?: AllowBlockTypes[];
   addBlockFields?: AddBlockFields[];
   renameEntries?: RenameEntry[];
+  privacyPage?: boolean;
 };
 type Database = Parameters<typeof applySeed>[0];
 
@@ -207,6 +210,48 @@ async function applyRenameEntries(
   }
 }
 
+/**
+ * Adds the privacy policy page, a draft for the company to read and publish: a Text section with
+ * the Privacy policy block, titled and slugged in the site's language. Skipped when a page
+ * already has the block or the slug is taken (the site has its own policy), and on a site whose
+ * pages can't hold a Text section.
+ */
+async function applyPrivacyPage(db: Database, name: string): Promise<void> {
+  const schema = new SchemaRegistry(db);
+  const content = await schema.getField('pages', 'content');
+  const allowed = content?.validation?.allowedTypes;
+  if (!content || content.type !== 'blocks') return;
+  if (Array.isArray(allowed) && !allowed.includes('marketing_text')) return;
+  const text = await new BlockTypeRegistry(db).getBlockType('marketing_text');
+  if (!text) return;
+  const existing = await d1()
+    .prepare(
+      'SELECT 1 FROM ec_pages WHERE deleted_at IS NULL AND content LIKE \'%"himlio-privacy"%\' LIMIT 1'
+    )
+    .first();
+  if (existing) return;
+  const { title, slug } = privacyPage(facts.locale);
+  const repo = new ContentRepository(db);
+  if (await repo.findBySlug('pages', slug)) return;
+  await repo.create({
+    type: 'pages',
+    slug,
+    status: 'draft',
+    data: {
+      title,
+      content: [
+        {
+          _type: 'marketing_text',
+          _version: text.currentVersion,
+          _key: 'privacy',
+          body: [{ _type: 'himlio-privacy', _key: 'policy' }],
+        },
+      ],
+    },
+  });
+  console.log(`[himlio] ${name}: added the draft page /${slug}`);
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -218,7 +263,8 @@ async function applyPending(): Promise<void> {
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
     for (const { name, seed: migration } of todo) {
-      const { relabel, allowBlockTypes, addBlockFields, renameEntries, ...seed } = migration;
+      const { relabel, allowBlockTypes, addBlockFields, renameEntries, privacyPage, ...seed } =
+        migration;
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
@@ -228,6 +274,7 @@ async function applyPending(): Promise<void> {
       if (allowBlockTypes) await applyAllowBlockTypes(db, allowBlockTypes, name);
       if (addBlockFields) await applyAddBlockFields(db, addBlockFields, name);
       if (renameEntries) await applyRenameEntries(db, renameEntries, name);
+      if (privacyPage) await applyPrivacyPage(db, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

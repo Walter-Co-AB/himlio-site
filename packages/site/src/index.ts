@@ -28,6 +28,7 @@ import {
 } from './config.js';
 import { bookingPlugin } from './booking-plugin.js';
 import { formsPlugin } from './forms-plugin.js';
+import { sitePlugin } from './site-plugin.js';
 
 export type { HimlioFacts, HimlioOptions };
 export { devPort };
@@ -111,6 +112,7 @@ function himlio(options: HimlioOptions) {
       plugins: [
         formsPlugin({ defaultSpamProtection: 'honeypot' }),
         bookingPlugin(),
+        sitePlugin(),
         ...emailPlugins,
       ],
       admin: {

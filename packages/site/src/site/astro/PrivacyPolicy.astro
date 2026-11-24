@@ -1,0 +1,44 @@
+---
+// Himlio's generated privacy policy, in the site's language (himlio.json locale): what the
+// platform features the site uses do with personal data (../privacy.ts). Plain headings,
+// paragraphs and lists, so the site's text styles apply. Headings start at h3 (the policy sits
+// in a section with its own heading); pass `level={2}` to start at h2.
+//   import { PrivacyPolicy } from '@himlio/site/site';
+//   <PrivacyPolicy />
+interface Props {
+  level?: 2 | 3 | 4;
+  class?: string;
+}
+import { himlio } from '../../runtime/himlio.js';
+import { privacyFacts } from '../../runtime/privacy.js';
+import { privacyPolicy } from '../privacy.js';
+
+const { level = 3, class: className } = Astro.props;
+const Heading = `h${level}`;
+const sections = privacyPolicy(await privacyFacts(), himlio.locale);
+---
+
+<div class:list={['himlio-privacy', className]}>
+  {sections.map((section) => (
+    <>
+      <Heading>{section.heading}</Heading>
+      {section.paragraphs.map((p) => (
+        <p>{p}</p>
+      ))}
+      {section.list && (
+        <ul>
+          {section.list.map((item) => (
+            <li>{item}</li>
+          ))}
+        </ul>
+      )}
+    </>
+  ))}
+</div>
+
+<style>
+  /* Only spacing, with no specificity (:where), so the site's own text styles win. */
+  :where(.himlio-privacy) :where(p + p, p + ul, ul + p) {
+    margin-top: 0.75em;
+  }
+</style>

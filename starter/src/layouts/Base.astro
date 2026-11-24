@@ -5,7 +5,12 @@ import { createPublicPageContext } from "@himlio/site/emdash/page";
 import "@fontsource-variable/inter";
 import "@fontsource/instrument-serif/400.css";
 import "@fontsource/instrument-serif/400-italic.css";
-import { contactDetails, himlio } from "@himlio/site/runtime";
+import {
+	contactDetails,
+	himlio,
+	privacyPolicyPath,
+	socialLinksFrom,
+} from "@himlio/site/runtime";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import { resolveSiteIdentity } from "../utils/site";
@@ -47,8 +52,11 @@ if (Astro.cache?.enabled) {
 	}
 }
 
-// Contact details from the admin (Himlio's Company details), shown in the footer.
+// Contact details from the admin (Himlio's Company details), social links (Settings → Social)
+// and the published privacy policy page, shown in the footer.
 const contact = await contactDetails(Astro.cache);
+const social = socialLinksFrom(settingsResult.data.social);
+const privacyPath = await privacyPolicyPath();
 const { siteTitle, siteTagline, siteLogo, titleSeparator } = resolveSiteIdentity(
 	settingsResult.data,
 );
@@ -87,6 +95,13 @@ const isLoggedIn = !!Astro.locals.user;
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>{fullTitle}</title>
 		<EmDashHead page={pageCtx} />
+		{
+			// The favicon from Settings → General comes from EmDashHead; until one is set, the
+			// starter's.
+			!settingsResult.data.favicon?.url && (
+				<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+			)
+		}
 		<script is:inline>
 			// Apply an explicit theme choice immediately to prevent flash.
 			// With no cookie, color-scheme: light dark follows the OS.
@@ -109,7 +124,15 @@ const isLoggedIn = !!Astro.locals.user;
 			<slot />
 		</main>
 
-		<Footer {siteTitle} {siteTagline} {siteLogo} {contact} columns={footerColumns} />
+		<Footer
+			{siteTitle}
+			{siteTagline}
+			{siteLogo}
+			{contact}
+			{social}
+			{privacyPath}
+			columns={footerColumns}
+		/>
 
 		<EmDashBodyEnd page={pageCtx} />
 	</body>

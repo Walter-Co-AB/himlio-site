@@ -1,0 +1,42 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "0004_business_info_privacy",
+    "description": "Company details get a business type (for the business info search engines read), and the site gets the privacy policy page as a draft."
+  },
+  "collections": [
+    {
+      "slug": "company",
+      "label": "Company details",
+      "fields": [
+        {
+          "slug": "business_type",
+          "label": "Business type (for search engines; Local business if unsure)",
+          "type": "select",
+          "defaultValue": "LocalBusiness",
+          "validation": {
+            "options": [
+              "LocalBusiness",
+              "HairSalon",
+              "BeautySalon",
+              "NailSalon",
+              "DaySpa",
+              "TattooParlor",
+              "HealthAndBeautyBusiness",
+              "ProfessionalService",
+              "Restaurant",
+              "CafeOrCoffeeShop",
+              "Store",
+              "AutoRepair",
+              "HomeAndConstructionBusiness",
+              "MedicalBusiness",
+              "Organization"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "privacyPage": true
+}

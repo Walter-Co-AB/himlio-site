@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.14.1",
+  "version": "1.15.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",
@@ -93,10 +93,22 @@
     "./booking/admin": {
       "types": "./dist/booking/admin.d.ts",
       "default": "./dist/booking/admin.js"
+    },
+    "./site": {
+      "types": "./dist/site/astro/ui.d.ts",
+      "default": "./dist/site/astro/ui.js"
+    },
+    "./site/astro": {
+      "types": "./dist/site/astro/index.d.ts",
+      "default": "./dist/site/astro/index.js"
+    },
+    "./site/plugin": {
+      "types": "./dist/site/plugin.d.ts",
+      "default": "./dist/site/plugin.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts src/forms/plugin.js src/forms/plugin.d.ts dist/forms/ && mkdir -p dist/booking/astro && cp src/booking/astro/* dist/booking/astro/",
+    "build": "rm -rf dist && tsc -p tsconfig.json && cp src/emdash/ui.js src/emdash/ui.d.ts dist/emdash/ && mkdir -p dist/forms && cp src/forms/index.js src/forms/index.d.ts src/forms/plugin.js src/forms/plugin.d.ts dist/forms/ && mkdir -p dist/booking/astro && cp src/booking/astro/* dist/booking/astro/ && mkdir -p dist/site/astro && cp src/site/astro/* dist/site/astro/",
     "test": "node --test \"test/**/*.test.mjs\"",
     "prepack": "npm run build"
   },
