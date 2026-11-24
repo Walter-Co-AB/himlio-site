@@ -29,7 +29,7 @@ test('readHimlio: defaults, and email only when set', () => {
   assert.deepEqual(facts, {
     slug: 'a',
     name: 'A',
-    locale: 'sv',
+    locale: 'en',
     url: null,
     forms: { notify: [] },
   });
@@ -122,7 +122,7 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   const bad = site({ 'model/0001_x.json': JSON.stringify({ version: '1', settings: {} }) });
   assert.throws(
     () => readModelMigrations(bad, { modelMigrations: 'model' }),
-    /only blockTypes, collections, content, relabel, allowBlockTypes and addBlockFields/
+    /only blockTypes, collections, content, relabel, allowBlockTypes, addBlockFields and renameEntries/
   );
 });
 
@@ -194,6 +194,22 @@ test('addBlockFields entries are checked at build time', () => {
     () => read([{ blockType: 'marketing_hero', fields: [layout], remove: ['x'] }]),
     /found "remove"/
   );
+});
+
+test('renameEntries entries are checked at build time', () => {
+  const read = (renameEntries) =>
+    readModelMigrations(
+      site({ 'model/0001_x.json': JSON.stringify({ version: '1', renameEntries }) }),
+      { modelMigrations: 'model' }
+    );
+  const ok = { collection: 'company', slug: ['old-name', 'new-name'], title: ['Old', 'New'] };
+  assert.equal(read([ok]).at(-1).name, 'site/0001_x');
+  assert.throws(() => read({}), /must be a list/);
+  assert.throws(() => read([{ slug: ok.slug }]), /needs a collection/);
+  assert.throws(() => read([{ ...ok, slug: ['a'] }]), /slug must be/);
+  assert.throws(() => read([{ ...ok, slug: ['Gamla', 'new'] }]), /lowercase/);
+  assert.throws(() => read([{ ...ok, title: 'New' }]), /title must be/);
+  assert.throws(() => read([{ ...ok, data: {} }]), /found "data"/);
 });
 
 test('allowBlockTypes entries are checked at build time', () => {

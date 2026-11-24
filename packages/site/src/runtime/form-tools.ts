@@ -146,8 +146,9 @@ export function withFormTools<P extends FormsPluginLike>(plugin: P, notify: read
         create_form: {
           description:
             'Create a form: name, slug, pages of fields (one page for a normal form), and ' +
-            'settings such as submitLabel, confirmationMessage and retentionDays. Labels in ' +
-            `Swedish unless asked otherwise. ${rules}`,
+            'settings such as submitLabel, confirmationMessage and retentionDays. Name, slug and ' +
+            "field names in English; labels and messages visitors see in the site's language. " +
+            rules,
           route: CONNECTOR_CREATE,
           input: connectorCreateInput,
         },

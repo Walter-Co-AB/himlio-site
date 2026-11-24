@@ -104,7 +104,7 @@ function himlio(options: HimlioOptions) {
       siteUrl,
       database: d1({ binding: 'DB', session: 'auto', coalesce: true }),
       storage: r2({ binding: 'MEDIA' }),
-      // Forms (Formulär) on every site: built in the admin, placed on a page as a Form block in
+      // Forms on every site: built in the admin, placed on a page as a Form block in
       // rich text. Honeypot spam protection unless a form chooses otherwise; notifications go
       // out through the email plugin above.
       // Booking (Bokning): services and opening hours in the admin, a Booking block for pages.
@@ -116,7 +116,7 @@ function himlio(options: HimlioOptions) {
       admin: {
         siteName: facts.name,
         // The admin is in English, like EmDash, its plugins and the code. The site itself (content
-        // and interface text) is Swedish.
+        // and interface text) is in its own language, himlio.json `locale`.
         locales: ['en'],
       },
     }),

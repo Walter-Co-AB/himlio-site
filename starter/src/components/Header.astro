@@ -3,6 +3,7 @@
 // and the mobile menu. Data comes from Base.astro; menus are edited in the admin.
 import { Icon } from "astro-iconset/components";
 import type { MenuItem, SiteLogo } from "../utils/site";
+import { t } from "../utils/strings";
 
 interface Props {
 	siteTitle: string;
@@ -40,7 +41,7 @@ const hasMenuPanel = navLinks.length > 0 || panelButtons.length > 0 || isLoggedI
 		</a>
 		{
 			navLinks.length > 0 && (
-				<nav class="nav__links" aria-label="Huvudmeny">
+				<nav class="nav__links" aria-label={t.mainMenu}>
 					{navLinks.map((item) => (
 						<a
 							href={item.url}
@@ -72,7 +73,7 @@ const hasMenuPanel = navLinks.length > 0 || panelButtons.length > 0 || isLoggedI
 						class="nav__menu-btn"
 						aria-expanded="false"
 						aria-controls="mobile-menu"
-						aria-label="Meny"
+						aria-label={t.menu}
 					>
 						<Icon name="ph:list" class="nav__menu-open" aria-hidden="true" />
 						<Icon name="ph:x" class="nav__menu-close" aria-hidden="true" />
@@ -82,7 +83,7 @@ const hasMenuPanel = navLinks.length > 0 || panelButtons.length > 0 || isLoggedI
 		</div>
 		{
 			hasMenuPanel && (
-				<nav id="mobile-menu" class="nav__panel" aria-label="Huvudmeny" hidden>
+				<nav id="mobile-menu" class="nav__panel" aria-label={t.mainMenu} hidden>
 					{[...navLinks, ...panelButtons].map((item) => (
 						<a
 							href={item.url}

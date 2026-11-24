@@ -1,8 +1,10 @@
 // Sample content for the local dev server, for looking at the design and for screenshots.
 // Part of @himlio/site. Uses EmDash's dev-only setup bypass, so it only works against `astro dev`.
 //
-//   himlio-site fixtures             tagline, company details, a home page, "Om oss" and "Kontakt"
-//                                    with a sample contact form, and "Block gallery"
+//   himlio-site fixtures             tagline, company details, a home page, "About us" and
+//                                    "Contact" with a sample contact form (in the site's language,
+//                                    cli/samples.mjs: /om-oss and /kontakt on a Swedish site), and
+//                                    "Block gallery"
 //                                    (/block-gallery, -2, ...): every section type the pages allow, with
 //                                    all fields filled (long text), only the required ones,
 //                                    and once per option of each select field (design variants)
@@ -13,6 +15,7 @@
 import { execFileSync } from 'node:child_process';
 import { deflateSync } from 'node:zlib';
 import { devPort, readHimlio } from '../dist/config.js';
+import { samples } from './samples.mjs';
 
 const args = process.argv.slice(3);
 const empty = args.includes('--empty');
@@ -89,10 +92,7 @@ const block = (text, style = 'normal') => ({
   children: [{ _type: 'span', _key: 's', text, marks: [] }],
 });
 
-const START_TEXT =
-  'Det här är exempelinnehåll från himlio-site fixtures, för att se hur designen fungerar med riktig text. Det visas bara på den lokala utvecklingsservern.';
-const ABOUT_TEXT =
-  'Exempeltext: ett par stycken om företaget. Här kan kunden berätta vad de gör, för vem och hur man kommer i kontakt.';
+const S = samples(himlio.locale);
 
 /**
  * Sample pages for the site's content model. With pages built from sections (`content` is a
@@ -108,16 +108,12 @@ async function samplePages() {
   if (content?.type !== 'blocks') {
     return {
       start: {
-        title: 'Välkommen',
-        content: [block('Exempeltext för startsidan', 'h2'), block(START_TEXT)],
+        title: S.titles.start,
+        content: [block(S.startHeading, 'h2'), block(S.startText)],
       },
-      'om-oss': {
-        title: 'Om oss',
-        content: [
-          block(ABOUT_TEXT),
-          block('Exempel på underrubrik', 'h2'),
-          block('Ytterligare ett stycke exempeltext för att visa radlängd och avstånd.'),
-        ],
+      [S.pages.about]: {
+        title: S.titles.about,
+        content: [block(S.aboutText), block(S.subheading, 'h2'), block(S.moreText)],
       },
     };
   }
@@ -132,10 +128,10 @@ async function samplePages() {
   const hero = {
     _type: 'marketing_hero',
     _key: key(),
-    headline: 'Exempelrubrik för startsidan',
-    subheadline: 'Exempeltext: en mening om vad företaget erbjuder.',
-    primary_cta_label: 'Om oss',
-    primary_cta_url: '/om-oss',
+    headline: S.hero.headline,
+    subheadline: S.hero.subheadline,
+    primary_cta_label: S.hero.cta,
+    primary_cta_url: `/${S.pages.about}`,
   };
   // The form in its own section (marketing_form, the starter's "Contact form") where the site
   // has it, otherwise as a Form block in a Text section.
@@ -143,44 +139,37 @@ async function samplePages() {
     ? {
         _type: 'marketing_form',
         _key: key(),
-        eyebrow: 'Kontakt',
-        headline: 'Kontakta oss',
-        intro: 'Exempeltext: skriv till oss så hör vi av oss.',
+        eyebrow: S.contact.eyebrow,
+        headline: S.contact.headline,
+        intro: S.contact.intro,
         form: FORM_SLUG,
         show_contact_details: true,
-        aside_text: 'Exempeltext: ett par rader bredvid formuläret, till exempel när ni svarar.',
+        aside_text: S.contact.aside,
       }
     : {
         _type: 'marketing_text',
         _key: key(),
-        headline: 'Kontakta oss',
-        body: [
-          block('Exempeltext: skriv till oss så hör vi av oss.'),
-          { _type: 'emdash-form', _key: key(), formId: FORM_SLUG },
-        ],
+        headline: S.contact.headline,
+        body: [block(S.contact.intro), { _type: 'emdash-form', _key: key(), formId: FORM_SLUG }],
       };
   const only = (blocks) => blocks.filter((b) => allowed.size === 0 || allowed.has(b._type));
   return {
     ...(await galleryPages(allowed, content.validation?.maxItems ?? 20)),
     home: {
-      title: 'Start',
-      content: only([hero, text('Exempeltext för startsidan', [START_TEXT])]),
+      title: S.titles.home,
+      content: only([hero, text(S.startHeading, [S.startText])]),
     },
-    'om-oss': {
-      title: 'Om oss',
-      content: only([
-        text(undefined, [
-          ABOUT_TEXT,
-          'Ytterligare ett stycke exempeltext för att visa radlängd och avstånd.',
-        ]),
-      ]),
+    [S.pages.about]: {
+      title: S.titles.about,
+      content: only([text(undefined, [S.aboutText, S.moreText])]),
     },
-    kontakt: { title: 'Kontakt', content: only([contact]) },
+    [S.pages.contact]: { title: S.titles.contact, content: only([contact]) },
   };
 }
 
-// A sample contact form from the Forms plugin, placed on "Kontakt" (blocks sites only).
-const FORM_SLUG = 'exempelformular';
+// A sample contact form from the Forms plugin, placed on the contact page (blocks sites only).
+// Its slug, name and field names are internal, so English; its labels are the site's language.
+const FORM_SLUG = 'sample-form';
 const FORMS_API = '/_emdash/api/plugins/emdash-forms';
 async function sampleForm() {
   const list = ok(await api('GET', `${FORMS_API}/forms/list`), 'list forms').data;
@@ -195,21 +184,21 @@ async function sampleForm() {
   });
   ok(
     await api('POST', `${FORMS_API}/forms/create`, {
-      name: 'Exempelformulär',
+      name: 'Sample form',
       slug: FORM_SLUG,
       pages: [
         {
           fields: [
-            field('text', 'namn', 'Namn', true, 'half'),
-            field('email', 'epost', 'E-post', true, 'half'),
-            field('tel', 'telefon', 'Telefon', false),
-            field('textarea', 'meddelande', 'Meddelande', true),
+            field('text', 'name', S.form.labels.name, true, 'half'),
+            field('email', 'email', S.form.labels.email, true, 'half'),
+            field('tel', 'phone', S.form.labels.phone, false),
+            field('textarea', 'message', S.form.labels.message, true),
           ],
         },
       ],
       settings: {
-        submitLabel: 'Skicka',
-        confirmationMessage: 'Tack! Det här är ett exempelformulär på utvecklingsservern.',
+        submitLabel: S.form.submit,
+        confirmationMessage: S.form.confirmation,
         notifyEmails: ['info@example.com'],
         spamProtection: 'honeypot',
         retentionDays: 30,
@@ -301,18 +290,10 @@ async function sampleImage() {
   };
 }
 
-// Sample content is Swedish on purpose, like the customers' sites: compound words that don't fit
-// narrow columns, and enough text to wrap. Everything else in the gallery (slugs, titles, the
-// variant labels) is English: it is a developer tool, only ever on the local dev server.
-const LONG = {
-  headline: 'Exempelrubrik med ett riktigt långt sammansatt ord: hårvårdsspecialistkonsultationer',
-  short: 'Exempeltext med några ord',
-  sentence:
-    'Exempeltext: en längre mening som visar hur texten bryts över flera rader, med ord som verksamhetsutvecklingsprojekt.',
-  paragraphs:
-    'Exempeltext: första stycket, tillräckligt långt för att visa radlängd och avstånd mellan rader.\n\nAndra stycket, med ett långt ord som kundtjänstmedarbetarutbildning och en mening till.',
-  lines: 'Första punkten\nAndra punkten, lite längre än den första\nTredje punkten',
-};
+// The gallery's sample content is in the site's language, with its long words (cli/samples.mjs).
+// Everything else in the gallery (slugs, titles, the variant labels) is English: it is a
+// developer tool, only ever on the local dev server.
+const LONG = S.long;
 const SKIP = /^(anchor_id|service)$|_id$/; // Section IDs must be unique; booking service by name
 const URLISH = /(^|_)(url|href|link)$/;
 
@@ -333,9 +314,9 @@ function sampleValue(field, ctx) {
     case 'string':
       if (SKIP.test(field.slug)) return undefined;
       if (field.slug === 'form') value = FORM_SLUG;
-      else if (URLISH.test(field.slug)) value = '/om-oss';
+      else if (URLISH.test(field.slug)) value = `/${S.pages.about}`;
       else if (/headline|title|name|question/.test(field.slug)) value = LONG.headline;
-      else if (/price|amount/.test(field.slug)) value = '1 200 kr';
+      else if (/price|amount/.test(field.slug)) value = LONG.price;
       else if (/value|number|stat/.test(field.slug)) value = '98 %';
       else if (/label|cta|badge|period|role/.test(field.slug)) value = LONG.short;
       else value = LONG.sentence;
@@ -365,7 +346,7 @@ function sampleValue(field, ctx) {
       break;
     case 'portableText':
       value = [
-        block('Exempel på underrubrik', 'h2'),
+        block(LONG.subheading, 'h2'),
         block(LONG.paragraphs.split('\n\n')[0]),
         block(LONG.sentence),
       ];
@@ -473,14 +454,16 @@ async function removePage(slug) {
   return existing.status === 200;
 }
 
+const COMPANY_ENTRY = 'company-details'; // renamed from foretagsuppgifter by 0003
+
 async function setCompany(data) {
-  const entry = await api('GET', '/_emdash/api/content/company/foretagsuppgifter');
+  const entry = await api('GET', `/_emdash/api/content/company/${COMPANY_ENTRY}`);
   if (entry.status !== 200) {
     console.warn('company entry not found (content-model migration not applied yet?); skipped');
     return;
   }
   ok(
-    await api('PUT', '/_emdash/api/content/company/foretagsuppgifter', {
+    await api('PUT', `/_emdash/api/content/company/${COMPANY_ENTRY}`, {
       _rev: entry.json.data._rev,
       data,
     }),
@@ -495,25 +478,19 @@ ok(await api('POST', '/_emdash/api/setup/dev-bypass'), 'dev bypass');
 if (empty) {
   ok(await api('POST', '/_emdash/api/settings', { tagline: '' }), 'tagline');
   await setCompany({ phone: '', email: '', address: '', org_number: '', opening_hours: '' });
-  for (const slug of ['home', 'start', 'om-oss', 'kontakt']) await removePage(slug);
+  for (const slug of ['home', 'start', S.pages.about, S.pages.contact]) await removePage(slug);
   for (let i = 1; await removePage(i > 1 ? `block-gallery-${i}` : 'block-gallery'); i++);
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
     await api('POST', '/_emdash/api/settings', {
-      tagline: 'Exempeltext: en mening om vad företaget gör.',
+      tagline: S.tagline,
     }),
     'tagline'
   );
-  await setCompany({
-    phone: '08-123 456 78',
-    email: 'info@example.com',
-    address: 'Exempelgatan 1\n123 45 Stockholm',
-    org_number: '556000-0000',
-    opening_hours: 'Mån–fre 9–17',
-  });
+  await setCompany({ ...S.company, email: 'info@example.com' });
   const pages = await samplePages();
-  if (pages.kontakt) await sampleForm();
+  if (pages[S.pages.contact]) await sampleForm();
   for (const [slug, page] of Object.entries(pages)) await upsertPage(slug, page);
   const gallery = Object.keys(pages).filter((slug) => slug.startsWith('block-gallery'));
   // Unpublish gallery pages a bigger content model left behind.

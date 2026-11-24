@@ -23,9 +23,11 @@ on:
         type: string
         default: ''
       screenshot-pages:
-        description: Space-separated paths to screenshot.
+        description: >-
+          Space-separated paths to screenshot. Empty: himlio-site's defaults (home, about and
+          contact in the site's language, the block gallery and a missing page).
         type: string
-        default: / /om-oss /sidan-finns-inte
+        default: ''
 
 permissions:
   contents: read

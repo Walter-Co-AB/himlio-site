@@ -23,8 +23,9 @@ yours to change, completely.
 So a section component may look nothing like the template's, and that is fine. What is not fine:
 
 - **Copy in code.** Every visible text comes from a field, a menu, the settings or the company
-  details. A heading the customer can't change is a bug. (Interface words such as "Meny" or
-  "Hoppa till innehållet" are code; they are the same on every page.)
+  details. A heading the customer can't change is a bug. Interface words that are the same on
+  every page ("Menu", "Skip to content", the 404 page) come from `src/utils/strings.ts`, one
+  object per language (see "Language" below), never written into the markup.
 - **A section the customer can't rebuild.** If the design shows something on a page, the
   customer must be able to make it again, or remove it, from the admin.
 - **Porting a theme.** Don't copy AstroWind, AstroDeck or a Tailwind template into the repo;
@@ -46,7 +47,7 @@ So a section component may look nothing like the template's, and that is fine. W
 5. **Check it against the reference** with the block gallery and screenshots (below), in light
    and dark mode, desktop and mobile, until it matches.
 6. **Check the content cases**, not only the happy path: empty optional fields, one item and
-   twelve, long Swedish words, a missing image.
+   twelve, long words, a missing image.
 
 ## Variants: one block type, several looks
 
@@ -127,13 +128,28 @@ and `allowBlockTypes` in a migration, a component in `src/components/blocks/`, r
   map to icon names in the component.
 - **Motion** respects `prefers-reduced-motion` (the base styles turn it off); animate
   `transform` and `opacity`; content must be readable before any animation runs.
-- **Swedish text is long.** Compound words (`hårvårdsspecialistkonsultationer`) don't fit narrow
-  columns. Headings hyphenate (`hyphens: auto`; the page is `lang="sv"`) and break as a last
+- **Long words.** Swedish compound words (`hårvårdsspecialistkonsultationer`) don't fit narrow
+  columns. Headings hyphenate (`hyphens: auto`, in the page's `lang`) and break as a last
   resort (`overflow-wrap: anywhere`); do the same for any big text you add, and never set
   `white-space: nowrap` on text the customer writes.
 - **Accessibility:** one `h1` per page, headings in order,
   contrast at least 4.5:1 for text (3:1 for large text and UI) in both modes, visible focus,
   44 px touch targets, alt text from the image field.
+
+## Language
+
+The code is English, and so are the names inside the CMS that aren't URLs: block types, fields,
+select options, entry and form slugs, form names and field names. The site's language is
+`locale` in `himlio.json` (`sv` on most sites), and only what visitors read is in it:
+
+- **Content** (in the admin) and **page URLs** (page slugs, for search engines).
+- **Interface text** from `src/utils/strings.ts`: `localized({ en: {...}, sv: {...} })` from
+  `@himlio/site/runtime` picks the site's language. Add a key to every language when you add
+  one; the type check catches a missing one.
+- **Platform text** (the booking form and its emails, the link pages) follows `locale` by itself.
+
+Text only editors see (an empty page's "Add sections in the editor") is English, like the
+admin. Select options are English slugs (`cover`); the label explains them to the editor.
 
 ## Seeing it: the block gallery
 
@@ -145,7 +161,8 @@ npm run screenshots    # light, dark and mobile, into screenshots/
 
 `fixtures` builds the **block gallery** from the site's live content model, so your own block
 types and variants are in it: every section type the pages allow, once with every field filled
-(long Swedish text, three repeater items, a sample image), once with only the required fields,
+(long text in the site's language, three repeater items, a sample image), once with only the
+required fields,
 and once per option of each select field. One look at `/block-gallery` after a token change
 shows every section, its empty state and its variants. CI's **screenshots** artifact has the
 same pages; look at it before merging a design change.

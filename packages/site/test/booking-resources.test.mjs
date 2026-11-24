@@ -303,7 +303,7 @@ test('feeds and calendars per resource', async () => {
   const annaFeed = new URL(await feedUrl(t.deps, t.anna.id));
   const text = await feed(t.deps, annaFeed.searchParams.get('k'), t.anna.id);
   assert.equal(text.match(/BEGIN:VEVENT/g).length, 1);
-  assert.match(text, /X-WR-CALNAME:Bokningar – Anna\\, Salong Test/);
+  assert.match(text, /X-WR-CALNAME:Bookings – Anna\\, Salong Test/);
   assert.equal(
     await feed(t.deps, annaFeed.searchParams.get('k'), t.bo.id),
     null,

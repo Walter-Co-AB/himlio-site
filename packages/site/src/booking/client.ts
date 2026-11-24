@@ -1,8 +1,10 @@
 // The visitor's booking UI in the browser: service, who (if the site has resources), date, time,
 // contact details and the service's questions, send. Enhances the markup of Booking.astro
-// ([data-hb-booking]); all text is Swedish. Talks to the plugin's public routes (services, slots,
+// ([data-hb-booking]); its text is in the site's language (data-lang, strings.ts). Talks to the plugin's public routes (services, slots,
 // book). With Turnstile on the site, a widget proves the visitor is a person and the booking
 // counts at once; otherwise the visitor confirms by email.
+
+import { BOOKING_TEXT, intlLocale, language, type BookingText } from './strings.js';
 
 const API = '/_emdash/api/plugins/himlio-booking/';
 const DAYS_PER_PAGE = 14;
@@ -51,7 +53,7 @@ interface Turnstile {
   reset(id?: string): void;
 }
 
-async function call<T>(route: string, body: unknown): Promise<T> {
+async function call<T>(t: BookingText, route: string, body: unknown): Promise<T> {
   const res = await fetch(API + route, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -63,7 +65,7 @@ async function call<T>(route: string, body: unknown): Promise<T> {
     | null;
   if (!res.ok || !json || !json.success) {
     const error = new Error(
-      (json && !json.success && json.error?.message) || 'Något gick fel. Försök igen.'
+      (json && !json.success && json.error?.message) || t.genericError
     ) as Error & { code?: string };
     error.code = (json && !json.success && json.error?.code) || undefined;
     throw error;
@@ -87,26 +89,31 @@ function loadTurnstile(): Promise<Turnstile | null> {
   return turnstileScript;
 }
 
-const weekday = new Intl.DateTimeFormat('sv-SE', { weekday: 'short', timeZone: 'UTC' });
-const dayMonth = new Intl.DateTimeFormat('sv-SE', {
-  day: 'numeric',
-  month: 'short',
-  timeZone: 'UTC',
-});
-const longDate = new Intl.DateTimeFormat('sv-SE', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  timeZone: 'UTC',
-});
-const kronor = new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 });
+function formats(t: BookingText) {
+  const locale = intlLocale(t.lang);
+  const money = new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'SEK',
+    maximumFractionDigits: 0,
+  });
+  return {
+    weekday: new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }),
+    dayMonth: new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+    longDate: new Intl.DateTimeFormat(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    }),
+    price: (p?: Service['price']) =>
+      p ? `${p.kind === 'from' ? t.priceFrom : ''}${money.format(p.amount)}` : '',
+  };
+}
 const asUtc = (date: string) => new Date(`${date}T12:00:00Z`);
 const addDays = (date: string, n: number) =>
   new Date(asUtc(date).getTime() + n * 86_400_000).toISOString().slice(0, 10);
 const minutes = (n: number) =>
   n % 60 === 0 ? `${n / 60} h` : n > 60 ? `${Math.floor(n / 60)} h ${n % 60} min` : `${n} min`;
-const price = (p?: Service['price']) =>
-  p ? `${p.kind === 'from' ? 'från ' : ''}${kronor.format(p.amount)} kr` : '';
 
 /** Appends children (Element.append's type clashes with workers-types in this package). */
 function add(parent: Node, ...children: Node[]) {
@@ -150,6 +157,8 @@ function option(
 function init(root: HTMLElement) {
   if (root.dataset.hbReady) return;
   root.dataset.hbReady = '1';
+  const t = BOOKING_TEXT[language(root.dataset.lang)];
+  const { weekday, dayMonth, longDate, price } = formats(t);
   const form = root.querySelector<HTMLFormElement>('form')!;
   const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
   const servicePart = q<HTMLFieldSetElement>('[data-hb-services]');
@@ -218,7 +227,7 @@ function init(root: HTMLElement) {
     if (resourcePart.hidden) return;
     add(
       resourceList,
-      option('resource', 'any', resource === 'any', ['Vem som helst', 'Första lediga tid'], () => {
+      option('resource', 'any', resource === 'any', [...t.anyone], () => {
         resource = 'any';
         void reload();
       })
@@ -285,7 +294,7 @@ function init(root: HTMLElement) {
         : 'any';
     renderResources();
     renderQuestions();
-    submit.textContent = s.mode === 'request' ? 'Skicka förfrågan' : 'Boka';
+    submit.textContent = s.mode === 'request' ? t.sendRequest : t.book;
     await reload();
   }
 
@@ -300,9 +309,9 @@ function init(root: HTMLElement) {
     if (!service) return;
     datePart.hidden = false;
     datePart.setAttribute('aria-busy', 'true');
-    say('Hämtar lediga tider…');
+    say(t.loading);
     try {
-      slots = await call<Slots>('slots', {
+      slots = await call<Slots>(t, 'slots', {
         serviceId: service.id,
         ...(resource !== 'any' ? { resourceId: resource } : {}),
         from: from || undefined,
@@ -330,7 +339,7 @@ function init(root: HTMLElement) {
         class: 'hb-booking-date',
         'aria-pressed': String(d.date === date),
         disabled: d.starts.length === 0,
-        'aria-label': `${longDate.format(asUtc(d.date))}${d.starts.length ? '' : ', inga lediga tider'}`,
+        'aria-label': `${longDate.format(asUtc(d.date))}${d.starts.length ? '' : t.noTimesOnDay}`,
       });
       add(
         button,
@@ -347,8 +356,7 @@ function init(root: HTMLElement) {
     }
     prev.disabled = !from || from <= slots.firstDate;
     next.disabled = addDays(from, DAYS_PER_PAGE) > slots.lastDate;
-    if (!slots.days.some((d) => d.starts.length))
-      say('Inga lediga tider de här dagarna. Prova nästa period.');
+    if (!slots.days.some((d) => d.starts.length)) say(t.noTimes);
   }
 
   function renderTimes() {
@@ -358,7 +366,7 @@ function init(root: HTMLElement) {
     submit.hidden = !start;
     timeList.replaceChildren();
     if (!day) return;
-    timeLegend.textContent = `Tid, ${longDate.format(asUtc(day.date))}`;
+    timeLegend.textContent = t.timeOn(longDate.format(asUtc(day.date)));
     for (const s of day.starts) {
       const button = el(
         'button',
@@ -374,18 +382,14 @@ function init(root: HTMLElement) {
         renderTimes();
         const who =
           resource !== 'any'
-            ? ` hos ${nameOf(resource)}`
+            ? t.withWhom(nameOf(resource))
             : s.resources.length === 1 && service!.resources.length >= 1
-              ? ` hos ${nameOf(s.resources[0]!)}`
+              ? t.withWhom(nameOf(s.resources[0]!))
               : '';
-        summary.textContent = `${service!.name}${who}, ${longDate.format(asUtc(day.date))} kl. ${s.time}${service!.price ? ` · ${price(service!.price)}` : ''}`;
+        summary.textContent = `${service!.name}${who}, ${t.at(longDate.format(asUtc(day.date)), s.time)}${service!.price ? ` · ${price(service!.price)}` : ''}`;
         const notes: string[] = [];
-        if (service!.mode === 'request')
-          notes.push(
-            'Det här är en förfrågan: tiden reserveras åt dig och du får besked med mejl.'
-          );
-        if (service!.cancelHours)
-          notes.push(`Avbokning och ombokning senast ${service!.cancelHours} timmar innan.`);
+        if (service!.mode === 'request') notes.push(t.requestNote);
+        if (service!.cancelHours) notes.push(t.deadlineNote(service!.cancelHours));
         note.textContent = notes.join(' ');
         note.hidden = notes.length === 0;
         void showTurnstile();
@@ -402,7 +406,7 @@ function init(root: HTMLElement) {
     turnstileBox.hidden = false;
     widget = turnstile.render(turnstileBox, {
       sitekey: siteKey,
-      language: 'sv',
+      language: t.lang,
       callback: (t: string) => (token = t),
       'expired-callback': () => (token = ''),
       'error-callback': () => (token = ''),
@@ -425,7 +429,7 @@ function init(root: HTMLElement) {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!service || !start) return say('Välj en tid först.', 'error');
+    if (!service || !start) return say(t.pickTime, 'error');
     if (!form.reportValidity()) return;
     const data = new FormData(form);
     const value = (k: string) => String(data.get(k) ?? '').trim();
@@ -435,9 +439,9 @@ function init(root: HTMLElement) {
       if (v) answers[question.id] = v;
     }
     submit.disabled = true;
-    say('Skickar…');
+    say(t.sending);
     try {
-      const result = await call<BookResult>('book', {
+      const result = await call<BookResult>(t, 'book', {
         serviceId: service.id,
         ...(resource !== 'any' ? { resourceId: resource } : {}),
         start: start.start,
@@ -449,23 +453,14 @@ function init(root: HTMLElement) {
         website: value('website') || undefined,
         ...(token ? { turnstileToken: token } : {}),
       });
-      const who = result.resourceName ? ` hos ${result.resourceName}` : '';
-      const when = `${longDate.format(asUtc(date))} kl. ${start.time}`;
+      const who = result.resourceName ? t.withWhom(result.resourceName) : '';
+      const when = t.at(longDate.format(asUtc(date)), start.time);
       const done = el('div', { class: 'hb-booking-done', role: 'status', tabindex: '-1' });
-      const lines: Record<BookResult['status'], [string, string]> = {
-        confirmed: [
-          'Tack, du är bokad!',
-          `Vi har skickat en bekräftelse med kalenderfil till ${value('email')}.`,
-        ],
-        requested: [
-          'Tack för din förfrågan!',
-          `Tiden är reserverad åt dig. Du får besked till ${value('email')} när vi har svarat.`,
-        ],
-        pending: [
-          'Nästan klart!',
-          `Vi har skickat ett mejl till ${value('email')}. Bekräfta via länken i mejlet inom ` +
-            `${result.holdMinutes ?? 30} minuter, annars släpps tiden.`,
-        ],
+      const email = value('email');
+      const lines: Record<BookResult['status'], readonly [string, string]> = {
+        confirmed: t.confirmedDone(email),
+        requested: t.requestedDone(email),
+        pending: t.pendingDone(email, result.holdMinutes ?? 30),
       };
       const [title, text] = lines[result.status];
       add(
@@ -496,7 +491,7 @@ function init(root: HTMLElement) {
 
   (async () => {
     try {
-      const result = await call<{ items: Service[]; turnstileSiteKey?: string }>('services', {});
+      const result = await call<{ items: Service[]; turnstileSiteKey?: string }>(t, 'services', {});
       siteKey = result.turnstileSiteKey;
       services = result.items;
       const wanted = fixedService.toLowerCase();
@@ -511,14 +506,14 @@ function init(root: HTMLElement) {
         );
       }
       if (services.length === 0) {
-        say('Det går inte att boka just nu.');
+        say(t.unavailable);
         return;
       }
       root.querySelector('[data-hb-noscript]')?.remove();
       form.hidden = false;
       renderServices();
       if (services.length === 1) await choose(services[0]!);
-      else say('Välj vad du vill boka.');
+      else say(t.chooseService);
     } catch (error) {
       say((error as Error).message, 'error');
     }

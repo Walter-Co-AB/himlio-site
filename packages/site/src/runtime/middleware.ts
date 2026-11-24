@@ -13,7 +13,7 @@ import { startModelMigrations } from './model-migrations.js';
 export const onRequest = defineMiddleware(async (context, next) => {
   if (isBookingPage(context.url)) {
     const runtime = (context.locals as { emdash?: Parameters<typeof bookingPage>[1] }).emdash;
-    return bookingPage(context.request, runtime, facts.name);
+    return bookingPage(context.request, runtime, facts.name, facts.locale);
   }
   const response = await next();
   const cf = (context.locals as { cfContext?: { waitUntil(p: Promise<unknown>): void } }).cfContext;

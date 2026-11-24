@@ -13,6 +13,7 @@ import {
   BOOKING_PLUGIN_VERSION,
   BOOKING_STORAGE,
 } from './store.js';
+import { bookingText } from './strings.js';
 
 const send = mailer(facts.email ? { email: facts.email.from, name: facts.name } : null);
 
@@ -84,6 +85,7 @@ async function makeDeps(ctx: Ctx): Promise<Deps> {
       name: ctx.site?.name || facts.name,
       url: siteUrl(ctx),
       ...(facts.email?.replyTo ? { replyTo: facts.email.replyTo } : {}),
+      text: bookingText(facts.locale),
     },
     platformNotify: facts.forms.notify,
     fetchCalendar,

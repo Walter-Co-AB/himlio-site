@@ -1,0 +1,14 @@
+{
+  "version": "1",
+  "meta": {
+    "name": "0003_company_entry_english",
+    "description": "Internal names in the CMS are English: the company details entry is company-details, titled Company details (if its title is still the Swedish one)."
+  },
+  "renameEntries": [
+    {
+      "collection": "company",
+      "slug": ["foretagsuppgifter", "company-details"],
+      "title": ["Företagsuppgifter", "Company details"]
+    }
+  ]
+}

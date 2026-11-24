@@ -8,7 +8,8 @@
 // collections and fields, but only labels that still have their old value (see applyRelabel).
 // `allowBlockTypes` adds block types to a blocks field's allowed list (applyAllowBlockTypes).
 // `addBlockFields` adds optional fields to an existing block type (applyAddBlockFields), e.g. a
-// `layout` select for a design variant.
+// `layout` select for a design variant. `renameEntries` renames an entry's slug, and its title
+// while it still has the old one (applyRenameEntries).
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -22,7 +23,13 @@
 // Rules for migration files: append-only, never edit one that has been released.
 import { createDialect } from '@emdash-cms/cloudflare/db/d1';
 import { env } from 'cloudflare:workers';
-import { BlockTypeRegistry, SchemaRegistry, applySeed, validateSeed } from 'emdash';
+import {
+  BlockTypeRegistry,
+  ContentRepository,
+  SchemaRegistry,
+  applySeed,
+  validateSeed,
+} from 'emdash';
 import { Kysely } from 'kysely';
 import { modelMigrations } from 'virtual:himlio/config';
 
@@ -50,10 +57,17 @@ type BlockField = Parameters<BlockTypeRegistry['updateBlockType']>[1]['fields'] 
   ? F
   : never;
 
+interface RenameEntry {
+  collection: string;
+  slug: LabelChange;
+  title?: LabelChange;
+}
+
 type Migration = Seed & {
   relabel?: Relabel[];
   allowBlockTypes?: AllowBlockTypes[];
   addBlockFields?: AddBlockFields[];
+  renameEntries?: RenameEntry[];
 };
 type Database = Parameters<typeof applySeed>[0];
 
@@ -171,6 +185,28 @@ async function applyAddBlockFields(
   }
 }
 
+/**
+ * Renames entries (e.g. a Swedish internal slug to English). Only an entry that still has the old
+ * slug, and only when the new slug is free; the title changes only while it is still the old
+ * one, so a title the customer changed is kept. Missing collections and entries are skipped.
+ */
+async function applyRenameEntries(
+  db: Database,
+  entries: RenameEntry[],
+  name: string
+): Promise<void> {
+  const schema = new SchemaRegistry(db);
+  const content = new ContentRepository(db);
+  for (const { collection, slug, title } of entries) {
+    if (!(await schema.getCollection(collection))) continue;
+    const item = await content.findBySlug(collection, slug[0]);
+    if (!item || (await content.findBySlug(collection, slug[1]))) continue;
+    const data = title && item.data.title === title[0] ? { title: title[1] } : undefined;
+    await content.update(collection, item.id, { slug: slug[1], ...(data ? { data } : {}) });
+    console.log(`[himlio] ${name}: renamed ${collection}/${slug[0]} to ${slug[1]}`);
+  }
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -182,7 +218,7 @@ async function applyPending(): Promise<void> {
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
     for (const { name, seed: migration } of todo) {
-      const { relabel, allowBlockTypes, addBlockFields, ...seed } = migration;
+      const { relabel, allowBlockTypes, addBlockFields, renameEntries, ...seed } = migration;
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
@@ -191,6 +227,7 @@ async function applyPending(): Promise<void> {
       if (relabel) await applyRelabel(db, relabel, name);
       if (allowBlockTypes) await applyAllowBlockTypes(db, allowBlockTypes, name);
       if (addBlockFields) await applyAddBlockFields(db, addBlockFields, name);
+      if (renameEntries) await applyRenameEntries(db, renameEntries, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

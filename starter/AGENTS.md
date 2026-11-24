@@ -16,8 +16,11 @@ working on this site. The site runs on Himlio, the website platform from Walter 
   and `/runtime`, never `emdash` directly, so the site uses the EmDash version the platform pins.
 - Admin at `/_emdash/admin`, in English (like EmDash, its plugins and the code). Content and
   users in D1 (`DB`), media in R2 (`MEDIA`).
-- Swedish first on the site: `sv` is the site language. Write the site's interface text and content
-  in Swedish.
+- **Language.** The site's language is `locale` in `himlio.json` (`sv` on most sites). In that
+  language: the content, page URLs (page slugs) and the interface text visitors read. That text
+  comes from `src/utils/strings.ts` (`localized()`, one object per language), never written into
+  markup. Everything else is English: code, comments, commits, text only editors see, and names
+  inside the CMS that aren't URLs (entry and form slugs, form names, field names, block types).
 
 ## What's where
 
@@ -91,7 +94,7 @@ own code now: change it as much as the design needs. The design guide,
 
 When you change a **published** item with `content_update` (contact details, a page), pass
 `status: "published"` or call `content_publish` afterwards. Otherwise the change can stay a
-draft and not show on the site. The contact details are the one entry `foretagsuppgifter` in
+draft and not show on the site. The contact details are the one entry `company-details` in
 `company`: `content_get` it, then `content_update` with its `_rev`. Connectors can also change
 the content model, the site settings (not the site URL) and forms, and read form submissions;
 see "AI connectors" in the `@himlio/site` README for what they can and can't do.

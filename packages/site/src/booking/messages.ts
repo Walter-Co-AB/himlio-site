@@ -1,21 +1,35 @@
-// The emails and link pages of booking. To visitors in Swedish (the site's language); to the
-// customer in English, like the Forms notifications and the admin.
+// The emails and link pages of booking. To visitors in the site's language (strings.ts); to
+// the customer in English, like the Forms notifications and the admin.
 
 import type { Booking } from './store.js';
+import { intlLocale, type BookingText, type Lang } from './strings.js';
 import { TIME_ZONE } from './time.js';
 
-const svDate = new Intl.DateTimeFormat('sv-SE', {
-  timeZone: TIME_ZONE,
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-const svTime = new Intl.DateTimeFormat('sv-SE', {
-  timeZone: TIME_ZONE,
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const formats = new Map<Lang, { date: Intl.DateTimeFormat; time: Intl.DateTimeFormat }>();
+function format(lang: Lang) {
+  let f = formats.get(lang);
+  if (!f) {
+    const locale = intlLocale(lang);
+    f = {
+      date: new Intl.DateTimeFormat(locale, {
+        timeZone: TIME_ZONE,
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+      time: new Intl.DateTimeFormat(locale, {
+        timeZone: TIME_ZONE,
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+      }),
+    };
+    formats.set(lang, f);
+  }
+  return f;
+}
+
 const enWhen = new Intl.DateTimeFormat('en-GB', {
   timeZone: TIME_ZONE,
   weekday: 'long',
@@ -26,29 +40,35 @@ const enWhen = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
 });
 
-/** "måndag 23 november 2026 kl. 10:00–11:00" */
-export function swedishWhen(booking: Pick<Booking, 'start' | 'end'>): string {
+/** "Monday 23 November 2026 at 10:00–11:00", in the visitor's language. */
+export function visitorWhen(text: BookingText, booking: Pick<Booking, 'start' | 'end'>): string {
+  const { date, time } = format(text.lang);
   const start = new Date(booking.start);
-  const end = new Date(booking.end);
-  return `${svDate.format(start)} kl. ${svTime.format(start)}–${svTime.format(end)}`;
+  return text.mail.when(date.format(start), time.format(start), time.format(new Date(booking.end)));
 }
 
+/** For the customer (English): "Monday, 23 November 2026 at 10:00–11:00 (Stockholm time)". */
 export function englishWhen(booking: Pick<Booking, 'start' | 'end'>): string {
-  return `${enWhen.format(new Date(booking.start))}–${svTime.format(new Date(booking.end))} (Stockholm time)`;
+  return `${enWhen.format(new Date(booking.start))}–${format('en').time.format(new Date(booking.end))} (Stockholm time)`;
 }
 
-/** "Klippning hos Anna" (or just the service when nobody in particular is booked). */
-export function what(booking: Pick<Booking, 'serviceName' | 'resourceName'>): string {
-  return booking.resourceName
-    ? `${booking.serviceName} hos ${booking.resourceName}`
-    : booking.serviceName;
+/** "Haircut with Anna" (or just the service when nobody in particular is booked). */
+export function what(
+  text: BookingText,
+  booking: Pick<Booking, 'serviceName' | 'resourceName'>
+): string {
+  return booking.serviceName + (booking.resourceName ? text.withWhom(booking.resourceName) : '');
 }
 
-/** "senast söndag 22 november kl. 10:00", or null without a deadline. */
-export function deadlineText(booking: Pick<Booking, 'start' | 'cancelHours'>): string | null {
+/** "by Sunday 22 November at 10:00", or null without a deadline. */
+export function deadlineText(
+  text: BookingText,
+  booking: Pick<Booking, 'start' | 'cancelHours'>
+): string | null {
   if (!booking.cancelHours) return null;
+  const { date, time } = format(text.lang);
   const at = new Date(Date.parse(booking.start) - booking.cancelHours * 3_600_000);
-  return `senast ${svDate.format(at).replace(/ \d{4}$/, '')} kl. ${svTime.format(at)}`;
+  return text.mail.deadline(date.format(at).replace(/,? \d{4}$/, ''), time.format(at));
 }
 
 export interface Mail {
@@ -64,6 +84,8 @@ interface Site {
   name: string;
   /** Where visitors' replies go (himlio.json email.reply_to); else no Reply-To. */
   replyTo?: string;
+  /** The visitor texts in the site's language. */
+  text: BookingText;
 }
 
 /** The visitor's links in confirmations and reminders. */
@@ -74,15 +96,18 @@ export interface VisitorLinks {
 
 const replyTo = (site: Site) => (site.replyTo ? { replyTo: site.replyTo } : {});
 
-const signature = (site: Site) => `\n\nVänliga hälsningar\n${site.name}`;
+const signature = (site: Site) => site.text.mail.signature(site.name);
 
-function changeText(booking: Booking, links: VisitorLinks): string {
-  const deadline = deadlineText(booking);
-  const lines = [
-    deadline ? `Kan du inte komma? Avboka eller boka om ${deadline}.` : 'Kan du inte komma?',
-  ];
-  if (links.rebook) lines.push(`Boka om: ${links.rebook}`);
-  lines.push(`Avboka: ${links.cancel}`);
+/** "Haircut with Anna, Monday 23 November 2026 at 10:00–11:00" */
+const whatWhen = (site: Site, booking: Booking) =>
+  `${what(site.text, booking)}, ${visitorWhen(site.text, booking)}`;
+
+function changeText(site: Site, booking: Booking, links: VisitorLinks): string {
+  const m = site.text.mail;
+  const deadline = deadlineText(site.text, booking);
+  const lines = [deadline ? m.cantComeBy(deadline) : m.cantCome];
+  if (links.rebook) lines.push(`${m.rebook}: ${links.rebook}`);
+  lines.push(`${m.cancel}: ${links.cancel}`);
   return lines.join('\n');
 }
 
@@ -97,22 +122,23 @@ export function confirmRequestMail(
   confirmUrl: string,
   holdMinutes: number
 ): Mail {
-  const request = booking.mode === 'request';
+  const m = site.text.mail;
+  const kind = booking.mode === 'request' ? m.confirmRequest : m.confirmBooking;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: request
-      ? `Bekräfta din förfrågan hos ${site.name}`
-      : `Bekräfta din bokning hos ${site.name}`,
+    subject: kind.subject(site.name),
     // Nothing the visitor typed (not even the name): the address isn't proven yet, so this
     // email must be useless for sending someone else a message.
     text:
-      'Hej!\n\n' +
-      `Någon, förhoppningsvis du, har ${request ? 'skickat en förfrågan om' : 'bokat'} ` +
-      `${what(booking)} ${swedishWhen(booking)}.\n\n` +
-      `Bekräfta ${request ? 'förfrågan' : 'bokningen'} inom ${holdMinutes} minuter genom att öppna länken:\n${confirmUrl}\n\n` +
-      'Om du inte bekräftar släpps tiden till någon annan. Har du inte bokat något kan du ' +
-      'bortse från det här mejlet.' +
+      `${m.greeting}\n\n` +
+      m.confirmBody(
+        kind.booked,
+        `${what(site.text, booking)} ${visitorWhen(site.text, booking)}`,
+        kind.confirmIt,
+        holdMinutes,
+        confirmUrl
+      ) +
       signature(site),
   };
 }
@@ -125,49 +151,49 @@ export function confirmedMail(
   location?: string,
   moved = false
 ): Mail {
+  const m = site.text.mail;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: `${moved ? 'Ombokad' : 'Bokning bekräftad'}: ${what(booking)}, ${swedishWhen(booking)}`,
+    subject: (moved ? m.movedSubject : m.confirmedSubject)(whatWhen(site, booking)),
     text:
-      `Hej ${booking.name}!\n\n` +
-      `${moved ? 'Din bokning är flyttad till' : 'Din bokning är bekräftad'}:\n\n` +
-      `${what(booking)}\n${swedishWhen(booking)}\n` +
+      `${m.hello(booking.name)}\n\n` +
+      `${moved ? m.movedLead : m.confirmedLead}:\n\n` +
+      `${what(site.text, booking)}\n${visitorWhen(site.text, booking)}\n` +
       (location ? `${location}\n` : '') +
-      '\nDu hittar tiden i den bifogade kalenderfilen.\n\n' +
-      changeText(booking, links) +
+      `\n${m.calendarFile}\n\n` +
+      changeText(site, booking, links) +
       signature(site),
-    ics: { filename: 'bokning.ics', content: ics, method: 'PUBLISH' },
+    ics: { filename: m.icsFile, content: ics, method: 'PUBLISH' },
   };
 }
 
 export function requestReceivedMail(site: Site, booking: Booking, cancelUrl: string): Mail {
+  const m = site.text.mail;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: `Förfrågan mottagen: ${what(booking)}, ${swedishWhen(booking)}`,
+    subject: m.requestReceivedSubject(whatWhen(site, booking)),
     text:
-      `Hej ${booking.name}!\n\n` +
-      `Tack för din förfrågan om ${what(booking)} ${swedishWhen(booking)}. ` +
-      'Tiden är reserverad åt dig tills vi har svarat, och du får ett mejl när vi har ' +
-      'bekräftat eller om vi inte kan ta emot den.\n\n' +
-      `Vill du dra tillbaka förfrågan? ${cancelUrl}` +
+      `${m.hello(booking.name)}\n\n` +
+      m.requestReceived(`${what(site.text, booking)} ${visitorWhen(site.text, booking)}`) +
+      `\n\n${m.withdraw(cancelUrl)}` +
       signature(site),
   };
 }
 
 export function declinedMail(site: Site, booking: Booking, expired = false): Mail {
+  const m = site.text.mail;
+  const subject = `${what(site.text, booking)} ${visitorWhen(site.text, booking)}`;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: `Förfrågan: ${what(booking)}, ${swedishWhen(booking)}`,
+    subject: m.declinedSubject(whatWhen(site, booking)),
     text:
-      `Hej ${booking.name}!\n\n` +
-      (expired
-        ? `Vi hann tyvärr inte svara på din förfrågan om ${what(booking)} ${swedishWhen(booking)}, och tiden är släppt. `
-        : `Vi kan tyvärr inte ta emot din förfrågan om ${what(booking)} ${swedishWhen(booking)}. `) +
+      `${m.hello(booking.name)}\n\n` +
+      (expired ? m.expired(subject) : m.declined(subject)) +
       (booking.declineReason ? `\n\n${booking.declineReason}\n\n` : '') +
-      'Svara gärna på det här mejlet, eller välj en annan tid på webbplatsen.' +
+      m.declinedOutro +
       signature(site),
   };
 }
@@ -178,33 +204,33 @@ export function reminderMail(
   links: VisitorLinks,
   location?: string
 ): Mail {
+  const m = site.text.mail;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: `Påminnelse: ${what(booking)} ${swedishWhen(booking)}`,
+    subject: m.reminderSubject(whatWhen(site, booking)),
     text:
-      `Hej ${booking.name}!\n\n` +
-      `Välkommen till ${what(booking)} ${swedishWhen(booking)}.\n` +
+      `${m.hello(booking.name)}\n\n` +
+      `${m.reminder(`${what(site.text, booking)} ${visitorWhen(site.text, booking)}`)}\n` +
       (location ? `${location}\n` : '') +
       '\n' +
-      changeText(booking, links) +
+      changeText(site, booking, links) +
       signature(site),
   };
 }
 
 export function cancelledMail(site: Site, booking: Booking, ics: string, byStaff: boolean): Mail {
+  const m = site.text.mail;
+  const subject = `${what(site.text, booking)} ${visitorWhen(site.text, booking)}`;
   return {
     to: booking.email,
     ...replyTo(site),
-    subject: `Avbokad: ${what(booking)} ${swedishWhen(booking)}`,
+    subject: m.cancelledSubject(whatWhen(site, booking)),
     text:
-      `Hej ${booking.name}!\n\n` +
-      (byStaff
-        ? `Vi har tyvärr fått ställa in din bokning av ${what(booking)} ${swedishWhen(booking)}. ` +
-          'Svara på det här mejlet om du har frågor, eller boka en ny tid på webbplatsen.'
-        : `Din bokning av ${what(booking)} ${swedishWhen(booking)} är avbokad.`) +
+      `${m.hello(booking.name)}\n\n` +
+      (byStaff ? m.cancelledByStaff(subject) : m.cancelledByVisitor(subject)) +
       signature(site),
-    ics: { filename: 'avbokning.ics', content: ics, method: 'CANCEL' },
+    ics: { filename: m.cancelIcsFile, content: ics, method: 'CANCEL' },
   };
 }
 
@@ -313,7 +339,7 @@ export interface ChoiceGroup {
 }
 
 /**
- * A small page in Swedish: a heading, text and optionally a button (or groups of buttons) that
+ * A small page in the site's language: a heading, text and optionally a button (or groups of buttons) that
  * POST back (email scanners follow links with GET; only a button changes anything).
  */
 export function linkPage(options: {
@@ -330,7 +356,7 @@ export function linkPage(options: {
   const form = (label: string, to: string, cls = '') =>
     `<form method="post" action="${escapeHtml(to)}"><button type="submit"${cls ? ` class="${cls}"` : ''}>${escapeHtml(label)}</button></form>`;
   return `<!doctype html>
-<html lang="sv">
+<html lang="${site.text.lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -364,7 +390,7 @@ ${(groups ?? [])
   )
   .join('\n')}
 ${(links ?? []).map((l) => `<p><a href="${escapeHtml(l.href)}">${escapeHtml(l.label)}</a></p>`).join('\n')}
-${home ? `<p><a href="${escapeHtml(home)}">Till webbplatsen</a></p>` : ''}
+${home ? `<p><a href="${escapeHtml(home)}">${escapeHtml(site.text.page.toSite)}</a></p>` : ''}
 </main>
 </body>
 </html>

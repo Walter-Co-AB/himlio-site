@@ -1,13 +1,15 @@
 // Full-page screenshots of the local dev server, light, dark and mobile. Part of @himlio/site.
 //
-//   himlio-site screenshots --out screenshots/full [--url http://localhost:4321] [/ /om-oss ...]
+//   himlio-site screenshots --out screenshots/full [--url http://localhost:4321] [/ /about ...]
 //
-// Pages default to the home page, "Om oss", "Kontakt" and the block gallery (from himlio-site
+// Pages default to the home page, "About us", "Contact" (their URLs in the site's language,
+// cli/samples.mjs) and the block gallery (from himlio-site
 // fixtures) and a missing page (404).
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { devPort, readHimlio } from '../dist/config.js';
+import { samples } from './samples.mjs';
 
 const args = process.argv.slice(3);
 const value = (flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
@@ -17,11 +19,12 @@ const out = value('--out') ?? 'screenshots';
 const flagValues = new Set([value('--url'), value('--out')]);
 const pages = args.filter((a) => a.startsWith('/') && !flagValues.has(a));
 if (pages.length === 0) {
-  pages.push('/', '/om-oss', '/kontakt', '/block-gallery');
+  const { pages: sample } = samples(himlio.locale);
+  pages.push('/', `/${sample.about}`, `/${sample.contact}`, '/block-gallery');
   // The block gallery's further pages, as many as fixtures made.
   for (let i = 2; (await fetch(`${base}/block-gallery-${i}`)).ok; i++)
     pages.push(`/block-gallery-${i}`);
-  pages.push('/sidan-finns-inte');
+  pages.push('/page-not-found');
 }
 
 const VARIANTS = [

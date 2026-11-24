@@ -78,7 +78,7 @@ export function readHimlio(root: string): HimlioFacts {
   return {
     slug: raw.slug ?? '',
     name: raw.name ?? '',
-    locale: raw.locale || 'sv',
+    locale: raw.locale || 'en',
     url: raw.url ?? null,
     ...(raw.email?.from ? { email: emailFacts(raw.email) } : {}),
     forms: { notify: formRecipients(raw.forms) },
@@ -191,6 +191,7 @@ const MODEL_MIGRATION_KEYS = [
   'relabel',
   'allowBlockTypes',
   'addBlockFields',
+  'renameEntries',
 ];
 
 /**
@@ -302,6 +303,30 @@ function validateAddBlockFields(value: unknown, where: string): void {
   }
 }
 
+/**
+ * `renameEntries` in a model migration: [{ collection, slug: ["from", "to"], title?: [...] }].
+ */
+function validateRenameEntries(value: unknown, where: string): void {
+  if (!Array.isArray(value)) fail(`${where}: renameEntries must be a list`);
+  const pair = (v: unknown) =>
+    Array.isArray(v) && v.length === 2 && v.every((x) => typeof x === 'string' && x.trim());
+  for (const item of value as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item))
+      fail(`${where}: each renameEntries entry must be an object`);
+    const entry = item as Record<string, unknown>;
+    for (const key of Object.keys(entry))
+      if (!['collection', 'slug', 'title'].includes(key))
+        fail(`${where}: renameEntries entries take collection, slug and title (found "${key}")`);
+    if (typeof entry.collection !== 'string')
+      fail(`${where}: each renameEntries entry needs a collection`);
+    if (!pair(entry.slug)) fail(`${where}: renameEntries slug must be ["from", "to"]`);
+    if (!(entry.slug as string[]).every((s) => /^[a-z0-9][a-z0-9-]*$/.test(s)))
+      fail(`${where}: renameEntries slugs must be lowercase (a-z0-9-)`);
+    if (entry.title !== undefined && !pair(entry.title))
+      fail(`${where}: renameEntries title must be ["from", "to"]`);
+  }
+}
+
 /** Platform model migrations (unprefixed names) and the site's own ("site/NNNN_name"). */
 export function readModelMigrations(root: string, options: HimlioOptions) {
   const list: { name: string; seed: unknown }[] = [];
@@ -315,16 +340,24 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
       for (const key of Object.keys(seed))
         if (!MODEL_MIGRATION_KEYS.includes(key))
           fail(
-            `${dir}/${file}: only blockTypes, collections, content, relabel, allowBlockTypes and addBlockFields are allowed (found "${key}")`
+            `${dir}/${file}: only blockTypes, collections, content, relabel, allowBlockTypes, addBlockFields and renameEntries are allowed (found "${key}")`
           );
       if (seed.relabel !== undefined) validateRelabel(seed.relabel, `${dir}/${file}`);
       if (seed.allowBlockTypes !== undefined)
         validateAllowBlockTypes(seed.allowBlockTypes, `${dir}/${file}`);
       if (seed.addBlockFields !== undefined)
         validateAddBlockFields(seed.addBlockFields, `${dir}/${file}`);
+      if (seed.renameEntries !== undefined)
+        validateRenameEntries(seed.renameEntries, `${dir}/${file}`);
       // The same check the runner makes before applying: catch it in the build, not on the
       // live site, where a failing migration is retried every minute and never applied.
-      const { relabel: _relabel, allowBlockTypes: _allow, addBlockFields: _add, ...plain } = seed;
+      const {
+        relabel: _relabel,
+        allowBlockTypes: _allow,
+        addBlockFields: _add,
+        renameEntries: _rename,
+        ...plain
+      } = seed;
       const validation = validateSeed(plain);
       if (!validation.valid) fail(`${dir}/${file}: ${validation.errors.join('; ')}`);
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });

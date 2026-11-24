@@ -282,7 +282,7 @@ test('reminders: a day before, once, not for late bookings', async () => {
   assert.equal((await maintenance(t.deps, true)).reminded, 0);
   const [reminder] = t.sent.slice(before);
   assert.equal(reminder.to, 'anna@example.com');
-  assert.match(reminder.subject, /^Påminnelse: Klippning torsdag 26 november/);
+  assert.match(reminder.subject, /^Påminnelse: Klippning, torsdag 26 november/);
   assert.ok(early);
 });
 
@@ -432,4 +432,59 @@ test("Reply-To: visitors' emails go to the site's reply-to; the customer's to th
   await bookAndConfirm(u, at('2026-11-26', '10:00'));
   for (const m of u.sent.filter((m) => m.to === 'anna@example.com'))
     assert.equal(m.replyTo, undefined);
+});
+
+test('language: an English site gets English visitor text; Swedish for sv', async () => {
+  const t = await setup({ locale: 'en' });
+  await assert.rejects(
+    book(
+      t.deps,
+      { serviceId: t.service.id, start: at('2026-11-24', '10:00'), ...visitor, name: '' },
+      null
+    ),
+    { message: 'Please fill in your name.' }
+  );
+  await book(
+    t.deps,
+    { serviceId: t.service.id, start: at('2026-11-24', '10:00'), ...visitor },
+    null
+  );
+  const request = t.sent.at(-1);
+  assert.equal(request.subject, 'Confirm your booking at Salong Test');
+  assert.match(
+    request.text,
+    /^Hello!\n\nSomeone, hopefully you, has booked Klippning Tuesday,? 24 November 2026 at 10:00–11:00\./
+  );
+  assert.match(request.text, /Kind regards\nSalong Test$/);
+  const id = linkOf(request).searchParams.get('b');
+  await confirm(t.deps, id);
+  const confirmed = t.sent.find((m) => m.to === visitor.email && m.ics);
+  assert.match(
+    confirmed.subject,
+    /^Booking confirmed: Klippning, Tuesday,? 24 November 2026 at 10:00/
+  );
+  assert.equal(confirmed.ics.filename, 'booking.ics');
+  await assert.rejects(
+    book(
+      t.deps,
+      {
+        serviceId: t.service.id,
+        start: at('2026-11-24', '10:00'),
+        ...visitor,
+        email: 'b@example.com',
+      },
+      null
+    ),
+    { code: 'TAKEN', message: 'That time is no longer free. Please choose another.' }
+  );
+
+  const sv = await setup({ locale: 'sv-SE' });
+  await assert.rejects(
+    book(
+      sv.deps,
+      { serviceId: sv.service.id, start: at('2026-11-24', '10:00'), ...visitor, name: '' },
+      null
+    ),
+    { message: 'Fyll i ditt namn.' }
+  );
 });

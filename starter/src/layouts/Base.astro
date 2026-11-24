@@ -9,6 +9,7 @@ import { contactDetails, himlio } from "@himlio/site/runtime";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
 import { resolveSiteIdentity } from "../utils/site";
+import { t } from "../utils/strings";
 import "../styles/tokens.css";
 import "../styles/global.css";
 import "../styles/forms.css";
@@ -46,7 +47,7 @@ if (Astro.cache?.enabled) {
 	}
 }
 
-// Contact details from the admin (Himlio's Företagsuppgifter), shown in the footer.
+// Contact details from the admin (Himlio's Company details), shown in the footer.
 const contact = await contactDetails(Astro.cache);
 const { siteTitle, siteTagline, siteLogo, titleSeparator } = resolveSiteIdentity(
 	settingsResult.data,
@@ -101,7 +102,7 @@ const isLoggedIn = !!Astro.locals.user;
 	</head>
 	<body>
 		<EmDashBodyStart page={pageCtx} />
-		<a href="#main" class="skip-link">Hoppa till innehållet</a>
+		<a href="#main" class="skip-link">{t.skipToContent}</a>
 		<Header {siteTitle} {siteLogo} {menuItems} {isLoggedIn} />
 
 		<main id="main" tabindex="-1">
