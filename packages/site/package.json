@@ -1,6 +1,6 @@
 {
   "name": "@himlio/site",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "The Himlio platform for an EmDash site: Astro integration, Worker runtime and build tooling.",
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,8 @@
     "model-migrations",
     "docs",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "bin": {
     "himlio-site": "cli/himlio-site.mjs"

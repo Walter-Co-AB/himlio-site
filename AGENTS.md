@@ -8,6 +8,8 @@ Rules for AI coding tools and people working on the Himlio platform repo.
   with `tsc`), the `himlio-site` command in `cli/` (plain ESM), platform D1 migrations in
   `migrations/` (0001–0099), platform content-model migrations in `model-migrations/`, tests in
   `test/` (against `dist/`). Its README is the public documentation.
+- `packages/site/docs/site-agents.md`: the rules for working on a site. Sites' `AGENTS.md`
+  imports it, so a rule for every site goes there, not into the starter's `AGENTS.md`.
 - `starter/`: the design new sites start from: EmDash's marketing template (block-type pages)
   adapted to Himlio, consuming the package through the npm workspace. `starter/UPSTREAM.md` lists
   the EmDash version it follows and every Himlio change; keep `src/` close to upstream. (Sites own
@@ -28,7 +30,8 @@ Rules for AI coding tools and people working on the Himlio platform repo.
 4. **No secrets in git.** The repo is public.
 5. **Pin what sites depend on:** EmDash and `@emdash-cms/cloudflare` exactly, actions by commit
    SHA, new npm packages at a version at least 7 days old.
-6. **Releases go through a tag.** Bump `packages/site/package.json`, merge, then ask Anton or the
+6. **Releases go through a tag.** Bump `packages/site/package.json`, add its entry to
+   `packages/site/CHANGELOG.md` (with what sites need to do), merge, then ask Anton or the
    infrastructure agent to push `vX.Y.Z` (only org admins may create `v*` tags). `publish.yml`
    publishes it with npm Trusted Publishing. Never publish by hand.
 

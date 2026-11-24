@@ -61,3 +61,12 @@ test("the starter's model migrations match its seed: every migrated block type, 
     }
   }
 });
+
+test('the changelog has an entry for this version, and the starter AGENTS.md imports the rules', () => {
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8');
+  assert.match(changelog, new RegExp(`^## ${pkg.version.replace(/\./g, '\\.')}$`, 'm'));
+  assert.ok(pkg.files.includes('CHANGELOG.md') && pkg.files.includes('docs'));
+  const agents = readFileSync(new URL('../../../starter/AGENTS.md', import.meta.url), 'utf8');
+  assert.match(agents, /^@node_modules\/@himlio\/site\/docs\/site-agents\.md$/m);
+});
