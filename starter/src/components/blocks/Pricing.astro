@@ -127,15 +127,18 @@ const plans = rawPlans.map((plan) => ({
 	.plan__badge {
 		display: inline-flex;
 		align-items: center;
-		height: 24px;
+		/* Himlio: a long badge wraps instead of widening the page */
+		min-height: 24px;
+		max-width: 100%;
 		margin-inline-start: auto;
+		padding-block: 3px;
 		padding-inline: 10px;
 		border-radius: var(--radius-full);
 		background: var(--color-sunken);
 		color: var(--color-text-secondary);
 		font-size: 12.5px;
 		font-weight: 500;
-		white-space: nowrap;
+		line-height: 1.4;
 	}
 
 	.plan__price {

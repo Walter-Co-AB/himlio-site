@@ -10,7 +10,8 @@ Rules for AI coding tools and people working on the Himlio platform repo.
   `test/` (against `dist/`). Its README is the public documentation.
 - `starter/`: the design new sites start from: EmDash's marketing template (block-type pages)
   adapted to Himlio, consuming the package through the npm workspace. `starter/UPSTREAM.md` lists
-  the EmDash version it follows and every Himlio change; keep `src/` close to upstream.
+  the EmDash version it follows and every Himlio change; keep `src/` close to upstream. (Sites own
+  their copy and change it freely; `packages/site/docs/design.md` is the design guide they follow.)
   Infra copies it once per new site, at the tag of the latest `@himlio/site`, and never syncs it,
   so it must be a complete site on its own, and its `@himlio/site` version and `build.yml@vX.Y.Z`
   must equal the package version (a test checks).

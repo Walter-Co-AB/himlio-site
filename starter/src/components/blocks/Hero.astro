@@ -10,6 +10,8 @@ type Props = BlockComponentProps<HeroBlock>;
 const { value } = Astro.props;
 const { anchor_id, eyebrow, headline, subheadline, image, image_caption, centered } =
 	value;
+// Himlio: the layout variant ("cover": the text over the image, full bleed). Needs an image.
+const cover = value.layout === "cover" && !!image;
 
 const eyebrowUrl = value.eyebrow_url ? sanitizeHref(value.eyebrow_url) : undefined;
 const primaryCta =
@@ -24,9 +26,25 @@ const secondaryCta =
 
 <section
 	id={anchor_id || undefined}
-	class:list={["hero", { "hero--centered": centered }]}
+	class:list={[
+		"hero",
+		{ "hero--centered": centered },
+		cover && ["hero--cover", "sheet", "sheet-section", "settle"],
+	]}
 >
-	<div class="container">
+	{
+		cover && image && (
+			<div class="hero__bg">
+				<Image
+					image={image}
+					alt=""
+					priority
+					sizes="(max-width: 960px) 1000px, min(100vw, 1680px)"
+				/>
+			</div>
+		)
+	}
+	<div class="container hero__content">
 		{
 			eyebrow && eyebrowUrl && (
 				<a href={eyebrowUrl} class="hero__announce rise">
@@ -44,13 +62,19 @@ const secondaryCta =
 					{(primaryCta || secondaryCta) && (
 						<div class="actions">
 							{primaryCta && (
-								<a href={primaryCta.url} class="btn btn-primary btn-lg">
+								<a
+									href={primaryCta.url}
+									class:list={["btn", "btn-lg", cover ? "btn-light" : "btn-primary"]}
+								>
 									{primaryCta.label}
 									<Icon name="ph:arrow-right" aria-hidden="true" class="arrow" />
 								</a>
 							)}
 							{secondaryCta && (
-								<a href={secondaryCta.url} class="btn btn-secondary btn-lg">
+								<a
+									href={secondaryCta.url}
+									class:list={["btn", "btn-lg", cover ? "btn-glass" : "btn-secondary"]}
+								>
 									{secondaryCta.label}
 								</a>
 							)}
@@ -59,9 +83,10 @@ const secondaryCta =
 				</div>
 			)
 		}
+		{cover && image_caption && <p class="hero__cover-caption">{image_caption}</p>}
 	</div>
 	{
-		image && (
+		image && !cover && (
 			<figure class="sheet media settle hero__media">
 				<div class="media__img">
 					<Image
@@ -160,6 +185,66 @@ const secondaryCta =
 		justify-content: center;
 	}
 
+	/* Himlio: layout "cover", the text over the image (like the photo call to action) */
+	.hero--cover {
+		display: grid;
+		align-items: end;
+		min-height: clamp(520px, 72vh, 820px);
+		padding-block-start: 0;
+		color: #fff;
+		background-color: var(--color-night);
+	}
+
+	.hero--cover::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background: linear-gradient(
+			to top,
+			rgb(15 14 13 / 0.88),
+			rgb(15 14 13 / 0.5) 45%,
+			rgb(15 14 13 / 0.1)
+		);
+	}
+
+	.hero__bg {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+	}
+
+	.hero__bg :global(img) {
+		width: 100%;
+		max-width: none;
+		height: 100%;
+		max-height: none;
+		object-fit: cover;
+	}
+
+	.hero--cover .hero__content {
+		padding-block: clamp(96px, 10vw, 140px) clamp(40px, 5vw, 72px);
+	}
+
+	.hero--cover .hero__lead {
+		color: rgb(255 255 255 / 0.78);
+	}
+
+	.hero--cover .hero__announce {
+		background: var(--chip-bg);
+		color: var(--chip-text);
+	}
+
+	.hero--cover :focus-visible {
+		outline-color: var(--color-on-night);
+	}
+
+	.hero__cover-caption {
+		margin-block-start: 32px;
+		font-size: 13.5px;
+		color: rgb(255 255 255 / 0.64);
+	}
+
 	@media (max-width: 960px) {
 		.hero__row {
 			grid-template-columns: minmax(0, 1fr);
@@ -167,6 +252,10 @@ const secondaryCta =
 
 		.hero__media {
 			aspect-ratio: 1;
+		}
+
+		.hero--cover {
+			min-height: 560px;
 		}
 	}
 </style>

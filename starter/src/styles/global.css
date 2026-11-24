@@ -1,0 +1,596 @@
+/*
+  global.css -- the site-wide base styles and shared building blocks: reset, body, layout
+  (.container, .section, .sheet), type (.display, .lead, .section-headline), buttons (.btn-*),
+  surfaces (.card, .icon-tile) and motion (.rise). Block components use these classes and add
+  their own scoped styles. Values come from the tokens (tokens.css, overridden in theme.css);
+  change a building block here once rather than in each component.
+
+  Moved from <style is:global> in src/layouts/Base.astro (Himlio).
+*/
+
+/*
+ * Establish layer order: "base" has lower priority than unlayered
+ * styles, so theme.css overrides always win regardless of source
+ * order in the bundled CSS.
+ */
+@layer base;
+
+@layer base {
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+
+	/*
+	 * Design tokens live in src/styles/tokens.css. Colors are
+	 * defined with light-dark(); these rules pin the scheme when
+	 * the footer switcher sets an explicit choice. With no class,
+	 * color-scheme: light dark follows the OS preference. The
+	 * @supports guard keeps the toggle from forcing dark UA form
+	 * controls on browsers stuck on the plain-light fallback.
+	 */
+	@supports (color: light-dark(#000, #fff)) {
+		:root.light {
+			color-scheme: light;
+		}
+
+		:root.dark {
+			color-scheme: dark;
+		}
+	}
+
+	html {
+		scroll-behavior: smooth;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
+
+		*,
+		*::before,
+		*::after {
+			scroll-behavior: auto !important;
+			transition-duration: 0.01ms !important;
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+		}
+	}
+
+	body {
+		display: flex;
+		flex-direction: column;
+		min-height: 100vh;
+		font-family: var(--font-body);
+		font-size: var(--font-size-base);
+		font-feature-settings: "cv11", "ss01";
+		line-height: var(--leading-normal);
+		color: var(--color-text);
+		background: var(--color-bg);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	main {
+		flex: 1;
+	}
+
+	main:focus {
+		outline: none;
+	}
+
+	a:where(:not([class*="emdash"]):not([class*="ec-"])) {
+		color: currentColor;
+		text-decoration: none;
+	}
+
+	/* Bare links in authored content need a visible style; component
+	   links restyle themselves via classes. */
+	p a:not([class]),
+	li a:not([class]) {
+		color: var(--color-brand);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	:where(:not([class*="emdash"]):not([class*="ec-"])):focus-visible {
+		outline: 2px solid var(--color-text);
+		outline-offset: 2px;
+	}
+
+	/* Light buttons sit on dark panels and photos, so their ring is light too */
+	:where(.sheet--night) :focus-visible,
+	.btn-light:focus-visible,
+	.btn-glass:focus-visible {
+		outline-color: var(--color-on-night);
+	}
+
+	img {
+		max-width: 100%;
+		height: auto;
+		display: block;
+	}
+
+	ul {
+		list-style: none;
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--font-heading);
+		font-weight: var(--font-weight-heading);
+		line-height: 1.3;
+		letter-spacing: -0.01em;
+		text-wrap: balance;
+		/* Himlio: long Swedish compound words hyphenate, or break, rather than overflow */
+		hyphens: auto;
+		overflow-wrap: anywhere;
+	}
+
+	h1 {
+		font-size: var(--font-size-5xl);
+	}
+	h2 {
+		font-size: var(--font-size-3xl);
+	}
+	h3 {
+		font-size: var(--font-size-2xl);
+	}
+	h4 {
+		font-size: var(--font-size-xl);
+	}
+
+	.skip-link {
+		position: fixed;
+		inset-block-start: 12px;
+		inset-inline-start: 12px;
+		z-index: 100;
+		padding: 10px 18px;
+		border-radius: var(--radius-full);
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-size: 14px;
+		font-weight: 500;
+		translate: 0 calc(-100% - 24px);
+		transition: translate var(--transition-fast);
+	}
+
+	.skip-link:focus {
+		translate: 0 0;
+	}
+
+	/* Layout */
+
+	.container {
+		width: min(100% - var(--gutter) * 2, var(--wide-width));
+		margin-inline: auto;
+	}
+
+	/*
+	 * Blocks can come in any order, so every gap is the same: a plain
+	 * section pads half of --section-space and a sheet keeps half of
+	 * it as margin, putting any two neighbours one space apart.
+	 */
+	.section {
+		padding-block: calc(var(--section-space) / 2);
+	}
+
+	.sheet-section {
+		margin-block: calc(var(--section-space) / 2);
+	}
+
+	.sheet-body {
+		padding-block: var(--section-space);
+	}
+
+	/* A flex column, so the margins of two neighbouring sheets add up instead of collapsing */
+	.page-blocks {
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Anchor targets land below the floating header */
+	section[id],
+	main {
+		scroll-margin-top: 88px;
+	}
+
+	.media {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		border-radius: var(--radius-media);
+	}
+
+	.media::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: inset 0 0 0 1px light-dark(oklch(0 0 0 / 0.1), oklch(1 0 0 / 0.1));
+		pointer-events: none;
+	}
+
+	.media__img {
+		display: block;
+	}
+
+	/* After .media, so a photo sheet keeps the sheet radius */
+	.sheet {
+		position: relative;
+		isolation: isolate;
+		width: min(100% - var(--sheet-inset) * 2, var(--sheet-max));
+		margin-inline: auto;
+		border-radius: var(--radius-sheet);
+		overflow: hidden;
+	}
+
+	.sheet--sunken {
+		background: var(--glow-daylight), var(--color-sunken);
+	}
+
+	.sheet--night {
+		color: var(--color-on-night);
+		background: var(--glow-dusk), var(--color-night);
+		box-shadow: inset 0 0 0 1px light-dark(transparent, var(--color-border));
+	}
+
+	/* Type */
+
+	.section-header {
+		max-width: 780px;
+		margin-bottom: clamp(40px, 5vw, 64px);
+	}
+
+	.section-header--center {
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.section-headline {
+		font-family: var(--font-display);
+		font-size: var(--font-size-h2);
+		font-weight: var(--font-weight-display);
+		line-height: var(--leading-snug);
+		letter-spacing: var(--tracking-snug);
+		text-wrap: balance;
+		overflow-wrap: break-word;
+	}
+
+	.section-headline__muted {
+		color: var(--color-muted);
+	}
+
+	.section-subheadline {
+		margin-top: 20px;
+		font-size: 18px;
+		line-height: 1.55;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.eyebrow {
+		display: inline-block;
+		font-family: var(--font-body);
+		font-size: 13px;
+		font-weight: 500;
+		line-height: 1.4;
+		letter-spacing: normal;
+		color: var(--color-text-secondary);
+	}
+
+	.eyebrow + :is(h1, h2, h3) {
+		margin-top: 18px;
+	}
+
+	.display {
+		font-family: var(--font-display);
+		font-weight: var(--font-weight-display);
+		line-height: var(--leading-snug);
+		letter-spacing: var(--tracking-snug);
+		text-wrap: balance;
+		overflow-wrap: break-word;
+	}
+
+	.lead {
+		font-size: 19px;
+		line-height: 1.55;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.sheet--night
+		:is(.eyebrow, .lead, .section-subheadline, .section-headline__muted) {
+		color: var(--color-on-night-muted);
+	}
+
+	/* Buttons and links */
+
+	.btn,
+	.btn-primary {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-height: 44px;
+		padding: 10px 20px;
+		border: 0;
+		border-radius: var(--radius-full);
+		background: var(--color-brand);
+		color: var(--color-on-brand);
+		font-family: inherit;
+		font-size: 15px;
+		font-weight: 500;
+		line-height: 1.2;
+		text-align: center;
+		text-decoration: none;
+		cursor: pointer;
+		transition:
+			background-color var(--transition-fast),
+			box-shadow var(--transition-fast),
+			scale var(--transition-fast);
+	}
+
+	.btn:hover,
+	.btn-primary:hover {
+		background: var(--color-brand-strong);
+	}
+
+	.btn:active,
+	.btn-primary:active {
+		scale: 0.96;
+	}
+
+	.btn-secondary {
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: var(--shadow-card);
+	}
+
+	.btn-secondary:hover {
+		background: var(--color-surface);
+		box-shadow: var(--shadow-card-hover);
+	}
+
+	.btn-light {
+		background: #fafaf9;
+		color: #141312;
+	}
+
+	.btn-light:hover {
+		background: #ffffff;
+	}
+
+	.btn-glass {
+		background: rgb(255 255 255 / 0.12);
+		color: #ffffff;
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.3);
+		-webkit-backdrop-filter: blur(12px);
+		backdrop-filter: blur(12px);
+	}
+
+	.btn-glass:hover {
+		background: rgb(255 255 255 / 0.2);
+	}
+
+	.btn-sm {
+		min-height: 40px;
+		padding-inline: 16px;
+		font-size: 14px;
+	}
+
+	.btn-lg {
+		min-height: 50px;
+		padding-inline: 24px;
+		font-size: 15.5px;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.text-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 15px;
+		font-weight: 500;
+	}
+
+	.arrow {
+		flex: none;
+		transition: translate var(--transition-base);
+	}
+
+	:is(.btn, .text-link) .arrow {
+		font-size: 15px;
+	}
+
+	:is(.btn, .text-link):hover .arrow {
+		translate: 2px 0;
+	}
+
+	:dir(rtl) .arrow {
+		scale: -1 1;
+	}
+
+	:dir(rtl) :is(.btn, .text-link):hover .arrow {
+		translate: -2px 0;
+	}
+
+	/* Surfaces */
+
+	.card {
+		background: var(--color-surface);
+		color: var(--color-text);
+		border-radius: var(--radius-xl);
+		box-shadow: var(--shadow-card);
+		transition:
+			box-shadow var(--transition-base),
+			translate var(--transition-base);
+	}
+
+	.card--lift:hover {
+		box-shadow: var(--shadow-card-hover);
+		translate: 0 -2px;
+	}
+
+	.icon-tile {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 44px;
+		height: 44px;
+		border-radius: var(--radius);
+		background: var(--color-sunken);
+		color: var(--color-text);
+		font-size: 21px;
+	}
+
+	.media-chip {
+		position: absolute;
+		inset-block-end: clamp(12px, 1.6vw, 24px);
+		inset-inline-start: clamp(12px, 1.6vw, 24px);
+		z-index: 1;
+		display: inline-flex;
+		align-items: center;
+		max-width: calc(100% - 2 * clamp(12px, 1.6vw, 24px));
+		min-height: 40px;
+		padding-block: 9px;
+		padding-inline: 16px;
+		border-radius: var(--radius-full);
+		background: var(--chip-bg);
+		color: var(--chip-text);
+		font-size: 13.5px;
+		font-weight: 500;
+		line-height: 1.3;
+		box-shadow:
+			inset 0 0 0 1px light-dark(rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.1)),
+			0 10px 30px -10px light-dark(rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.5));
+		-webkit-backdrop-filter: blur(16px) saturate(1.5);
+		backdrop-filter: blur(16px) saturate(1.5);
+	}
+
+	.tick {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 22px;
+		height: 22px;
+		margin-top: 1px;
+		border-radius: 50%;
+		background: var(--color-sunken);
+		color: var(--color-text);
+		font-size: 12px;
+	}
+
+	.sheet--night .tick {
+		background: rgb(255 255 255 / 0.12);
+		color: var(--color-on-night);
+	}
+
+	.avatar {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		background: var(--color-sunken);
+		box-shadow: inset 0 0 0 1px var(--color-border);
+		color: var(--color-text-secondary);
+		font-size: 13.5px;
+		font-weight: 500;
+		letter-spacing: 0.02em;
+	}
+
+	.empty-state {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 20px;
+		max-width: 640px;
+		padding-block: var(--section-space);
+		text-align: center;
+	}
+
+	.empty-state__title {
+		font-size: var(--font-size-h2);
+		line-height: var(--leading-snug);
+	}
+
+	.empty-state .actions {
+		justify-content: center;
+		margin-top: 12px;
+	}
+
+	@media (max-width: 640px) {
+		.media-chip {
+			border-radius: 16px;
+			font-size: 12.5px;
+		}
+	}
+
+	/* Motion */
+
+	@media (prefers-reduced-motion: no-preference) {
+		.rise {
+			animation: rise-in 900ms var(--ease-out) both;
+			animation-delay: calc(var(--rise-index, 0) * 90ms);
+		}
+
+		@supports (animation-timeline: view()) {
+			.settle img {
+				animation: media-settle linear both;
+				animation-timeline: view();
+				animation-range: entry 0% cover 45%;
+			}
+		}
+	}
+
+	@keyframes rise-in {
+		from {
+			opacity: 0;
+			translate: 0 14px;
+			filter: blur(6px);
+		}
+	}
+
+
+	@keyframes media-settle {
+		from {
+			scale: 1.12;
+		}
+
+		to {
+			scale: 1;
+		}
+	}
+}
+
+/*
+ * Outside the layer, and more specific than EmDash's unlayered
+ * ".emdash-image-media { max-width: 100%; height: auto }", so a photo
+ * fills its frame whichever way <Image> renders it. No display here:
+ * EmDash hides the inactive light or dark variant with display: none.
+ */
+.media__img,
+.media__img img,
+.media__img img.emdash-image-media,
+img.media__img.emdash-image-media {
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	object-fit: cover;
+}

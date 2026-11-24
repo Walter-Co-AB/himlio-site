@@ -2,13 +2,16 @@
 // Part of @himlio/site. Uses EmDash's dev-only setup bypass, so it only works against `astro dev`.
 //
 //   himlio-site fixtures             tagline, company details, a home page, "Om oss" and "Kontakt"
-//                                    with a sample contact form
+//                                    with a sample contact form, and "Blockgalleri"
+//                                    (/blockgalleri, -2, ...): every section type the pages allow, with
+//                                    all fields filled (long text), only the required ones,
+//                                    and once per option of each select field (design variants)
 //   himlio-site fixtures --empty    everything empty: no tagline or details, pages unpublished
 //   ... -- --url http://localhost:4644   another server (default: this repo's dev port)
 //
 // The text is labelled as sample text. Never run this against a deployed site.
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { deflateSync } from 'node:zlib';
 import { devPort, readHimlio } from '../dist/config.js';
 
 const args = process.argv.slice(3);
@@ -158,6 +161,7 @@ async function samplePages() {
       };
   const only = (blocks) => blocks.filter((b) => allowed.size === 0 || allowed.has(b._type));
   return {
+    ...(await galleryPages(allowed, content.validation?.maxItems ?? 20)),
     home: {
       title: 'Start',
       content: only([hero, text('Exempeltext för startsidan', [START_TEXT])]),
@@ -215,6 +219,232 @@ async function sampleForm() {
   );
 }
 
+// ---- Block gallery ----------------------------------------------------------------------------
+
+/** A PNG of a soft diagonal gradient, so image fields have something to show (no network). */
+function samplePng(width, height) {
+  const crcTable = Array.from({ length: 256 }, (_, n) => {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    return c >>> 0;
+  });
+  const crc = (buf) => {
+    let c = 0xffffffff;
+    for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+  const chunk = (type, data) => {
+    const out = Buffer.alloc(12 + data.length);
+    out.writeUInt32BE(data.length, 0);
+    out.write(type, 4, 'ascii');
+    data.copy(out, 8);
+    out.writeUInt32BE(crc(out.subarray(4, 8 + data.length)), 8 + data.length);
+    return out;
+  };
+  const raw = Buffer.alloc((width * 3 + 1) * height);
+  for (let y = 0; y < height; y++) {
+    const row = y * (width * 3 + 1);
+    for (let x = 0; x < width; x++) {
+      const t = (x / width + y / height) / 2;
+      const i = row + 1 + x * 3;
+      raw[i] = Math.round(70 + 150 * t);
+      raw[i + 1] = Math.round(110 + 60 * (1 - t));
+      raw[i + 2] = Math.round(160 - 60 * t);
+    }
+  }
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header.set([8, 2, 0, 0, 0], 8); // 8-bit RGB
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', header),
+    chunk('IDAT', deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+async function sampleImage() {
+  const [width, height] = [1600, 1000];
+  const form = new FormData();
+  form.append(
+    'file',
+    new Blob([samplePng(width, height)], { type: 'image/png' }),
+    'exempelbild.png'
+  );
+  form.append('alt', 'Exempelbild');
+  form.append('width', String(width));
+  form.append('height', String(height));
+  form.append('deduplicate', 'true');
+  const res = await fetch(base + '/_emdash/api/media', {
+    method: 'POST',
+    headers: {
+      Origin: base,
+      'X-EmDash-Request': '1',
+      Cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; '),
+    },
+    body: form,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok)
+    throw new Error(`upload the sample image: ${res.status} ${JSON.stringify(json).slice(0, 300)}`);
+  const item = json.data.item;
+  return {
+    provider: 'local',
+    id: item.id,
+    src: item.url,
+    filename: item.filename,
+    mimeType: item.mimeType,
+    width: item.width ?? width,
+    height: item.height ?? height,
+    alt: 'Exempelbild',
+  };
+}
+
+// Long Swedish text: compound words that don't fit narrow columns, and enough of it to wrap.
+const LONG = {
+  headline: 'Exempelrubrik med ett riktigt långt sammansatt ord: hårvårdsspecialistkonsultationer',
+  short: 'Exempeltext med några ord',
+  sentence:
+    'Exempeltext: en längre mening som visar hur texten bryts över flera rader, med ord som verksamhetsutvecklingsprojekt.',
+  paragraphs:
+    'Exempeltext: första stycket, tillräckligt långt för att visa radlängd och avstånd mellan rader.\n\nAndra stycket, med ett långt ord som kundtjänstmedarbetarutbildning och en mening till.',
+  lines: 'Första punkten\nAndra punkten, lite längre än den första\nTredje punkten',
+};
+const SKIP = /^(anchor_id|service)$|_id$/; // Section IDs must be unique; booking service by name
+const URLISH = /(^|_)(url|href|link)$/;
+
+function matches(value, validation) {
+  if (typeof value !== 'string') return true;
+  if (validation?.maxLength !== undefined && value.length > validation.maxLength) return false;
+  if (validation?.pattern && !new RegExp(validation.pattern).test(value)) return false;
+  return true;
+}
+
+/** A sample value for a field, or undefined to leave it out. */
+function sampleValue(field, ctx) {
+  const v = field.validation ?? {};
+  const options = v.options ?? field.options;
+  const clip = (text) => (v.maxLength ? text.slice(0, v.maxLength) : text);
+  let value;
+  switch (field.type) {
+    case 'string':
+      if (SKIP.test(field.slug)) return undefined;
+      if (field.slug === 'form') value = FORM_SLUG;
+      else if (URLISH.test(field.slug)) value = '/om-oss';
+      else if (/headline|title|name|question/.test(field.slug)) value = LONG.headline;
+      else if (/price|amount/.test(field.slug)) value = '1 200 kr';
+      else if (/value|number|stat/.test(field.slug)) value = '98 %';
+      else if (/label|cta|badge|period|role/.test(field.slug)) value = LONG.short;
+      else value = LONG.sentence;
+      value = clip(value);
+      break;
+    case 'text':
+      value = clip(/points|list|items/.test(field.slug) ? LONG.lines : LONG.paragraphs);
+      break;
+    case 'url':
+      value = 'https://example.com/';
+      break;
+    case 'number':
+    case 'integer':
+      value = Math.min(v.max ?? 42, Math.max(v.min ?? 42, 42));
+      break;
+    case 'boolean':
+      value = true;
+      break;
+    case 'datetime':
+      value = new Date().toISOString();
+      break;
+    case 'select':
+      value = ctx.select?.[field.slug] ?? options?.[0];
+      break;
+    case 'multiSelect':
+      value = options ?? [];
+      break;
+    case 'portableText':
+      value = [
+        block('Exempel på underrubrik', 'h2'),
+        block(LONG.paragraphs.split('\n\n')[0]),
+        block(LONG.sentence),
+      ];
+      break;
+    case 'image':
+      value = ctx.image;
+      break;
+    case 'repeater': {
+      const subs = v.subFields ?? [];
+      const count = Math.max(v.minItems ?? 1, Math.min(v.maxItems ?? 3, ctx.minimal ? 1 : 3));
+      value = Array.from({ length: count }, (_, i) => {
+        const item = { _key: `item${i}` };
+        for (const sub of subs) {
+          if (ctx.minimal && !sub.required) continue;
+          const subOptions = sub.options ?? sub.validation?.options;
+          const x =
+            sub.type === 'select' && subOptions
+              ? subOptions[i % subOptions.length]
+              : sampleValue(sub, { ...ctx, select: undefined });
+          if (x !== undefined) item[sub.slug] = x;
+        }
+        return item;
+      });
+      break;
+    }
+    default:
+      return undefined;
+  }
+  return matches(value, v) ? value : undefined;
+}
+
+/**
+ * The block gallery: every block type the pages allow, from the live content model, so a site's
+ * own block types and variants are in it too. Per type: all fields filled, only the required
+ * ones (for the empty states), and once per further option of each select field.
+ */
+async function galleryPages(allowed, maxBlocks) {
+  const types = ok(await api('GET', '/_emdash/api/schema/block-types'), 'list block types').data
+    .items;
+  const image = await sampleImage();
+  const key = () => Math.random().toString(36).slice(2, 10);
+  const content = [];
+  for (const type of types) {
+    if (allowed.size > 0 && !allowed.has(type.slug)) continue;
+    const version = type.versions.find((x) => x.version === type.currentVersion);
+    if (!version) continue;
+    const make = (variant, ctx) => {
+      const value = { _type: type.slug, _key: key() };
+      for (const field of version.fields) {
+        if (ctx.minimal && !field.required) continue;
+        const x = sampleValue(field, { image, ...ctx });
+        if (x !== undefined) value[field.slug] = x;
+      }
+      // Say which variant this is in the first text field (usually the headline).
+      const first = version.fields.find(
+        (f) =>
+          f.type === 'string' &&
+          typeof value[f.slug] === 'string' &&
+          f.slug !== 'form' &&
+          !URLISH.test(f.slug)
+      );
+      if (first) value[first.slug] = `${type.label} (${variant}): ${value[first.slug]}`;
+      return value;
+    };
+    content.push(make('alla fält', {}));
+    content.push(make('bara obligatoriska', { minimal: true }));
+    for (const field of version.fields.filter((f) => f.type === 'select')) {
+      for (const option of (field.validation?.options ?? []).slice(1))
+        content.push(make(`${field.slug}: ${option}`, { select: { [field.slug]: option } }));
+    }
+  }
+  // A page takes at most maxBlocks sections (pages.content's maxItems), so split it up.
+  const pages = {};
+  for (let i = 0; i * maxBlocks < content.length; i++)
+    pages[i ? `blockgalleri-${i + 1}` : 'blockgalleri'] = {
+      title: i ? `Blockgalleri ${i + 1}` : 'Blockgalleri',
+      content: content.slice(i * maxBlocks, (i + 1) * maxBlocks),
+    };
+  return pages;
+}
+
 async function upsertPage(slug, page) {
   const existing = await api('GET', `/_emdash/api/content/pages/${slug}`);
   if (existing.status === 200) {
@@ -238,6 +468,7 @@ async function removePage(slug) {
   const existing = await api('GET', `/_emdash/api/content/pages/${slug}`);
   if (existing.status === 200 && existing.json.data.item.status === 'published')
     ok(await api('POST', `/_emdash/api/content/pages/${slug}/unpublish`, {}), `unpublish ${slug}`);
+  return existing.status === 200;
 }
 
 async function setCompany(data) {
@@ -263,6 +494,7 @@ if (empty) {
   ok(await api('POST', '/_emdash/api/settings', { tagline: '' }), 'tagline');
   await setCompany({ phone: '', email: '', address: '', org_number: '', opening_hours: '' });
   for (const slug of ['home', 'start', 'om-oss', 'kontakt']) await removePage(slug);
+  for (let i = 1; await removePage(i > 1 ? `blockgalleri-${i}` : 'blockgalleri'); i++);
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
@@ -281,5 +513,9 @@ if (empty) {
   const pages = await samplePages();
   if (pages.kontakt) await sampleForm();
   for (const [slug, page] of Object.entries(pages)) await upsertPage(slug, page);
+  const gallery = Object.keys(pages).filter((slug) => slug.startsWith('blockgalleri'));
+  // Unpublish gallery pages a bigger content model left behind.
+  for (let i = gallery.length + 1; await removePage(`blockgalleri-${i}`); i++);
+  if (gallery.length) console.log(`fixtures: block gallery on /${gallery.join(', /')}`);
   console.log(`fixtures: sample content on ${base}`);
 }

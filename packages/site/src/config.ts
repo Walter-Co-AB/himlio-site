@@ -190,6 +190,7 @@ const MODEL_MIGRATION_KEYS = [
   'content',
   'relabel',
   'allowBlockTypes',
+  'addBlockFields',
 ];
 
 /**
@@ -247,6 +248,60 @@ function validateAllowBlockTypes(value: unknown, where: string): void {
   }
 }
 
+const BLOCK_FIELD_TYPES = [
+  'string',
+  'text',
+  'url',
+  'number',
+  'integer',
+  'boolean',
+  'datetime',
+  'select',
+  'multiSelect',
+  'portableText',
+  'image',
+  'file',
+  'repeater',
+];
+
+/**
+ * `addBlockFields` in a model migration: [{ blockType, fields: [{ slug, label, type, ... }] }].
+ * Adds optional fields to an existing block type. EmDash checks the rest of each field (options
+ * of a select, sub-fields of a repeater) when it applies them; the build checks what it can.
+ */
+function validateAddBlockFields(value: unknown, where: string): void {
+  if (!Array.isArray(value)) fail(`${where}: addBlockFields must be a list`);
+  for (const item of value as unknown[]) {
+    if (typeof item !== 'object' || item === null || Array.isArray(item))
+      fail(`${where}: each addBlockFields entry must be an object`);
+    const entry = item as Record<string, unknown>;
+    for (const key of Object.keys(entry))
+      if (!['blockType', 'fields'].includes(key))
+        fail(`${where}: addBlockFields entries take blockType and fields (found "${key}")`);
+    if (typeof entry.blockType !== 'string' || !/^[a-z][a-z0-9_]*$/.test(entry.blockType))
+      fail(`${where}: each addBlockFields entry needs a blockType slug`);
+    const fields = entry.fields;
+    if (!Array.isArray(fields) || fields.length === 0)
+      fail(`${where}: addBlockFields ${entry.blockType}: fields must be a non-empty list`);
+    for (const f of fields as Record<string, unknown>[]) {
+      const at = `${where}: addBlockFields ${entry.blockType}`;
+      if (typeof f !== 'object' || f === null) fail(`${at}: each field must be an object`);
+      if (typeof f.slug !== 'string' || !/^[a-z][a-z0-9_]*$/.test(f.slug))
+        fail(`${at}: each field needs a slug (lowercase, a-z0-9_)`);
+      if (typeof f.label !== 'string' || !f.label.trim()) fail(`${at}.${f.slug}: needs a label`);
+      if (typeof f.type !== 'string' || !BLOCK_FIELD_TYPES.includes(f.type))
+        fail(`${at}.${f.slug}: unknown type "${String(f.type)}"`);
+      if (f.required === true)
+        fail(`${at}.${f.slug}: a field added to an existing block type must be optional`);
+      if (
+        (f.type === 'select' || f.type === 'multiSelect') &&
+        !Array.isArray((f.validation as { options?: unknown } | undefined)?.options)
+      )
+        fail(`${at}.${f.slug}: a ${f.type} needs validation.options`);
+    }
+  }
+}
+
 /** Platform model migrations (unprefixed names) and the site's own ("site/NNNN_name"). */
 export function readModelMigrations(root: string, options: HimlioOptions) {
   const list: { name: string; seed: unknown }[] = [];
@@ -260,14 +315,16 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
       for (const key of Object.keys(seed))
         if (!MODEL_MIGRATION_KEYS.includes(key))
           fail(
-            `${dir}/${file}: only blockTypes, collections, content, relabel and allowBlockTypes are allowed (found "${key}")`
+            `${dir}/${file}: only blockTypes, collections, content, relabel, allowBlockTypes and addBlockFields are allowed (found "${key}")`
           );
       if (seed.relabel !== undefined) validateRelabel(seed.relabel, `${dir}/${file}`);
       if (seed.allowBlockTypes !== undefined)
         validateAllowBlockTypes(seed.allowBlockTypes, `${dir}/${file}`);
+      if (seed.addBlockFields !== undefined)
+        validateAddBlockFields(seed.addBlockFields, `${dir}/${file}`);
       // The same check the runner makes before applying: catch it in the build, not on the
       // live site, where a failing migration is retried every minute and never applied.
-      const { relabel: _relabel, allowBlockTypes: _allow, ...plain } = seed;
+      const { relabel: _relabel, allowBlockTypes: _allow, addBlockFields: _add, ...plain } = seed;
       const validation = validateSeed(plain);
       if (!validation.valid) fail(`${dir}/${file}: ${validation.errors.join('; ')}`);
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });

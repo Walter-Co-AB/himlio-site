@@ -29,6 +29,7 @@ test('model migrations only touch the content model and content, never settings 
           'content',
           'relabel',
           'allowBlockTypes',
+          'addBlockFields',
         ].includes(key),
         `${file}: ${key}`
       );

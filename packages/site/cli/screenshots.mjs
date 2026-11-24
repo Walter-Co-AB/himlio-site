@@ -2,7 +2,8 @@
 //
 //   himlio-site screenshots --out screenshots/full [--url http://localhost:4321] [/ /om-oss ...]
 //
-// Pages default to the home page, "Om oss" (from himlio-site fixtures) and a missing page (404).
+// Pages default to the home page, "Om oss", "Kontakt" and the block gallery (from himlio-site
+// fixtures) and a missing page (404).
 import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
@@ -15,7 +16,13 @@ const base = (value('--url') ?? `http://localhost:${devPort(himlio.slug)}`).repl
 const out = value('--out') ?? 'screenshots';
 const flagValues = new Set([value('--url'), value('--out')]);
 const pages = args.filter((a) => a.startsWith('/') && !flagValues.has(a));
-if (pages.length === 0) pages.push('/', '/om-oss', '/kontakt', '/sidan-finns-inte');
+if (pages.length === 0) {
+  pages.push('/', '/om-oss', '/kontakt', '/blockgalleri');
+  // The block gallery's further pages, as many as fixtures made.
+  for (let i = 2; (await fetch(`${base}/blockgalleri-${i}`)).ok; i++)
+    pages.push(`/blockgalleri-${i}`);
+  pages.push('/sidan-finns-inte');
+}
 
 const VARIANTS = [
   { name: 'desktop-light', viewport: { width: 1280, height: 800 }, colorScheme: 'light' },

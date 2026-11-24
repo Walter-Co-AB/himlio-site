@@ -28,7 +28,7 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 | Booking                                                                   | In the admin under Booking (services with prices, staff and resources, opening hours, bookings and requests). Place it on a page in a Booking section (`marketing_booking`), or as a Booking block in a Text section; outside content, `<Booking />` from `@himlio/site/booking`. Picked date/time colours in `src/styles/forms.css`. |
 | Site description                                                          | In the admin: Settings → General → Tagline. Read it with `siteDescription()`.                                                                                                                                                                                                                                                         |
 | Contact details                                                           | In the admin: the one entry in Company details (`company`). Read them with `contactDetails()`.                                                                                                                                                                                                                                        |
-| Design                                                                    | `src/styles/theme.css` (colours, fonts, radii; tokens in `tokens.css`), `src/layouts/Base.astro`, `src/components/` (one component per block type in `blocks/`), `public/`                                                                                                                                                            |
+| Design                                                                    | **Read `node_modules/@himlio/site/docs/design.md` first.** `src/styles/theme.css` (tokens; defaults in `tokens.css`), `src/styles/global.css` (shared building blocks), `src/components/blocks/` (one component per block type), `Header.astro`, `Footer.astro`, `src/layouts/Base.astro`, `public/`                                  |
 | Pages                                                                     | `src/pages/`                                                                                                                                                                                                                                                                                                                          |
 | Astro config                                                              | `astro.config.mjs`: the site's integrations and options, in `defineHimlioConfig()`                                                                                                                                                                                                                                                    |
 | Own middleware, API routes, tables, crons, content model, Durable Objects | See "Extension points" in the `@himlio/site` README. Tables: `migrations/0100_*.sql` and up.                                                                                                                                                                                                                                          |
@@ -37,26 +37,31 @@ working on this site. The site runs on Himlio, the website platform from Walter 
 
 ## Build it the EmDash way
 
-This starter is EmDash's marketing template (`templates/marketing-cloudflare` in
-[emdash-cms/emdash](https://github.com/emdash-cms/emdash)) on `@himlio/site`; `UPSTREAM.md` says
-which version and what Himlio changed. Work with EmDash, not around it:
+This site started from EmDash's marketing template (`templates/marketing-cloudflare` in
+[emdash-cms/emdash](https://github.com/emdash-cms/emdash)) on `@himlio/site`. It is this site's
+own code now: change it as much as the design needs. The design guide,
+`node_modules/@himlio/site/docs/design.md`, says how. In short:
 
-- **Content lives in the CMS, as sections.** A page's `content` is a list of block types
-  (`marketing_hero`, `marketing_features`, `marketing_text`, ...). Customers and their AI
-  connector edit whole pages that way. Don't hardcode copy in `.astro` files.
-- **A new kind of section is a new block type**, with a component in `src/components/blocks/`
-  registered in `blocks/index.ts` and `MarketingBlocks.astro`, and the block type added through a
-  content-model migration in `src/model-migrations/` (`blockTypes`, plus `allowBlockTypes` to
-  allow it in `pages.content`; see `0001_contact_form_section.json`) and to `seed/seed.json`. Reuse or extend the
-  template's block types before inventing new ones.
-- **Look it up before inventing a pattern:** EmDash's docs MCP (`https://docs.emdashcms.com/mcp`,
-  set up in `.mcp.json`) and EmDash's agent skills and templates.
+- **The content model is the contract, the design is free.** A page's `content` is a list of
+  block types (`marketing_hero`, `marketing_features`, `marketing_text`, ...) that customers and
+  their AI connector edit. Restyle or rewrite any section component, header or footer freely;
+  never put copy in `.astro` files.
+- **Same content, different look: a variant field.** Add a `layout` select to the block type with
+  `addBlockFields` in a content-model migration (the Hero's `layout` is an example; see
+  `0003_hero_layout.json`).
+- **Different content: a new block type**, with a component in `src/components/blocks/`
+  registered in `blocks/index.ts` and `MarketingBlocks.astro`, the block type added through a
+  migration in `src/model-migrations/` (`blockTypes`, plus `allowBlockTypes` to allow it in
+  `pages.content`; see `0002_booking_section.json`), in `seed/seed.json` and in
+  `emdash-env.d.ts`.
+- **Look at every section after a change:** `npm run fixtures` makes the block gallery
+  (`/blockgalleri`), every section type with all fields, only the required ones and each variant.
 - **Style through tokens.** Change `theme.css` (it overrides `tokens.css`); keep component CSS
   on the tokens. Colours use `light-dark()` for dark mode.
 - **Don't port other themes** (AstroWind, AstroDeck and the like) into a Himlio site; they put
   content in code. Take the look, rebuild it with these blocks and tokens.
-- **Keep upstream files recognisable.** `src/` follows EmDash's formatting (tabs) and isn't
-  reformatted by Prettier, so EmDash's template updates can be compared and applied.
+- **Look it up before inventing a pattern:** EmDash's docs MCP (`https://docs.emdashcms.com/mcp`,
+  set up in `.mcp.json`) and EmDash's agent skills and templates.
 
 ## Rules
 

@@ -1,5 +1,5 @@
 import { himlio } from "@himlio/site/runtime";
-import type { SiteSettings } from "@himlio/site/emdash";
+import type { getMenuWithCacheHint, SiteSettings } from "@himlio/site/emdash";
 
 const DEFAULT_TITLE_SEPARATOR = "—";
 
@@ -15,3 +15,11 @@ export function resolveSiteIdentity(settings: Partial<SiteSettings> | undefined)
 		titleSeparator: settings?.seo?.titleSeparator?.trim() || DEFAULT_TITLE_SEPARATOR,
 	};
 }
+
+/** The site logo from the admin's settings, or null (Himlio). */
+export type SiteLogo = ReturnType<typeof resolveSiteIdentity>["siteLogo"];
+
+/** One item of a menu from the admin (Himlio). */
+export type MenuItem = NonNullable<
+	Awaited<ReturnType<typeof getMenuWithCacheHint>>["data"]
+>["items"][number];

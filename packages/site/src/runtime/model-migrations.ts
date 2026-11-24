@@ -7,6 +7,8 @@
 // exists is changed. Block types (`blockTypes`) are allowed as well. `relabel` renames
 // collections and fields, but only labels that still have their old value (see applyRelabel).
 // `allowBlockTypes` adds block types to a blocks field's allowed list (applyAllowBlockTypes).
+// `addBlockFields` adds optional fields to an existing block type (applyAddBlockFields), e.g. a
+// `layout` select for a design variant.
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -20,7 +22,7 @@
 // Rules for migration files: append-only, never edit one that has been released.
 import { createDialect } from '@emdash-cms/cloudflare/db/d1';
 import { env } from 'cloudflare:workers';
-import { SchemaRegistry, applySeed, validateSeed } from 'emdash';
+import { BlockTypeRegistry, SchemaRegistry, applySeed, validateSeed } from 'emdash';
 import { Kysely } from 'kysely';
 import { modelMigrations } from 'virtual:himlio/config';
 
@@ -39,7 +41,20 @@ interface AllowBlockTypes {
   add: string[];
 }
 
-type Migration = Seed & { relabel?: Relabel[]; allowBlockTypes?: AllowBlockTypes[] };
+interface AddBlockFields {
+  blockType: string;
+  fields: BlockField[];
+}
+type BlockField = Parameters<BlockTypeRegistry['updateBlockType']>[1]['fields'] extends
+  (infer F)[] | undefined
+  ? F
+  : never;
+
+type Migration = Seed & {
+  relabel?: Relabel[];
+  allowBlockTypes?: AllowBlockTypes[];
+  addBlockFields?: AddBlockFields[];
+};
 type Database = Parameters<typeof applySeed>[0];
 
 /** Platform migrations (in the package) first, then the site's own ("site/..."). */
@@ -126,6 +141,36 @@ async function applyAllowBlockTypes(
   }
 }
 
+/**
+ * Adds optional fields to block types that exist (seeded block types are otherwise skipped).
+ * Fields the block type has already are left alone, as are missing block types. An optional
+ * field is a compatible change, so EmDash updates the active version in place: content made
+ * before simply doesn't have the field.
+ */
+async function applyAddBlockFields(
+  db: Database,
+  entries: AddBlockFields[],
+  name: string
+): Promise<void> {
+  const registry = new BlockTypeRegistry(db);
+  for (const { blockType, fields } of entries) {
+    const current = await registry.getBlockType(blockType);
+    if (!current) continue;
+    const active = current.versions.find((v) => v.version === current.currentVersion);
+    if (!active) continue;
+    const have = new Set(active.fields.map((f) => f.slug));
+    const missing = fields.filter((f) => !have.has(f.slug));
+    if (missing.length === 0) continue;
+    await registry.updateBlockType(blockType, {
+      expectedFingerprint: active.fingerprint,
+      fields: [...active.fields, ...missing],
+    });
+    console.log(
+      `[himlio] ${name}: added ${missing.map((f) => f.slug).join(', ')} to block type ${blockType}`
+    );
+  }
+}
+
 async function applyPending(): Promise<void> {
   const { results } = await d1()
     .prepare('SELECT name FROM himlio_model_migrations')
@@ -137,7 +182,7 @@ async function applyPending(): Promise<void> {
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
     for (const { name, seed: migration } of todo) {
-      const { relabel, allowBlockTypes, ...seed } = migration;
+      const { relabel, allowBlockTypes, addBlockFields, ...seed } = migration;
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();
@@ -145,6 +190,7 @@ async function applyPending(): Promise<void> {
       await addMissingFields(db, seed, name);
       if (relabel) await applyRelabel(db, relabel, name);
       if (allowBlockTypes) await applyAllowBlockTypes(db, allowBlockTypes, name);
+      if (addBlockFields) await applyAddBlockFields(db, addBlockFields, name);
       await d1()
         .prepare('INSERT OR IGNORE INTO himlio_model_migrations (name, applied_at) VALUES (?, ?)')
         .bind(name, Date.now())

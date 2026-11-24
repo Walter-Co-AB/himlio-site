@@ -122,7 +122,7 @@ test('model migrations: the platform first (unprefixed), then the site (site/...
   const bad = site({ 'model/0001_x.json': JSON.stringify({ version: '1', settings: {} }) });
   assert.throws(
     () => readModelMigrations(bad, { modelMigrations: 'model' }),
-    /only blockTypes, collections, content, relabel and allowBlockTypes/
+    /only blockTypes, collections, content, relabel, allowBlockTypes and addBlockFields/
   );
 });
 
@@ -157,6 +157,43 @@ test('relabel entries are checked at build time', () => {
     /can't change "description" of a field/
   );
   assert.throws(() => read([{ collection: 'pages', slug: ['a', 'b'] }]), /can't change "slug"/);
+});
+
+test('addBlockFields entries are checked at build time', () => {
+  const read = (addBlockFields) =>
+    readModelMigrations(
+      site({ 'model/0001_x.json': JSON.stringify({ version: '1', addBlockFields }) }),
+      { modelMigrations: 'model' }
+    );
+  const layout = {
+    slug: 'layout',
+    label: 'Layout',
+    type: 'select',
+    validation: { options: ['standard', 'cover'] },
+  };
+  assert.equal(
+    read([{ blockType: 'marketing_hero', fields: [layout] }]).at(-1).name,
+    'site/0001_x'
+  );
+  assert.throws(() => read({}), /must be a list/);
+  assert.throws(() => read([{ fields: [layout] }]), /blockType slug/);
+  assert.throws(() => read([{ blockType: 'marketing_hero', fields: [] }]), /non-empty list/);
+  assert.throws(
+    () => read([{ blockType: 'marketing_hero', fields: [{ ...layout, required: true }] }]),
+    /must be optional/
+  );
+  assert.throws(
+    () => read([{ blockType: 'marketing_hero', fields: [{ ...layout, type: 'color' }] }]),
+    /unknown type/
+  );
+  assert.throws(
+    () => read([{ blockType: 'marketing_hero', fields: [{ ...layout, validation: {} }] }]),
+    /validation.options/
+  );
+  assert.throws(
+    () => read([{ blockType: 'marketing_hero', fields: [layout], remove: ['x'] }]),
+    /found "remove"/
+  );
 });
 
 test('allowBlockTypes entries are checked at build time', () => {

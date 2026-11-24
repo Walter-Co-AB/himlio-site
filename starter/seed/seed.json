@@ -79,6 +79,15 @@
 							}
 						},
 						{
+							"slug": "layout",
+							"label": "Layout (Cover: the text over the image, full width; needs an image)",
+							"type": "select",
+							"defaultValue": "standard",
+							"validation": {
+								"options": ["standard", "cover"]
+							}
+						},
+						{
 							"slug": "centered",
 							"label": "Center the layout",
 							"type": "boolean",
