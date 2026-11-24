@@ -10,8 +10,7 @@ on the package [`@himlio/site`](https://www.npmjs.com/package/@himlio/site).
   description (Tagline) and contact details are edited in the admin.
 - This repo holds the site's design and its own code. The platform comes as `@himlio/site`.
 - The design started from EmDash's marketing template: pages are built from sections (block
-  types) in the admin. How to design it: `node_modules/@himlio/site/docs/design.md` and
-  AGENTS.md, "Build it the EmDash way".
+  types) in the admin. How to design it: `node_modules/@himlio/site/docs/design.md`.
 
 ## Development
 
@@ -25,4 +24,6 @@ npm run verify     # what CI runs
 The first visit to `/_emdash/admin` starts the setup, where you create the first
 administrator.
 
-See [AGENTS.md](AGENTS.md) for the rules that apply to changes.
+See [AGENTS.md](AGENTS.md) for the rules that apply to changes (they come from
+`node_modules/@himlio/site/docs/site-agents.md`), and the package's `CHANGELOG.md` when you
+update `@himlio/site`.

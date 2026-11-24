@@ -4,8 +4,9 @@ The Himlio platform for a customer website: an [EmDash](https://github.com/emdas
 (Astro CMS) site on Cloudflare Workers for Platforms. A site's repo holds its design and its own
 code. This package brings everything the platform owns, and updates by version.
 
-Designing a site: [docs/design.md](docs/design.md) (what is free to change, variants, Astro
-practice, the block gallery).
+Working on a site: [docs/site-agents.md](docs/site-agents.md) (the rules a site's `AGENTS.md`
+imports), [docs/design.md](docs/design.md) (designing it) and [CHANGELOG.md](CHANGELOG.md) (what
+each version needs from sites).
 
 ## Use
 
