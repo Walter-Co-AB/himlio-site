@@ -106,7 +106,8 @@ The design guide, `node_modules/@himlio/site/docs/design.md`, says how. In short
 1. Read `CHANGELOG.md` in the package (or on GitHub) for every version since the site's: each
    says what sites need to do, usually nothing.
 2. Change `@himlio/site` in `package.json` and `build.yml@vX.Y.Z` in `.github/workflows/ci.yml`
-   to the same version, then `npm install`.
+   to the same version, then `npm install`. A version can take a few minutes to reach the npm
+   registry after it is published (`E404` / `ETARGET` until then): wait and retry.
 3. Do the steps the release notes list. "Optional" ones (a new section type, a fix to a starter
    component the site still uses) are up to the site.
 4. `npm run verify`, then `npm run dev`, `npm run fixtures` and look at the pages and the block
