@@ -7,11 +7,14 @@ import Contact from "./blocks/Contact.astro";
 import ContactForm from "./blocks/ContactForm.astro";
 import FAQ from "./blocks/FAQ.astro";
 import Features from "./blocks/Features.astro";
+import Gallery from "./blocks/Gallery.astro";
 import Hero from "./blocks/Hero.astro";
+import Location from "./blocks/Location.astro";
 import Logos from "./blocks/Logos.astro";
 import Pricing from "./blocks/Pricing.astro";
 import Split from "./blocks/Split.astro";
 import Stats from "./blocks/Stats.astro";
+import Team from "./blocks/Team.astro";
 import Testimonials from "./blocks/Testimonials.astro";
 import Text from "./blocks/Text.astro";
 
@@ -35,6 +38,9 @@ const marketingComponents = defineBlockComponents<PageContentBlock>({
 	marketing_form: ContactForm,
 	marketing_booking: BookingSection,
 	marketing_text: Text,
+	marketing_gallery: Gallery,
+	marketing_team: Team,
+	marketing_location: Location,
 });
 ---
 

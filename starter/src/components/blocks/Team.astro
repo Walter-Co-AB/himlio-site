@@ -1,0 +1,105 @@
+---
+// Team section (marketing_team): the people, each with a photo (initials when there is none),
+// name, role and a few words.
+import { Image, type BlockComponentProps } from "@himlio/site/emdash/ui";
+import type { PageContentBlock } from "../../../emdash-env";
+import { initials, toParagraphs } from "../../utils/text";
+
+type TeamBlock = Extract<PageContentBlock, { _type: "marketing_team" }>;
+type Props = BlockComponentProps<TeamBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline, members } = value;
+const intro = toParagraphs(value.intro);
+const NameHeading = headline ? "h3" : "h2";
+---
+
+<section id={anchor_id || undefined} class="container section">
+	{
+		(eyebrow || headline || intro.length > 0) && (
+			<header class="section-header">
+				{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+				{headline && <h2 class="section-headline">{headline}</h2>}
+				{intro.map((paragraph) => (
+					<p class="section-subheadline">{paragraph}</p>
+				))}
+			</header>
+		)
+	}
+	<ul class="team" role="list">
+		{
+			members.map((member) => (
+				<li class="team__member">
+					<div class="media team__photo">
+						{member.photo ? (
+							<Image
+								image={member.photo}
+								alt=""
+								sizes="(max-width: 640px) 50vw, 300px"
+								class="team__img"
+							/>
+						) : (
+							<span class="team__initials" aria-hidden="true">
+								{initials(member.name)}
+							</span>
+						)}
+					</div>
+					<NameHeading class="team__name">{member.name}</NameHeading>
+					{member.role && <p class="team__role">{member.role}</p>}
+					{toParagraphs(member.bio).map((paragraph) => (
+						<p class="team__bio">{paragraph}</p>
+					))}
+				</li>
+			))
+		}
+	</ul>
+</section>
+
+<style>
+	.team {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+		gap: 40px 24px;
+		list-style: none;
+	}
+
+	.team__photo {
+		aspect-ratio: 4 / 5;
+		background: var(--color-sunken);
+	}
+
+	.team__photo :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.team__initials {
+		display: grid;
+		place-items: center;
+		height: 100%;
+		font-family: var(--font-display);
+		font-size: 48px;
+		color: var(--color-text-secondary);
+	}
+
+	.team__name {
+		margin-top: 16px;
+		font-size: 18px;
+		line-height: 1.35;
+	}
+
+	.team__role {
+		margin-top: 2px;
+		font-size: 14.5px;
+		color: var(--color-muted);
+	}
+
+	.team__bio {
+		margin-top: 10px;
+		font-size: 15px;
+		line-height: 1.6;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+</style>

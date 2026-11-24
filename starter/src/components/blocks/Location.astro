@@ -1,0 +1,154 @@
+---
+// Location section (marketing_location): where to find the business. Address, opening hours,
+// phone and email come from Company details (one place to change them); the section adds how to
+// get there and an optional image. "Get directions" opens Google Maps with the address: a link,
+// not an embedded map, so no third party loads on the page.
+import { Icon } from "astro-iconset/components";
+import { Image, type BlockComponentProps } from "@himlio/site/emdash/ui";
+import { contactDetails, telHref } from "@himlio/site/runtime";
+import type { PageContentBlock } from "../../../emdash-env";
+import { toParagraphs } from "../../utils/text";
+import { t } from "../../utils/strings";
+
+type LocationBlock = Extract<PageContentBlock, { _type: "marketing_location" }>;
+type Props = BlockComponentProps<LocationBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline, image } = value;
+const showHours = value.show_opening_hours !== false;
+const showContact = value.show_contact !== false;
+const intro = toParagraphs(value.intro);
+const directions = toParagraphs(value.directions);
+const contact = await contactDetails(Astro.cache);
+const directionsUrl = contact.address
+	? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+			contact.address.replace(/\s*\n\s*/g, ", "),
+		)}`
+	: undefined;
+---
+
+<section
+	id={anchor_id || undefined}
+	class:list={["container", "section", "location", { "location--text-only": !image }]}
+>
+	<div>
+		{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+		{headline && <h2 class="section-headline">{headline}</h2>}
+		{intro.map((paragraph) => <p class="location__intro">{paragraph}</p>)}
+		<dl class="location__facts">
+			{
+				contact.address && (
+					<div>
+						<dt>{t.address}</dt>
+						<dd>{contact.address}</dd>
+					</div>
+				)
+			}
+			{
+				showHours && contact.opening_hours && (
+					<div>
+						<dt>{t.openingHours}</dt>
+						<dd>{contact.opening_hours}</dd>
+					</div>
+				)
+			}
+			{
+				showContact && (contact.phone || contact.email) && (
+					<div>
+						<dt>{t.contact}</dt>
+						<dd>
+							{contact.phone && <a href={telHref(contact.phone)}>{contact.phone}</a>}
+							{contact.phone && contact.email && <br />}
+							{contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
+						</dd>
+					</div>
+				)
+			}
+		</dl>
+		{directions.map((paragraph) => <p class="location__directions">{paragraph}</p>)}
+		{
+			directionsUrl && (
+				<a href={directionsUrl} class="text-link location__link" rel="noopener">
+					{t.getDirections}
+					<Icon name="ph:arrow-right" aria-hidden="true" class="arrow" />
+				</a>
+			)
+		}
+	</div>
+	{
+		image && (
+			<figure class="media location__media">
+				<Image image={image} sizes="(max-width: 960px) 100vw, 600px" />
+			</figure>
+		)
+	}
+</section>
+
+<style>
+	.location {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: clamp(40px, 6vw, 96px);
+		align-items: center;
+	}
+
+	.location--text-only {
+		grid-template-columns: minmax(0, 40rem);
+	}
+
+	.location__intro {
+		margin-top: 20px;
+		font-size: 18px;
+		line-height: 1.55;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.location__facts {
+		display: grid;
+		gap: 20px;
+		margin-top: 32px;
+	}
+
+	.location__facts dt {
+		font-size: 13px;
+		font-weight: 500;
+		letter-spacing: 0.02em;
+		color: var(--color-muted);
+	}
+
+	.location__facts dd {
+		margin: 4px 0 0;
+		white-space: pre-line;
+		font-size: 16px;
+		line-height: 1.55;
+	}
+
+	.location__facts a {
+		color: inherit;
+	}
+
+	.location__directions {
+		margin-top: 20px;
+		font-size: 15px;
+		line-height: 1.6;
+		color: var(--color-text-secondary);
+	}
+
+	.location__link {
+		display: inline-flex;
+		margin-top: 28px;
+	}
+
+	.location__media :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	@media (max-width: 960px) {
+		.location {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+</style>

@@ -1,0 +1,220 @@
+{
+	"version": "1",
+	"blockTypes": [
+		{
+			"slug": "marketing_gallery",
+			"label": "Gallery",
+			"description": "Images in a grid, for a portfolio or the premises. Visitors can open each image large",
+			"icon": "images",
+			"category": "Marketing",
+			"currentVersion": 1,
+			"versions": [
+				{
+					"version": 1,
+					"fields": [
+						{
+							"slug": "headline",
+							"label": "Headline",
+							"type": "string"
+						},
+						{
+							"slug": "eyebrow",
+							"label": "Label above headline",
+							"type": "string"
+						},
+						{
+							"slug": "intro",
+							"label": "Intro text (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "images",
+							"label": "Images",
+							"type": "repeater",
+							"required": true,
+							"validation": {
+								"minItems": 1,
+								"maxItems": 48,
+								"subFields": [
+									{
+										"slug": "image",
+										"label": "Image",
+										"type": "image",
+										"required": true
+									},
+									{
+										"slug": "caption",
+										"label": "Caption",
+										"type": "string"
+									}
+								]
+							}
+						},
+						{
+							"slug": "layout",
+							"label": "Layout (Masonry: images keep their shape, in columns)",
+							"type": "select",
+							"defaultValue": "grid",
+							"validation": {
+								"options": [
+									"grid",
+									"masonry"
+								]
+							}
+						},
+						{
+							"slug": "anchor_id",
+							"label": "Section ID (lowercase, for links like /#gallery)",
+							"type": "string",
+							"validation": {
+								"pattern": "^(?:$|[a-z][a-z0-9_-]*)$"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"slug": "marketing_team",
+			"label": "Team",
+			"description": "The people: photo, name, role and a few words",
+			"icon": "users",
+			"category": "Marketing",
+			"currentVersion": 1,
+			"versions": [
+				{
+					"version": 1,
+					"fields": [
+						{
+							"slug": "headline",
+							"label": "Headline",
+							"type": "string"
+						},
+						{
+							"slug": "eyebrow",
+							"label": "Label above headline",
+							"type": "string"
+						},
+						{
+							"slug": "intro",
+							"label": "Intro text (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "members",
+							"label": "People",
+							"type": "repeater",
+							"required": true,
+							"validation": {
+								"minItems": 1,
+								"maxItems": 24,
+								"subFields": [
+									{
+										"slug": "name",
+										"label": "Name",
+										"type": "string",
+										"required": true
+									},
+									{
+										"slug": "role",
+										"label": "Role or title",
+										"type": "string"
+									},
+									{
+										"slug": "bio",
+										"label": "A few words (leave a blank line between paragraphs)",
+										"type": "text"
+									},
+									{
+										"slug": "photo",
+										"label": "Photo (initials show when empty)",
+										"type": "image"
+									}
+								]
+							}
+						},
+						{
+							"slug": "anchor_id",
+							"label": "Section ID (lowercase, for links like /#team)",
+							"type": "string",
+							"validation": {
+								"pattern": "^(?:$|[a-z][a-z0-9_-]*)$"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"slug": "marketing_location",
+			"label": "Location",
+			"description": "Where to find the business: address, opening hours, phone and email from Company details, and a link for directions (no embedded map)",
+			"icon": "map-pin",
+			"category": "Marketing",
+			"currentVersion": 1,
+			"versions": [
+				{
+					"version": 1,
+					"fields": [
+						{
+							"slug": "headline",
+							"label": "Headline",
+							"type": "string"
+						},
+						{
+							"slug": "eyebrow",
+							"label": "Label above headline",
+							"type": "string"
+						},
+						{
+							"slug": "intro",
+							"label": "Intro text (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "directions",
+							"label": "How to get here: parking, public transport, entrance (leave a blank line between paragraphs)",
+							"type": "text"
+						},
+						{
+							"slug": "image",
+							"label": "Image, e.g. the entrance or a map",
+							"type": "image"
+						},
+						{
+							"slug": "show_opening_hours",
+							"label": "Show the opening hours from Company details",
+							"type": "boolean",
+							"defaultValue": true
+						},
+						{
+							"slug": "show_contact",
+							"label": "Show the phone and email from Company details",
+							"type": "boolean",
+							"defaultValue": true
+						},
+						{
+							"slug": "anchor_id",
+							"label": "Section ID (lowercase, for links like /#location)",
+							"type": "string",
+							"validation": {
+								"pattern": "^(?:$|[a-z][a-z0-9_-]*)$"
+							}
+						}
+					]
+				}
+			]
+		}
+	],
+	"allowBlockTypes": [
+		{
+			"collection": "pages",
+			"field": "content",
+			"add": [
+				"marketing_gallery",
+				"marketing_team",
+				"marketing_location"
+			]
+		}
+	]
+}

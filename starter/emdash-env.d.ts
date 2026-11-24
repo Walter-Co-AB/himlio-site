@@ -203,7 +203,50 @@ export interface PageContentMarketingBookingV1Block {
 
 export type PageContentMarketingBookingBlock = PageContentMarketingBookingV1Block;
 
-export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock | PageContentMarketingBookingBlock;
+export interface PageContentMarketingGalleryV1Block {
+  _type: "marketing_gallery";
+  _version: 1;
+  _key: string;
+  "headline"?: string | null;
+  "eyebrow"?: string | null;
+  "intro"?: string | null;
+  "images": { "image": { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } }; "caption"?: string | null }[];
+  "layout"?: "grid" | "masonry" | null;
+  "anchor_id"?: string | null;
+}
+
+export type PageContentMarketingGalleryBlock = PageContentMarketingGalleryV1Block;
+
+export interface PageContentMarketingTeamV1Block {
+  _type: "marketing_team";
+  _version: 1;
+  _key: string;
+  "headline"?: string | null;
+  "eyebrow"?: string | null;
+  "intro"?: string | null;
+  "members": { "name": string; "role"?: string | null; "bio"?: string | null; "photo"?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } } | null }[];
+  "anchor_id"?: string | null;
+}
+
+export type PageContentMarketingTeamBlock = PageContentMarketingTeamV1Block;
+
+export interface PageContentMarketingLocationV1Block {
+  _type: "marketing_location";
+  _version: 1;
+  _key: string;
+  "headline"?: string | null;
+  "eyebrow"?: string | null;
+  "intro"?: string | null;
+  "directions"?: string | null;
+  "image"?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } } | null;
+  "show_opening_hours"?: boolean | null;
+  "show_contact"?: boolean | null;
+  "anchor_id"?: string | null;
+}
+
+export type PageContentMarketingLocationBlock = PageContentMarketingLocationV1Block;
+
+export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock | PageContentMarketingBookingBlock | PageContentMarketingGalleryBlock | PageContentMarketingTeamBlock | PageContentMarketingLocationBlock;
 
 export interface Page {
   id: string;

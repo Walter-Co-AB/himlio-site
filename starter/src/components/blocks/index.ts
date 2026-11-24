@@ -11,3 +11,6 @@ export { default as Contact } from "./Contact.astro";
 export { default as ContactForm } from "./ContactForm.astro";
 export { default as BookingSection } from "./BookingSection.astro";
 export { default as Text } from "./Text.astro";
+export { default as Gallery } from "./Gallery.astro";
+export { default as Team } from "./Team.astro";
+export { default as Location } from "./Location.astro";
