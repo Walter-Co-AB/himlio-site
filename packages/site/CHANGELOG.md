@@ -9,6 +9,23 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.16.0
+
+- Starter: three new section types for the businesses Himlio is for: Gallery
+  (`marketing_gallery`: a portfolio or the premises, grid or masonry, each image opens large),
+  Team (`marketing_team`: photo, name, role, a few words) and Location (`marketing_location`:
+  address, opening hours, phone and email from Company details, how to get there, a "Get
+  directions" link instead of an embedded map). Migration `0004_gallery_team_location`.
+
+### Sites
+
+- Optional: to have these sections, copy from the starter `Gallery.astro`, `Team.astro` and
+  `Location.astro` in `src/components/blocks/`, their registration in `blocks/index.ts` and
+  `MarketingBlocks.astro`, `initials()` in `src/utils/text.ts`, the new keys in
+  `src/utils/strings.ts` (`openImage` to `getDirections`), the migration (renumbered after the
+  site's own) and the three block types in `seed/seed.json` and `emdash-env.d.ts`. Then restyle
+  them to the site's design and check them in the block gallery.
+
 ## 1.15.0
 
 - A built-in site plugin (`himlio-site`) for what every site needs:

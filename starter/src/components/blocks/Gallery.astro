@@ -1,0 +1,275 @@
+---
+// Gallery section (marketing_gallery): images in a grid (square crops) or masonry (columns, each
+// image keeps its shape), with captions. Each image opens large in a <dialog>, with previous
+// and next (buttons, arrow keys); without JavaScript the images still show in the page.
+import { Image, type BlockComponentProps } from "@himlio/site/emdash/ui";
+import type { PageContentBlock } from "../../../emdash-env";
+import { toParagraphs } from "../../utils/text";
+import { t } from "../../utils/strings";
+
+type GalleryBlock = Extract<PageContentBlock, { _type: "marketing_gallery" }>;
+type Props = BlockComponentProps<GalleryBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline, images } = value;
+const intro = toParagraphs(value.intro);
+const masonry = value.layout === "masonry";
+---
+
+<section id={anchor_id || undefined} class="container section gallery" data-gallery>
+	{
+		(eyebrow || headline || intro.length > 0) && (
+			<header class="section-header">
+				{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+				{headline && <h2 class="section-headline">{headline}</h2>}
+				{intro.map((paragraph) => (
+					<p class="section-subheadline">{paragraph}</p>
+				))}
+			</header>
+		)
+	}
+	<ul class:list={["gallery__list", { "gallery__list--masonry": masonry }]} role="list">
+		{
+			images.map((item, index) => (
+				<li class="gallery__item">
+					<figure>
+						<button
+							type="button"
+							class="media gallery__open"
+							data-index={index}
+							aria-label={item.caption || item.image?.alt || t.openImage}
+						>
+							<Image
+								image={item.image}
+								class="gallery__img"
+								sizes="(max-width: 640px) 50vw, (max-width: 960px) 33vw, 400px"
+							/>
+						</button>
+						{item.caption && <figcaption class="gallery__caption">{item.caption}</figcaption>}
+					</figure>
+					<template data-large>
+						<Image image={item.image} class="gallery__large" sizes="100vw" />
+					</template>
+				</li>
+			))
+		}
+	</ul>
+	<dialog class="gallery__dialog" aria-label={headline || t.openImage}>
+		<div class="gallery__stage" data-stage></div>
+		<p class="gallery__dialog-caption" data-caption></p>
+		<button type="button" class="gallery__btn gallery__close" data-close aria-label={t.closeImage}
+			>×</button
+		>
+		{
+			images.length > 1 && (
+				<>
+					<button
+						type="button"
+						class="gallery__btn gallery__prev"
+						data-step="-1"
+						aria-label={t.previousImage}
+					>
+						‹
+					</button>
+					<button
+						type="button"
+						class="gallery__btn gallery__next"
+						data-step="1"
+						aria-label={t.nextImage}
+					>
+						›
+					</button>
+				</>
+			)
+		}
+	</dialog>
+</section>
+
+<script>
+	for (const gallery of document.querySelectorAll<HTMLElement>("[data-gallery]")) {
+		const dialog = gallery.querySelector("dialog")!;
+		const stage = dialog.querySelector<HTMLElement>("[data-stage]")!;
+		const caption = dialog.querySelector<HTMLElement>("[data-caption]")!;
+		const items = [...gallery.querySelectorAll<HTMLLIElement>(".gallery__item")];
+		let current = 0;
+
+		const show = (index: number) => {
+			current = (index + items.length) % items.length;
+			const item = items[current];
+			const large = item.querySelector<HTMLTemplateElement>("template[data-large]")!;
+			stage.replaceChildren(large.content.cloneNode(true));
+			caption.textContent = item.querySelector("figcaption")?.textContent ?? "";
+		};
+
+		for (const button of gallery.querySelectorAll<HTMLButtonElement>(".gallery__open"))
+			button.addEventListener("click", () => {
+				show(Number(button.dataset.index));
+				dialog.showModal();
+			});
+		for (const button of dialog.querySelectorAll<HTMLButtonElement>("[data-step]"))
+			button.addEventListener("click", () => show(current + Number(button.dataset.step)));
+		dialog.querySelector("[data-close]")!.addEventListener("click", () => dialog.close());
+		// A click on the backdrop (outside the image and buttons) closes.
+		dialog.addEventListener("click", (event) => {
+			if (event.target === dialog || event.target === stage) dialog.close();
+		});
+		dialog.addEventListener("keydown", (event) => {
+			if (items.length < 2) return;
+			if (event.key === "ArrowLeft") show(current - 1);
+			if (event.key === "ArrowRight") show(current + 1);
+		});
+		dialog.addEventListener("close", () => {
+			stage.replaceChildren();
+			gallery.querySelectorAll<HTMLButtonElement>(".gallery__open")[current]?.focus();
+		});
+	}
+</script>
+
+<style>
+	.gallery__list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(240px, 45%), 1fr));
+		gap: 12px;
+		list-style: none;
+	}
+
+	.gallery__list--masonry {
+		display: block;
+		columns: 3 240px;
+		column-gap: 12px;
+	}
+
+	.gallery__list--masonry .gallery__item {
+		break-inside: avoid;
+		margin-bottom: 12px;
+	}
+
+	.gallery__open {
+		display: block;
+		width: 100%;
+		padding: 0;
+		border: 0;
+		background: var(--color-sunken);
+		cursor: zoom-in;
+	}
+
+	.gallery__open :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+		transition: scale var(--transition-base);
+	}
+
+	.gallery__list:not(.gallery__list--masonry) .gallery__open :global(img) {
+		aspect-ratio: 1;
+		object-fit: cover;
+	}
+
+	@media (hover: hover) {
+		.gallery__open:hover :global(img) {
+			scale: 1.03;
+		}
+	}
+
+	.gallery__caption {
+		margin-top: 8px;
+		font-size: 14px;
+		color: var(--color-muted);
+	}
+
+	.gallery__dialog {
+		width: 100vw;
+		max-width: none;
+		height: 100dvh;
+		max-height: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: oklch(0.13 0 0);
+		color: #fff;
+	}
+
+	.gallery__dialog::backdrop {
+		background: oklch(0.13 0 0);
+	}
+
+	.gallery__stage {
+		display: grid;
+		place-items: center;
+		height: calc(100% - 64px);
+		padding: 24px 64px 0;
+	}
+
+	.gallery__stage :global(img) {
+		max-width: 100%;
+		max-height: 100%;
+		width: auto;
+		height: auto;
+		object-fit: contain;
+	}
+
+	.gallery__dialog-caption {
+		height: 64px;
+		padding: 16px 24px;
+		text-align: center;
+		font-size: 15px;
+	}
+
+	.gallery__btn {
+		position: absolute;
+		display: grid;
+		place-items: center;
+		width: 48px;
+		height: 48px;
+		border: 0;
+		border-radius: 50%;
+		background: oklch(1 0 0 / 0.12);
+		color: #fff;
+		font-size: 30px;
+		line-height: 1;
+		cursor: pointer;
+	}
+
+	.gallery__btn:hover,
+	.gallery__btn:focus-visible {
+		background: oklch(1 0 0 / 0.24);
+	}
+
+	.gallery__close {
+		top: 12px;
+		right: 12px;
+	}
+
+	.gallery__prev,
+	.gallery__next {
+		top: 50%;
+		translate: 0 -50%;
+	}
+
+	.gallery__prev {
+		left: 8px;
+	}
+
+	.gallery__next {
+		right: 8px;
+	}
+
+	@media (max-width: 640px) {
+		.gallery__stage {
+			padding-inline: 8px;
+		}
+
+		.gallery__prev,
+		.gallery__next {
+			top: auto;
+			bottom: 8px;
+			translate: none;
+		}
+
+		.gallery__dialog-caption {
+			padding-inline: 64px;
+			overflow: hidden;
+			font-size: 14px;
+		}
+	}
+</style>

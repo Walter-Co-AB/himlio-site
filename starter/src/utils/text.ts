@@ -7,3 +7,15 @@ export function toParagraphs(text: string | null | undefined): string[] {
 		.map((paragraph) => paragraph.trim())
 		.filter(Boolean);
 }
+
+const WHITESPACE = /\s+/;
+
+/** A name's initials, first and last word: "Anna Maria Berg" → "AB". */
+export function initials(name: string): string {
+	const letters = name
+		.trim()
+		.split(WHITESPACE)
+		.map((word) => [...word][0] ?? "");
+	const ends = letters.length > 1 ? [letters[0], letters.at(-1)] : letters;
+	return ends.join("").toUpperCase();
+}
