@@ -12,7 +12,7 @@ function absoluteUrl(value: string, origin: string): string | undefined {
 	}
 }
 
-function absoluteImageUrl(image: HeroImage, origin: string): string | undefined {
+export function absoluteImageUrl(image: HeroImage, origin: string): string | undefined {
 	if (image.src) return absoluteUrl(image.src, origin);
 	// Only media in the site's own storage is served by the media file route.
 	if ((image.provider ?? "local") !== "local") {

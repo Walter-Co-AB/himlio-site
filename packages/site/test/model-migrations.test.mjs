@@ -43,3 +43,21 @@ test('platform D1 migrations stay in 0001–0099', () => {
   for (const file of readdirSync(new URL('../migrations/', import.meta.url)))
     assert.match(file, /^00\d\d_[a-z0-9_]+\.sql$/, file);
 });
+
+test('a collection urlPattern per language is resolved for the site locale, falling back to en', async () => {
+  const { localizeSeed } = await import('../dist/model-locale.js');
+  const seed = {
+    collections: [
+      { slug: 'posts', urlPattern: { en: '/news/{slug}', sv: '/nyheter/{slug}' } },
+      { slug: 'pages', urlPattern: '/{slug}' },
+    ],
+  };
+  const pattern = (locale) => localizeSeed(seed, locale).collections.map((c) => c.urlPattern);
+  assert.deepEqual(pattern('sv-SE'), ['/nyheter/{slug}', '/{slug}']);
+  assert.deepEqual(pattern('de'), ['/news/{slug}', '/{slug}']);
+  assert.equal(seed.collections[0].urlPattern.sv, '/nyheter/{slug}'); // not changed in place
+  assert.throws(
+    () => localizeSeed({ collections: [{ slug: 'x', urlPattern: { sv: '/x' } }] }, 'sv'),
+    /needs "en"/
+  );
+});

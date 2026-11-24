@@ -438,30 +438,54 @@ async function galleryPages(allowed, maxBlocks) {
   return pages;
 }
 
-async function upsertPage(slug, page) {
-  const existing = await api('GET', `/_emdash/api/content/pages/${slug}`);
+async function upsertPage(slug, page, collection = 'pages') {
+  const at = `/_emdash/api/content/${collection}`;
+  const existing = await api('GET', `${at}/${slug}`);
   if (existing.status === 200) {
     const rev = existing.json.data._rev;
-    ok(
-      await api('PUT', `/_emdash/api/content/pages/${slug}`, { _rev: rev, data: page }),
-      `update ${slug}`
-    );
+    ok(await api('PUT', `${at}/${slug}`, { _rev: rev, data: page }), `update ${slug}`);
   } else {
-    ok(await api('POST', '/_emdash/api/content/pages', { slug, data: page }), `create ${slug}`);
+    ok(await api('POST', at, { slug, data: page }), `create ${slug}`);
   }
-  const after = ok(await api('GET', `/_emdash/api/content/pages/${slug}`), `read ${slug}`).data
-    .item;
+  const after = ok(await api('GET', `${at}/${slug}`), `read ${slug}`).data.item;
   if (after.status !== 'published' || after.draftRevisionId)
-    ok(await api('POST', `/_emdash/api/content/pages/${slug}/publish`, {}), `publish ${slug}`);
+    ok(await api('POST', `${at}/${slug}/publish`, {}), `publish ${slug}`);
 }
 
 // Unpublish rather than delete: a trashed page keeps its slug, so the next sample run couldn't
 // create it again.
-async function removePage(slug) {
-  const existing = await api('GET', `/_emdash/api/content/pages/${slug}`);
+async function removePage(slug, collection = 'pages') {
+  const at = `/_emdash/api/content/${collection}`;
+  const existing = await api('GET', `${at}/${slug}`);
   if (existing.status === 200 && existing.json.data.item.status === 'published')
-    ok(await api('POST', `/_emdash/api/content/pages/${slug}/unpublish`, {}), `unpublish ${slug}`);
+    ok(await api('POST', `${at}/${slug}/unpublish`, {}), `unpublish ${slug}`);
   return existing.status === 200;
+}
+
+// Sample posts, on sites with a News collection (`posts`, as in the starter): three, so lists
+// and the post page have something to show. Slugs are internal-looking on purpose.
+const POST_SLUGS = ['sample-post-1', 'sample-post-2', 'sample-post-3'];
+async function hasPosts() {
+  return (await api('GET', '/_emdash/api/schema/collections/posts')).status === 200;
+}
+async function samplePosts() {
+  if (!(await hasPosts())) return;
+  const image = await sampleImage();
+  for (const [i, slug] of POST_SLUGS.entries())
+    await upsertPage(
+      slug,
+      {
+        title: i === 0 ? S.long.headline : `${S.post.title} ${i + 1}`,
+        excerpt: i === 1 ? undefined : S.long.sentence,
+        ...(i === 2 ? {} : { image }),
+        content: [
+          block(S.post.paragraph),
+          block(S.subheading, 'h2'),
+          ...S.long.paragraphs.split('\n\n').map((p) => block(p)),
+        ],
+      },
+      'posts'
+    );
 }
 
 const COMPANY_ENTRY = 'company-details'; // renamed from foretagsuppgifter by 0003
@@ -497,6 +521,7 @@ if (empty) {
   ])
     await removePage(slug);
   for (let i = 1; await removePage(i > 1 ? `block-gallery-${i}` : 'block-gallery'); i++);
+  if (await hasPosts()) for (const slug of POST_SLUGS) await removePage(slug, 'posts');
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
@@ -510,6 +535,7 @@ if (empty) {
   await setCompany({ ...S.company, email: 'info@example.com' });
   const pages = await samplePages();
   if (pages[S.pages.contact]) await sampleForm();
+  await samplePosts();
   for (const [slug, page] of Object.entries(pages)) await upsertPage(slug, page);
   const gallery = Object.keys(pages).filter((slug) => slug.startsWith('block-gallery'));
   // Unpublish gallery pages a bigger content model left behind.

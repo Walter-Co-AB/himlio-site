@@ -10,7 +10,8 @@
 // `addBlockFields` adds optional fields to an existing block type (applyAddBlockFields), e.g. a
 // `layout` select for a design variant. `renameEntries` renames an entry's slug, and its title
 // while it still has the old one (applyRenameEntries). `privacyPage` (platform only) adds the
-// privacy policy page as a draft (applyPrivacyPage).
+// privacy policy page as a draft (applyPrivacyPage). A collection's `urlPattern` may be given per
+// language ({ en, sv }); see ../model-locale.ts.
 //
 // Applied names are kept in the D1 table himlio_model_migrations (migrations/0002_...).
 //
@@ -33,6 +34,7 @@ import {
 } from 'emdash';
 import { Kysely } from 'kysely';
 import { facts, modelMigrations } from 'virtual:himlio/config';
+import { localizeSeed } from '../model-locale.js';
 import { privacyPage } from '../site/privacy.js';
 
 type Seed = Parameters<typeof applySeed>[1];
@@ -263,8 +265,9 @@ async function applyPending(): Promise<void> {
   const db = new Kysely<unknown>({ dialect: createDialect({ binding: 'DB' }) }) as Database;
   try {
     for (const { name, seed: migration } of todo) {
-      const { relabel, allowBlockTypes, addBlockFields, renameEntries, privacyPage, ...seed } =
+      const { relabel, allowBlockTypes, addBlockFields, renameEntries, privacyPage, ...raw } =
         migration;
+      const seed = localizeSeed(raw, facts.locale);
       const validation = validateSeed(seed);
       if (!validation.valid) throw new Error(`${name}: ${validation.errors.join(', ')}`);
       const started = Date.now();

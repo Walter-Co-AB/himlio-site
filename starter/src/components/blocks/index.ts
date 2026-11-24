@@ -14,3 +14,4 @@ export { default as Text } from "./Text.astro";
 export { default as Gallery } from "./Gallery.astro";
 export { default as Team } from "./Team.astro";
 export { default as Location } from "./Location.astro";
+export { default as Posts } from "./Posts.astro";

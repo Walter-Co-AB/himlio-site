@@ -31,6 +31,11 @@ const en = {
     confirmation: 'Thank you! This is a sample form on the development server.',
   },
   tagline: 'Sample text: one sentence about what the company does.',
+  post: {
+    title: 'Sample post',
+    paragraph:
+      'Sample text: the opening paragraph of a post, a little news from the company. Posts are only sample content on the development server.',
+  },
   company: {
     phone: '+44 20 7946 0000',
     address: '1 Example Street\nLondon EC1A 1AA',
@@ -78,6 +83,11 @@ const sv = {
     confirmation: 'Tack! Det här är ett exempelformulär på utvecklingsservern.',
   },
   tagline: 'Exempeltext: en mening om vad företaget gör.',
+  post: {
+    title: 'Exempelinlägg',
+    paragraph:
+      'Exempeltext: inledningen till ett inlägg, en nyhet från företaget. Inläggen är bara exempelinnehåll på utvecklingsservern.',
+  },
   company: {
     phone: '08-123 456 78',
     address: 'Exempelgatan 1\n123 45 Stockholm',

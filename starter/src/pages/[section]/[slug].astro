@@ -1,0 +1,103 @@
+---
+// A post from News (the `posts` collection), at /news/<slug> (/nyheter/<slug> on a Swedish
+// site: `newsPath` in strings.ts, the same as the collection's urlPattern).
+import { decodeSlug, getEmDashEntry, getSeoMeta } from "@himlio/site/emdash";
+import { Image, PortableText } from "@himlio/site/emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { absoluteImageUrl } from "../../utils/page";
+import { formatDate, postPath } from "../../utils/posts";
+import { t } from "../../utils/strings";
+
+if (Astro.params.section !== t.newsPath) return Astro.rewrite("/404");
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: post, cacheHint } = await getEmDashEntry("posts", slug);
+if (!post) return Astro.rewrite("/404");
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const seo = getSeoMeta(post, {
+	siteUrl: Astro.url.origin,
+	path: postPath(post.id),
+	// The SEO panel wins; then the excerpt (EmDash's default) and the post's image.
+	defaultOgImage: post.data.image ? absoluteImageUrl(post.data.image, Astro.url.origin) : undefined,
+});
+const published = post.data.publishedAt;
+---
+
+<Base
+	title={seo.title}
+	pageTitle={post.data.title}
+	description={seo.description}
+	image={seo.ogImage}
+	canonical={seo.canonical}
+	robots={seo.robots}
+	content={{ collection: "posts", id: post.data.id, slug: post.id }}
+	pageType="article"
+	articleMeta={{
+		publishedTime: published?.toISOString() ?? null,
+		modifiedTime: post.data.updatedAt?.toISOString() ?? null,
+	}}
+>
+	<article class="container post">
+		<header class="post__header">
+			<p class="eyebrow">
+				{t.news}
+				{
+					published && (
+						<>
+							{" · "}
+							<time datetime={published.toISOString()}>{formatDate(published)}</time>
+						</>
+					)
+				}
+			</p>
+			<h1 class="display post__title" {...post.edit.title}>{post.data.title}</h1>
+			{post.data.excerpt && <p class="lead post__excerpt">{post.data.excerpt}</p>}
+		</header>
+		{
+			post.data.image && (
+				<figure class="media post__media">
+					<Image image={post.data.image} sizes="(max-width: 960px) 100vw, 960px" priority />
+				</figure>
+			)
+		}
+		<div class="text-block__body post__body" {...post.edit.content}>
+			<PortableText value={post.data.content ?? []} />
+		</div>
+	</article>
+</Base>
+
+<style>
+	.post {
+		padding-block: clamp(48px, 8vw, 96px);
+	}
+
+	.post__header,
+	.post__body {
+		max-width: 44rem;
+	}
+
+	.post__title {
+		margin-top: 12px;
+	}
+
+	.post__excerpt {
+		margin-top: 20px;
+	}
+
+	.post__media {
+		max-width: 60rem;
+		margin-block: 48px;
+	}
+
+	.post__media :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
+	.post__body {
+		margin-top: 40px;
+	}
+</style>
