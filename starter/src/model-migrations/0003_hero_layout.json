@@ -1,0 +1,22 @@
+{
+	"version": "1",
+	"addBlockFields": [
+		{
+			"blockType": "marketing_hero",
+			"fields": [
+				{
+					"slug": "layout",
+					"label": "Layout (Cover: the text over the image, full width; needs an image)",
+					"type": "select",
+					"defaultValue": "standard",
+					"validation": {
+						"options": [
+							"standard",
+							"cover"
+						]
+					}
+				}
+			]
+		}
+	]
+}

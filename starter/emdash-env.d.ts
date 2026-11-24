@@ -37,6 +37,7 @@ export interface PageContentMarketingHeroV1Block {
   "image_caption"?: string | null;
   "eyebrow"?: string | null;
   "eyebrow_url"?: string | null;
+  "layout"?: "standard" | "cover" | null;
   "centered"?: boolean | null;
   "anchor_id"?: string | null;
 }

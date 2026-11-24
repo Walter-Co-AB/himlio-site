@@ -10,14 +10,15 @@ on the package [`@himlio/site`](https://www.npmjs.com/package/@himlio/site).
   description (Tagline) and contact details are edited in the admin.
 - This repo holds the site's design and its own code. The platform comes as `@himlio/site`.
 - The design started from EmDash's marketing template: pages are built from sections (block
-  types) in the admin. See [UPSTREAM.md](UPSTREAM.md) and AGENTS.md, "Build it the EmDash way".
+  types) in the admin. How to design it: `node_modules/@himlio/site/docs/design.md` and
+  AGENTS.md, "Build it the EmDash way".
 
 ## Development
 
 ```sh
 npm install
 npm run dev        # applies D1 migrations locally, then the site on its own port
-npm run fixtures   # sample content (-- --empty for the empty state)
+npm run fixtures   # sample content and the block gallery /blockgalleri (-- --empty: empty state)
 npm run verify     # what CI runs
 ```
 
