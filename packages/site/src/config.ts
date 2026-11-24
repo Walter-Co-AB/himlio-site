@@ -12,6 +12,7 @@ import {
 import { validateSeed } from 'emdash';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { localizeSeed } from './model-locale.js';
 
 /** The platform facts in himlio.json (written by Terraform). */
 export interface HimlioFacts {
@@ -375,8 +376,21 @@ export function readModelMigrations(root: string, options: HimlioOptions) {
         privacyPage: _privacy,
         ...plain
       } = seed;
-      const validation = validateSeed(plain);
-      if (!validation.valid) fail(`${dir}/${file}: ${validation.errors.join('; ')}`);
+      // Every language's urlPattern must be valid, so check the seed once per language given.
+      const languages = new Set(['en']);
+      for (const c of (plain.collections ?? []) as { urlPattern?: unknown }[])
+        if (typeof c.urlPattern === 'object' && c.urlPattern !== null)
+          for (const lang of Object.keys(c.urlPattern)) languages.add(lang);
+      for (const lang of languages) {
+        let errors: string[];
+        try {
+          const validation = validateSeed(localizeSeed(plain, lang));
+          errors = validation.valid ? [] : validation.errors;
+        } catch (error) {
+          errors = [(error as Error).message];
+        }
+        if (errors.length) fail(`${dir}/${file}: ${errors.join('; ')}`);
+      }
       list.push({ name: prefix + file.replace(/\.json$/, ''), seed });
     }
   };

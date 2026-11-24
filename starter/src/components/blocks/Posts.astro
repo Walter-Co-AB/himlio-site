@@ -1,0 +1,184 @@
+---
+// News section (marketing_posts): posts from the News collection, newest first. "Latest" shows
+// the newest few and an optional link to all posts; "All" shows every post, `count` per page,
+// with a link to older posts (?posts=<cursor>). Each post links to its page (postPath).
+import { Icon } from "astro-iconset/components";
+import { getEmDashCollection, sanitizeHref } from "@himlio/site/emdash";
+import { Image, type BlockComponentProps } from "@himlio/site/emdash/ui";
+import type { PageContentBlock } from "../../../emdash-env";
+import { feedPath, formatDate, postPath } from "../../utils/posts";
+import { toParagraphs } from "../../utils/text";
+import { t } from "../../utils/strings";
+
+type PostsBlock = Extract<PageContentBlock, { _type: "marketing_posts" }>;
+type Props = BlockComponentProps<PostsBlock>;
+
+const { value } = Astro.props;
+const { anchor_id, eyebrow, headline } = value;
+const intro = toParagraphs(value.intro);
+const all = value.mode === "all";
+const count = Math.min(Math.max(Math.round(value.count ?? 3), 1), all ? 24 : 12);
+const cursor = all ? Astro.url.searchParams.get("posts") || undefined : undefined;
+
+const { entries, nextCursor, cacheHint } = await getEmDashCollection("posts", {
+	limit: count,
+	orderBy: { published_at: "desc" },
+	...(cursor ? { cursor } : {}),
+});
+if (Astro.cache?.enabled && cacheHint) Astro.cache.set(cacheHint);
+
+const link =
+	!all && value.link_label && value.link_url
+		? { label: value.link_label, url: sanitizeHref(value.link_url) }
+		: undefined;
+const here = Astro.url.pathname;
+const PostHeading = headline ? "h3" : "h2";
+---
+
+<section id={anchor_id || undefined} class="container section">
+	{
+		(eyebrow || headline || intro.length > 0) && (
+			<header class="section-header">
+				{eyebrow && <p class="eyebrow">{eyebrow}</p>}
+				{headline && <h2 class="section-headline">{headline}</h2>}
+				{intro.map((paragraph) => (
+					<p class="section-subheadline">{paragraph}</p>
+				))}
+			</header>
+		)
+	}
+	{
+		entries.length === 0 ? (
+			<p class="posts__empty">{t.noPosts}</p>
+		) : (
+			<ul class="posts" role="list">
+				{entries.map((post) => (
+					<li class="posts__item">
+						<a href={postPath(post.id)} class="posts__link">
+							{post.data.image && (
+								<div class="media posts__media">
+									<Image
+										image={post.data.image}
+										alt=""
+										sizes="(max-width: 640px) 100vw, (max-width: 960px) 50vw, 400px"
+									/>
+								</div>
+							)}
+							{post.data.publishedAt && (
+								<time class="posts__date" datetime={post.data.publishedAt.toISOString()}>
+									{formatDate(post.data.publishedAt)}
+								</time>
+							)}
+							<PostHeading class="posts__title">{post.data.title}</PostHeading>
+						</a>
+						{post.data.excerpt && <p class="posts__excerpt">{post.data.excerpt}</p>}
+					</li>
+				))}
+			</ul>
+		)
+	}
+	<div class="posts__more">
+		{
+			link && (
+				<a href={link.url} class="text-link">
+					{link.label}
+					<Icon name="ph:arrow-right" aria-hidden="true" class="arrow" />
+				</a>
+			)
+		}
+		{
+			all && nextCursor && (
+				<a
+					href={`${here}?posts=${encodeURIComponent(nextCursor)}${anchor_id ? `#${anchor_id}` : ""}`}
+					class="text-link"
+				>
+					{t.olderPosts}
+					<Icon name="ph:arrow-right" aria-hidden="true" class="arrow" />
+				</a>
+			)
+		}
+		{all && cursor && <a href={here} class="text-link">{t.newestPosts}</a>}
+		{all && <a href={feedPath()} class="posts__feed">{t.subscribe}</a>}
+	</div>
+</section>
+
+<style>
+	.posts {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+		gap: 48px 24px;
+		list-style: none;
+	}
+
+	.posts__link {
+		display: block;
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.posts__media {
+		aspect-ratio: 3 / 2;
+		margin-bottom: 18px;
+		background: var(--color-sunken);
+	}
+
+	.posts__media :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: scale var(--transition-base);
+	}
+
+	@media (hover: hover) {
+		.posts__link:hover :global(img) {
+			scale: 1.03;
+		}
+
+		.posts__link:hover .posts__title {
+			text-decoration: underline;
+			text-underline-offset: 3px;
+		}
+	}
+
+	.posts__date {
+		font-size: 13.5px;
+		color: var(--color-muted);
+	}
+
+	.posts__title {
+		margin-top: 6px;
+		font-size: 20px;
+		line-height: 1.3;
+		text-wrap: balance;
+	}
+
+	.posts__excerpt {
+		margin-top: 10px;
+		font-size: 15px;
+		line-height: 1.6;
+		color: var(--color-text-secondary);
+		text-wrap: pretty;
+	}
+
+	.posts__empty {
+		color: var(--color-muted);
+	}
+
+	.posts__more {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 16px 32px;
+		margin-top: 48px;
+	}
+
+	.posts__more:empty {
+		display: none;
+	}
+
+	.posts__feed {
+		margin-left: auto;
+		font-size: 14px;
+		color: var(--color-muted);
+	}
+</style>

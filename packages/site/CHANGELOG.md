@@ -9,6 +9,28 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.17.0
+
+- Content-model migrations: a collection's `urlPattern` may be given per language
+  (`{ "en": "/news/{slug}", "sv": "/nyheter/{slug}" }`), so URLs follow the site's `locale`.
+- Fixtures: three sample posts on sites with a News collection (`posts`).
+- Starter: News. The `posts` collection (title, excerpt, image, text; drafts, revisions,
+  preview, SEO, search) with migration `0005_posts`; a News section (`marketing_posts`: the
+  latest few with a link, or all with pages); the post page at `/news/<slug>` (`/nyheter/` on a
+  Swedish site) with article metadata for search engines and social media; an RSS feed at
+  `/news/rss.xml`. The Text section's rich-text styles moved to `global.css` so posts share
+  them.
+
+### Sites
+
+- Optional: to have News, copy from the starter `0005_posts.json` (renumbered after the site's
+  own migrations), `Posts.astro` and its registration, `src/pages/[section]/`,
+  `src/utils/posts.ts`, the new keys in `strings.ts` (`newsPath` to `subscribe`), the
+  `pageType`/`articleMeta` props in `Base.astro`, `absoluteImageUrl` exported from
+  `src/utils/page.ts`, the rich-text styles in `global.css` (or the site's own), and
+  `marketing_posts` in `seed/seed.json` and `emdash-env.d.ts`. Keep `newsPath` equal to the
+  collection's `urlPattern`.
+
 ## 1.16.0
 
 - Starter: three new section types for the businesses Himlio is for: Gallery

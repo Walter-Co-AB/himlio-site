@@ -246,7 +246,23 @@ export interface PageContentMarketingLocationV1Block {
 
 export type PageContentMarketingLocationBlock = PageContentMarketingLocationV1Block;
 
-export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock | PageContentMarketingBookingBlock | PageContentMarketingGalleryBlock | PageContentMarketingTeamBlock | PageContentMarketingLocationBlock;
+export interface PageContentMarketingPostsV1Block {
+  _type: "marketing_posts";
+  _version: 1;
+  _key: string;
+  "headline"?: string | null;
+  "eyebrow"?: string | null;
+  "intro"?: string | null;
+  "mode"?: "latest" | "all" | null;
+  "count"?: number | null;
+  "link_label"?: string | null;
+  "link_url"?: string | null;
+  "anchor_id"?: string | null;
+}
+
+export type PageContentMarketingPostsBlock = PageContentMarketingPostsV1Block;
+
+export type PageContentBlock = PageContentMarketingHeroBlock | PageContentMarketingFeaturesBlock | PageContentMarketingTestimonialsBlock | PageContentMarketingPricingBlock | PageContentMarketingFaqBlock | PageContentMarketingLogosBlock | PageContentMarketingSplitBlock | PageContentMarketingStatsBlock | PageContentMarketingCtaBlock | PageContentMarketingContactBlock | PageContentMarketingTextBlock | PageContentMarketingFormBlock | PageContentMarketingBookingBlock | PageContentMarketingGalleryBlock | PageContentMarketingTeamBlock | PageContentMarketingLocationBlock | PageContentMarketingPostsBlock;
 
 export interface Page {
   id: string;
@@ -262,9 +278,26 @@ export interface Page {
   terms?: Record<string, TaxonomyTerm[]>;
 }
 
+export interface Post {
+  id: string;
+  slug: string | null;
+  status: string;
+  title: string;
+  excerpt?: string;
+  image?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown>; darkVariant?: { id: string; src?: string; alt?: string; caption?: string; width?: number; height?: number; filename?: string; mimeType?: string; blurhash?: string; dominantColor?: string; focalX?: number; focalY?: number; provider?: string; previewUrl?: string; meta?: Record<string, unknown> } };
+  content?: PortableTextBlock[];
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  byline?: BylineSummary | null;
+  bylines?: ContentBylineCredit[];
+  terms?: Record<string, TaxonomyTerm[]>;
+}
+
 declare module "emdash" {
   interface EmDashCollections {
     company: Company;
     pages: Page;
+    posts: Post;
   }
 }
