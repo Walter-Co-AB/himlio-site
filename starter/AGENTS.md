@@ -55,7 +55,7 @@ own code now: change it as much as the design needs. The design guide,
   `pages.content`; see `0002_booking_section.json`), in `seed/seed.json` and in
   `emdash-env.d.ts`.
 - **Look at every section after a change:** `npm run fixtures` makes the block gallery
-  (`/blockgalleri`), every section type with all fields, only the required ones and each variant.
+  (`/block-gallery`), every section type with all fields, only the required ones and each variant.
 - **Style through tokens.** Change `theme.css` (it overrides `tokens.css`); keep component CSS
   on the tokens. Colours use `light-dark()` for dark mode.
 - **Don't port other themes** (AstroWind, AstroDeck and the like) into a Himlio site; they put
