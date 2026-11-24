@@ -139,14 +139,14 @@ and `allowBlockTypes` in a migration, a component in `src/components/blocks/`, r
 
 ```sh
 npm run dev
-npm run fixtures       # sample content, including /blockgalleri (and -2, -3, ...)
+npm run fixtures       # sample content, including /block-gallery (and -2, -3, ...)
 npm run screenshots    # light, dark and mobile, into screenshots/
 ```
 
 `fixtures` builds the **block gallery** from the site's live content model, so your own block
 types and variants are in it: every section type the pages allow, once with every field filled
 (long Swedish text, three repeater items, a sample image), once with only the required fields,
-and once per option of each select field. One look at `/blockgalleri` after a token change
+and once per option of each select field. One look at `/block-gallery` after a token change
 shows every section, its empty state and its variants. CI's **screenshots** artifact has the
 same pages; look at it before merging a design change.
 

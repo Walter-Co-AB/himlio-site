@@ -17,10 +17,10 @@ const out = value('--out') ?? 'screenshots';
 const flagValues = new Set([value('--url'), value('--out')]);
 const pages = args.filter((a) => a.startsWith('/') && !flagValues.has(a));
 if (pages.length === 0) {
-  pages.push('/', '/om-oss', '/kontakt', '/blockgalleri');
+  pages.push('/', '/om-oss', '/kontakt', '/block-gallery');
   // The block gallery's further pages, as many as fixtures made.
-  for (let i = 2; (await fetch(`${base}/blockgalleri-${i}`)).ok; i++)
-    pages.push(`/blockgalleri-${i}`);
+  for (let i = 2; (await fetch(`${base}/block-gallery-${i}`)).ok; i++)
+    pages.push(`/block-gallery-${i}`);
   pages.push('/sidan-finns-inte');
 }
 

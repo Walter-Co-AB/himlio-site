@@ -18,7 +18,7 @@ on the package [`@himlio/site`](https://www.npmjs.com/package/@himlio/site).
 ```sh
 npm install
 npm run dev        # applies D1 migrations locally, then the site on its own port
-npm run fixtures   # sample content and the block gallery /blockgalleri (-- --empty: empty state)
+npm run fixtures   # sample content and the block gallery /block-gallery (-- --empty: empty state)
 npm run verify     # what CI runs
 ```
 

@@ -2,8 +2,8 @@
 // Part of @himlio/site. Uses EmDash's dev-only setup bypass, so it only works against `astro dev`.
 //
 //   himlio-site fixtures             tagline, company details, a home page, "Om oss" and "Kontakt"
-//                                    with a sample contact form, and "Blockgalleri"
-//                                    (/blockgalleri, -2, ...): every section type the pages allow, with
+//                                    with a sample contact form, and "Block gallery"
+//                                    (/block-gallery, -2, ...): every section type the pages allow, with
 //                                    all fields filled (long text), only the required ones,
 //                                    and once per option of each select field (design variants)
 //   himlio-site fixtures --empty    everything empty: no tagline or details, pages unpublished
@@ -270,9 +270,9 @@ async function sampleImage() {
   form.append(
     'file',
     new Blob([samplePng(width, height)], { type: 'image/png' }),
-    'exempelbild.png'
+    'sample-image.png'
   );
-  form.append('alt', 'Exempelbild');
+  form.append('alt', 'Sample image');
   form.append('width', String(width));
   form.append('height', String(height));
   form.append('deduplicate', 'true');
@@ -297,11 +297,13 @@ async function sampleImage() {
     mimeType: item.mimeType,
     width: item.width ?? width,
     height: item.height ?? height,
-    alt: 'Exempelbild',
+    alt: 'Sample image',
   };
 }
 
-// Long Swedish text: compound words that don't fit narrow columns, and enough of it to wrap.
+// Sample content is Swedish on purpose, like the customers' sites: compound words that don't fit
+// narrow columns, and enough text to wrap. Everything else in the gallery (slugs, titles, the
+// variant labels) is English: it is a developer tool, only ever on the local dev server.
 const LONG = {
   headline: 'Exempelrubrik med ett riktigt långt sammansatt ord: hårvårdsspecialistkonsultationer',
   short: 'Exempeltext med några ord',
@@ -428,8 +430,8 @@ async function galleryPages(allowed, maxBlocks) {
       if (first) value[first.slug] = `${type.label} (${variant}): ${value[first.slug]}`;
       return value;
     };
-    content.push(make('alla fält', {}));
-    content.push(make('bara obligatoriska', { minimal: true }));
+    content.push(make('all fields', {}));
+    content.push(make('required only', { minimal: true }));
     for (const field of version.fields.filter((f) => f.type === 'select')) {
       for (const option of (field.validation?.options ?? []).slice(1))
         content.push(make(`${field.slug}: ${option}`, { select: { [field.slug]: option } }));
@@ -438,8 +440,8 @@ async function galleryPages(allowed, maxBlocks) {
   // A page takes at most maxBlocks sections (pages.content's maxItems), so split it up.
   const pages = {};
   for (let i = 0; i * maxBlocks < content.length; i++)
-    pages[i ? `blockgalleri-${i + 1}` : 'blockgalleri'] = {
-      title: i ? `Blockgalleri ${i + 1}` : 'Blockgalleri',
+    pages[i ? `block-gallery-${i + 1}` : 'block-gallery'] = {
+      title: i ? `Block gallery ${i + 1}` : 'Block gallery',
       content: content.slice(i * maxBlocks, (i + 1) * maxBlocks),
     };
   return pages;
@@ -494,7 +496,7 @@ if (empty) {
   ok(await api('POST', '/_emdash/api/settings', { tagline: '' }), 'tagline');
   await setCompany({ phone: '', email: '', address: '', org_number: '', opening_hours: '' });
   for (const slug of ['home', 'start', 'om-oss', 'kontakt']) await removePage(slug);
-  for (let i = 1; await removePage(i > 1 ? `blockgalleri-${i}` : 'blockgalleri'); i++);
+  for (let i = 1; await removePage(i > 1 ? `block-gallery-${i}` : 'block-gallery'); i++);
   console.log(`fixtures: empty state on ${base}`);
 } else {
   ok(
@@ -513,9 +515,9 @@ if (empty) {
   const pages = await samplePages();
   if (pages.kontakt) await sampleForm();
   for (const [slug, page] of Object.entries(pages)) await upsertPage(slug, page);
-  const gallery = Object.keys(pages).filter((slug) => slug.startsWith('blockgalleri'));
+  const gallery = Object.keys(pages).filter((slug) => slug.startsWith('block-gallery'));
   // Unpublish gallery pages a bigger content model left behind.
-  for (let i = gallery.length + 1; await removePage(`blockgalleri-${i}`); i++);
+  for (let i = gallery.length + 1; await removePage(`block-gallery-${i}`); i++);
   if (gallery.length) console.log(`fixtures: block gallery on /${gallery.join(', /')}`);
   console.log(`fixtures: sample content on ${base}`);
 }
