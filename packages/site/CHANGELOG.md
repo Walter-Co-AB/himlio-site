@@ -9,6 +9,24 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.18.0
+
+- News is part of the platform: the `posts` collection on every site (platform migration
+  `0005_news`, URLs in the site's language) and its RSS feed at `/news/rss.xml`
+  (`/nyheter/rss.xml`), served by the platform. `newsPath()`, `postPath()` and `feedPath()` in
+  `@himlio/site/runtime`. How posts look stays the site's: a News section and a post page.
+- Site rules: "Picking up starter changes", where the starter for a version is and how to see
+  what changed in it.
+- Starter: the feed route is gone (the platform's now); post URLs from `@himlio/site/runtime`
+  instead of `newsPath` in `strings.ts`.
+
+### Sites
+
+- Optional: to show posts, copy the News section and post page as listed under 1.17.0, without
+  `rss.xml.ts` and the `newsPath` string: `src/utils/posts.ts` now re-exports the URLs from
+  `@himlio/site/runtime`. A site that copied the 1.17.0 feed route can delete it; the platform
+  answers that URL first.
+
 ## 1.17.1
 
 - Privacy policy: the cookie example no longer assumes a light/dark switcher; form messages say

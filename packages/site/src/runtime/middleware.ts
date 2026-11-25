@@ -1,10 +1,11 @@
 // The platform's middleware, registered by himlio() after EmDash's own. A site's own
 // src/middleware.ts runs after it; nothing to wire up. It also answers /_booking, the page
-// behind the links in booking emails (booking-pages.ts).
+// behind the links in booking emails (booking-pages.ts), and the News feed (news.ts).
 import { defineMiddleware } from 'astro:middleware';
 import { facts } from 'virtual:himlio/config';
 import { bookingPage, isBookingPage } from './booking-pages.js';
 import { startModelMigrations } from './model-migrations.js';
+import { isNewsFeed, newsFeed } from './news.js';
 
 /**
  * Starts pending content-model migrations after the response, without delaying it. Only when a
@@ -15,6 +16,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const runtime = (context.locals as { emdash?: Parameters<typeof bookingPage>[1] }).emdash;
     return bookingPage(context.request, runtime, facts.name, facts.locale);
   }
+  if (isNewsFeed(context.url) && context.request.method === 'GET') return newsFeed(context.url);
   const response = await next();
   const cf = (context.locals as { cfContext?: { waitUntil(p: Promise<unknown>): void } }).cfContext;
   if (cf) startModelMigrations((promise) => cf.waitUntil(promise));
