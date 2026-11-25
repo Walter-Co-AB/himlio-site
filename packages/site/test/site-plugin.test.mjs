@@ -164,3 +164,20 @@ test('validation messages follow the site language and the field', async () => {
   new Function(script);
   assert.match(script, /Fyll i det här fältet/);
 });
+
+test("the Forms plugin's English texts are translated on a site that isn't English", async () => {
+  const { formText, validationText, validationScript } = await import('../dist/site/validation.js');
+  const sv = validationText('sv');
+  assert.equal(formText('Submitting...', sv), 'Skickar…');
+  assert.equal(formText('Network error. Please try again.', sv), sv.offline);
+  assert.equal(formText('Step 2 of 3', sv), 'Steg 2 av 3');
+  assert.equal(
+    formText('Telefon must be a valid phone number', sv),
+    'Ange ett giltigt telefonnummer.'
+  );
+  assert.equal(formText('E-post is required', sv), 'Fyll i det här fältet.');
+  assert.equal(formText('Tack för ditt meddelande.', sv), null);
+  assert.equal(formText('Skickar…', sv), null);
+  assert.doesNotMatch(validationScript('en'), /MutationObserver/);
+  assert.match(validationScript('sv'), /MutationObserver/);
+});

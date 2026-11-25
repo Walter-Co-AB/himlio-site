@@ -9,6 +9,17 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.19.1
+
+- Forms in the site's language: on a site that isn't English, the Forms plugin's own English
+  texts are translated as they appear: "Submitting..." on the button, its error and success
+  messages (including a lost connection), "Step 1 of 2", and the server's field errors such as
+  "Telefon must be a valid phone number".
+
+### Sites
+
+Nothing.
+
 ## 1.19.0
 
 - Form validation messages in the site's language: forms and booking used the browser's own
