@@ -1,32 +1,47 @@
 ---
 import { decodeSlug, getEmDashEntry, getSeoMeta } from "@himlio/site/emdash";
 import Base from "../layouts/Base.astro";
+import NewsIndex from "../components/NewsIndex.astro";
 import PageView from "../components/PageView.astro";
 import { heroSeoDefaults } from "../utils/page";
+import { newsPath } from "../utils/posts";
+import { t } from "../utils/strings";
 
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
 
 const { entry: page, cacheHint } = await getEmDashEntry("pages", slug);
-if (!page) return Astro.rewrite("/404");
+// News has a listing even before the customer makes a page for it (NewsIndex).
+const newsIndex = !page && slug === newsPath();
+if (!page && !newsIndex) return Astro.rewrite("/404");
 
-if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled && cacheHint) Astro.cache.set(cacheHint);
 
-const seo = getSeoMeta(page, {
-	siteUrl: Astro.url.origin,
-	path: `/${page.id}`,
-	...heroSeoDefaults(page.data.content, Astro.url.origin),
-});
+const seo = page
+	? getSeoMeta(page, {
+			siteUrl: Astro.url.origin,
+			path: `/${page.id}`,
+			...heroSeoDefaults(page.data.content, Astro.url.origin),
+		})
+	: undefined;
 ---
 
-<Base
-	title={seo.title}
-	pageTitle={page.data.title}
-	description={seo.description}
-	image={seo.ogImage}
-	canonical={seo.canonical}
-	robots={seo.robots}
-	content={{ collection: "pages", id: page.data.id, slug: page.id }}
->
-	<PageView page={page} />
-</Base>
+{
+	page && seo ? (
+		<Base
+			title={seo.title}
+			pageTitle={page.data.title}
+			description={seo.description}
+			image={seo.ogImage}
+			canonical={seo.canonical}
+			robots={seo.robots}
+			content={{ collection: "pages", id: page.data.id, slug: page.id }}
+		>
+			<PageView page={page} />
+		</Base>
+	) : (
+		<Base title={t.news} canonical={`${Astro.url.origin}/${newsPath()}`}>
+			<NewsIndex />
+		</Base>
+	)
+}

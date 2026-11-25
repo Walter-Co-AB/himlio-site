@@ -42,7 +42,7 @@ const published = post.data.publishedAt;
 	<article class="container post">
 		<header class="post__header">
 			<p class="eyebrow">
-				{t.news}
+				<a href={`/${newsPath()}`} class="post__news">{t.news}</a>
 				{
 					published && (
 						<>
@@ -76,6 +76,15 @@ const published = post.data.publishedAt;
 	.post__header,
 	.post__body {
 		max-width: 44rem;
+	}
+
+	.post__news {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.post__news:hover {
+		text-decoration: underline;
 	}
 
 	.post__title {
