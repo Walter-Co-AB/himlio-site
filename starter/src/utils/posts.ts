@@ -1,11 +1,7 @@
 import { himlio, siteLanguage } from "@himlio/site/runtime";
-import { t } from "./strings";
 
-/** A post's URL. The prefix is `newsPath`, which matches the collection's `urlPattern`. */
-export const postPath = (slug: string) => `/${t.newsPath}/${encodeURIComponent(slug)}`;
-
-/** The feed's URL, e.g. /nyheter/rss.xml. */
-export const feedPath = () => `/${t.newsPath}/rss.xml`;
+// Post and feed URLs come from the platform, in the site's language (/news or /nyheter).
+export { feedPath, newsPath, postPath } from "@himlio/site/runtime";
 
 const dateFormat = new Intl.DateTimeFormat(himlio.locale || siteLanguage(), {
 	dateStyle: "long",

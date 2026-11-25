@@ -58,6 +58,7 @@ EmDash is pinned by this package, so a site can't drift to another EmDash versio
 | `hasContactDetails(details)`, `telHref(phone)`                 | Helpers for the above.                                                                                                          |
 | `siteDescription(Astro.cache)`                                 | The Tagline from the admin (Settings → General), or `undefined`.                                                                |
 | `socialLinks(Astro.cache)`, `socialLinksFrom(settings.social)` | The social profiles from Settings → Social as `{ network, label, url }`; a username or a full URL both work.                    |
+| `newsPath()`, `postPath(slug)`, `feedPath()`                   | News URLs in the site's language: `"nyheter"`, `/nyheter/<slug>`, `/nyheter/rss.xml` on a Swedish site.                         |
 | `privacyPolicyPath()`                                          | The path of the published page with the Privacy policy block (for a footer link), or `undefined`.                               |
 
 Pass `Astro.cache` so cached pages are purged when the content changes.
@@ -191,6 +192,11 @@ The platform's site plugin (`himlio-site`) adds these to every site, with no cod
   in a Text section, unless a page has the block already or the slug is taken. The company
   reads it, adds what else it does around the block and publishes it; it is responsible for
   the text. Outside content: `import { PrivacyPolicy } from '@himlio/site/site'`.
+
+- **News.** The `posts` collection (title, excerpt, image, text), with URLs in the site's
+  language: `newsPath()`, `postPath(slug)` (`/news/<slug>`, `/nyheter/<slug>`) and the RSS feed
+  at `feedPath()`, which the platform serves. The site shows posts in its own design: a News
+  section and a post page (the starter has both).
 
 EmDash itself handles the favicon (Settings → General), the default share image for social
 media (Settings → SEO), redirects, `sitemap.xml` and `robots.txt`.

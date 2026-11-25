@@ -1,14 +1,14 @@
 ---
-// A post from News (the `posts` collection), at /news/<slug> (/nyheter/<slug> on a Swedish
-// site: `newsPath` in strings.ts, the same as the collection's urlPattern).
+// A post from News (the platform's `posts` collection), at /news/<slug> (/nyheter/<slug> on a
+// Swedish site: newsPath() from @himlio/site/runtime). The feed is the platform's.
 import { decodeSlug, getEmDashEntry, getSeoMeta } from "@himlio/site/emdash";
 import { Image, PortableText } from "@himlio/site/emdash/ui";
 import Base from "../../layouts/Base.astro";
 import { absoluteImageUrl } from "../../utils/page";
-import { formatDate, postPath } from "../../utils/posts";
+import { formatDate, newsPath, postPath } from "../../utils/posts";
 import { t } from "../../utils/strings";
 
-if (Astro.params.section !== t.newsPath) return Astro.rewrite("/404");
+if (Astro.params.section !== newsPath()) return Astro.rewrite("/404");
 const slug = decodeSlug(Astro.params.slug);
 if (!slug) return Astro.rewrite("/404");
 

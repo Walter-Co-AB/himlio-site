@@ -1,0 +1,47 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "0005_news",
+    "description": "News: the posts collection on every site, with URLs in the site's language. The site shows posts with its own News section and post page; the platform serves the feed."
+  },
+  "collections": [
+    {
+      "slug": "posts",
+      "label": "News",
+      "labelSingular": "Post",
+      "description": "News and posts, newest first. Show them on a page with a News section.",
+      "urlPattern": {
+        "en": "/news/{slug}",
+        "sv": "/nyheter/{slug}"
+      },
+      "supports": ["drafts", "revisions", "preview", "seo", "search"],
+      "fields": [
+        {
+          "slug": "title",
+          "label": "Title",
+          "type": "string",
+          "required": true,
+          "searchable": true
+        },
+        {
+          "slug": "excerpt",
+          "label": "Excerpt: a sentence or two for lists and sharing",
+          "type": "text",
+          "searchable": true
+        },
+        {
+          "slug": "image",
+          "label": "Image",
+          "type": "image"
+        },
+        {
+          "slug": "content",
+          "label": "Text",
+          "type": "portableText",
+          "searchable": true
+        }
+      ]
+    }
+  ]
+}

@@ -35,8 +35,6 @@ export const t = localized({
 		address: "Address",
 		openingHours: "Opening hours",
 		getDirections: "Get directions",
-		// The News URLs: must match `urlPattern` in src/model-migrations/0005_posts.json.
-		newsPath: "news",
 		news: "News",
 		readMore: "Read more",
 		olderPosts: "Older posts",
@@ -73,7 +71,6 @@ export const t = localized({
 		address: "Adress",
 		openingHours: "Öppettider",
 		getDirections: "Hitta hit",
-		newsPath: "nyheter",
 		news: "Nyheter",
 		readMore: "Läs mer",
 		olderPosts: "Äldre inlägg",

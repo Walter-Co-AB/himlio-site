@@ -61,3 +61,19 @@ test('a collection urlPattern per language is resolved for the site locale, fall
     /needs "en"/
   );
 });
+
+test('the News collection URLs match the News paths the runtime and the feed use', async () => {
+  const { NEWS_PATHS, newsPathFor } = await import('../dist/news.js');
+  const read = (path) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const platform = read('../model-migrations/0005_news.json').collections[0];
+  const starter = read('../../../starter/src/model-migrations/0005_posts.json').collections[0];
+  for (const posts of [platform, starter]) {
+    assert.equal(posts.slug, 'posts');
+    assert.deepEqual(
+      posts.urlPattern,
+      Object.fromEntries(Object.entries(NEWS_PATHS).map(([l, p]) => [l, `/${p}/{slug}`]))
+    );
+  }
+  assert.equal(newsPathFor('sv-SE'), 'nyheter');
+  assert.equal(newsPathFor('fi'), 'news');
+});
