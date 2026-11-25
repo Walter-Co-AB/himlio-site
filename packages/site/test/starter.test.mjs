@@ -39,6 +39,59 @@ test("the starter's code imports EmDash through @himlio/site, never directly", (
   assert.deepEqual(direct, []);
 });
 
+// The entry points a site may import (README "Entry points"); every other export is internal.
+const PUBLIC_EXPORTS = [
+  '.',
+  './runtime',
+  './emdash',
+  './emdash/ui',
+  './emdash/page',
+  './emdash/runtime',
+  './forms',
+  './booking',
+  './booking/text',
+  './site',
+  './worker',
+];
+const INTERNAL_EXPORTS = [
+  './middleware',
+  './session-driver',
+  './forms/plugin',
+  './booking/plugin',
+  './booking/astro',
+  './booking/client',
+  './booking/admin',
+  './site/astro',
+  './site/plugin',
+];
+
+test('every export is public or internal, and the README says which', () => {
+  const exports = Object.keys(JSON.parse(read('packages/site/package.json')).exports);
+  assert.deepEqual(exports.sort(), [...PUBLIC_EXPORTS, ...INTERNAL_EXPORTS].sort());
+  const readme = read('packages/site/README.md');
+  const section = readme.slice(
+    readme.indexOf('## Entry points'),
+    readme.indexOf('## Runtime helpers')
+  );
+  for (const path of INTERNAL_EXPORTS) assert.ok(section.includes(`\`${path.slice(1)}\``), path);
+});
+
+test('the starter imports @himlio/site only through its public entry points', () => {
+  const dir = new URL('../../../starter/', import.meta.url);
+  const files = [
+    'astro.config.mjs',
+    ...readdirSync(new URL('src/', dir), { recursive: true }).map((f) => `src/${f}`),
+  ].filter((f) => /\.(astro|ts|tsx|js|mjs)$/.test(f));
+  const used = new Set();
+  for (const f of files)
+    for (const m of readFileSync(new URL(f, dir), 'utf8').matchAll(
+      /['"]@himlio\/site(\/[^'"]*)?['"]/g
+    ))
+      used.add(`.${m[1] ?? ''}`);
+  assert.ok(used.size > 0);
+  for (const path of used) assert.ok(PUBLIC_EXPORTS.includes(path), path);
+});
+
 test("the starter's model migrations match its seed: every migrated block type, allowed in pages", () => {
   const seed = JSON.parse(read('starter/seed/seed.json'));
   const dir = new URL('../../../starter/src/model-migrations/', import.meta.url);

@@ -9,6 +9,19 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.19.2
+
+- The public API is written down: the README's "Entry points" lists what a site may import from
+  `@himlio/site`; the other exports (`/middleware`, `/forms/plugin`, `/site/astro`, ...) are
+  internal and may change in any version. A test keeps the starter to the public ones.
+- `docs/himlio-json.md`: the `himlio.json` format, what each key does when it is missing, and
+  the rules for changing it (unknown keys are ignored; an invalid value fails the build).
+- Site rule 12: import `@himlio/site` only through its entry points.
+
+### Sites
+
+Nothing. A site that imports an internal path (none known) should move to an entry point.
+
 ## 1.19.1
 
 - Forms in the site's language: on a site that isn't English, the Forms plugin's own English
