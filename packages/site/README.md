@@ -194,6 +194,9 @@ The platform's site plugin (`himlio-site`) adds these to every site, with no cod
   reads it, adds what else it does around the block and publishes it; it is responsible for
   the text. Outside content: `import { PrivacyPolicy } from '@himlio/site/site'`.
 
+- **Form validation in the site's language.** Forms and booking use the browser's validation,
+  whose messages follow the visitor's browser. A small script on every page replaces them with
+  the site's language ("Fyll i det här fältet.", "Ange en giltig e-postadress.").
 - **News.** The `posts` collection (title, excerpt, image, text), with URLs in the site's
   language: `newsPath()`, `postPath(slug)` (`/news/<slug>`, `/nyheter/<slug>`) and the RSS feed
   at `feedPath()`, which the platform serves. The site shows posts in its own design: a News

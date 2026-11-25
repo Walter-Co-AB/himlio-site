@@ -3,6 +3,7 @@
 //   - The business info for search engines (schema.org JSON-LD) on the home page, from the site
 //     settings, Company details and social links (./business.ts).
 //   - Cloudflare Web Analytics on every public page, when himlio.json has a token.
+//   - Form validation messages in the site's language (./validation.ts), on every public page.
 //   - The Privacy policy block for rich text (./privacy.ts, rendered by ./astro).
 import { definePlugin, getEmDashCollection, getSiteSettings } from 'emdash';
 import type { PageFragmentContribution, PageMetadataContribution, PublicPageContext } from 'emdash';
@@ -10,6 +11,7 @@ import { facts } from 'virtual:himlio/config';
 import { contactDetails } from '../runtime/contact.js';
 import { socialLinksFrom } from '../runtime/social.js';
 import { businessJsonLd } from './business.js';
+import { validationScript } from './validation.js';
 
 export const SITE_PLUGIN_ID = 'himlio-site';
 export const SITE_PLUGIN_VERSION = '1.0.0';
@@ -57,6 +59,8 @@ async function businessInfo(page: PublicPageContext): Promise<PageMetadataContri
   return graph ? { kind: 'jsonld', id: 'himlio-business', graph } : null;
 }
 
+const VALIDATION_SCRIPT = validationScript(facts.locale);
+
 function analytics(): PageFragmentContribution | null {
   const token = facts.analytics?.cloudflareToken;
   if (!token) return null;
@@ -84,7 +88,15 @@ export function createPlugin() {
           return null;
         }
       },
-      'page:fragments': () => analytics(),
+      'page:fragments': () => [
+        ...(analytics() ? [analytics()!] : []),
+        {
+          kind: 'inline-script',
+          placement: 'body:end',
+          code: VALIDATION_SCRIPT,
+          key: 'himlio-validation',
+        },
+      ],
     },
     admin: {
       portableTextBlocks: [
