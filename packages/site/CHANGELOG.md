@@ -9,6 +9,16 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.18.1
+
+- Privacy policy: the spam protection paragraph names what uses Cloudflare Turnstile, booking
+  (when the platform has set both keys), forms (an active form set to Turnstile) or both, and
+  is left out when nothing does. Before, a site with Turnstile keys said its forms used it.
+
+### Sites
+
+Nothing.
+
 ## 1.18.0
 
 - News is part of the platform: the `posts` collection on every site (platform migration

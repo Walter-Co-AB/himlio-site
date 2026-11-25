@@ -20,7 +20,8 @@ export interface PrivacyFacts {
    */
   formsRetentionDays?: number;
   booking: boolean;
-  turnstile: boolean;
+  /** Where Cloudflare Turnstile checks visitors: the booking form, and forms set to use it. */
+  turnstile: { booking: boolean; forms: boolean };
   analytics: boolean;
 }
 
@@ -28,6 +29,16 @@ export interface PolicySection {
   heading: string;
   paragraphs: string[];
   list?: string[];
+}
+
+/** What uses Turnstile, as the subject of a sentence; undefined when nothing does. */
+function turnstileUsers(t: PrivacyFacts['turnstile'], lang: 'en' | 'sv'): string | undefined {
+  const words =
+    lang === 'sv'
+      ? { booking: 'bokningen', forms: 'våra formulär', and: ' och ' }
+      : { booking: 'booking', forms: 'our forms', and: ' and ' };
+  const users = [t.booking && words.booking, t.forms && words.forms].filter(Boolean);
+  return users.length ? users.join(words.and) : undefined;
 }
 
 const join = (parts: (string | undefined)[]) => parts.filter(Boolean).join(', ');
@@ -61,11 +72,12 @@ function en(f: PrivacyFacts): PolicySection[] {
         `We delete a booking ${RETENTION_DAYS} days after the appointment, and a request or booking that was never confirmed after ${EXPIRED_RETENTION_DAYS} days.`,
       ],
     });
-  if (f.turnstile)
+  const enTurnstile = turnstileUsers(f.turnstile, 'en');
+  if (enTurnstile)
     sections.push({
       heading: 'Protection against spam',
       paragraphs: [
-        'To stop automated spam, our forms use Cloudflare Turnstile, which checks information about your browser and connection to tell people from bots. It does not use cookies for advertising or follow you across websites. The legal basis is our legitimate interest in protecting the website against abuse.',
+        `To stop automated spam, ${enTurnstile} ${f.turnstile.forms ? 'use' : 'uses'} Cloudflare Turnstile, which checks information about your browser and connection to tell people from bots. It does not use cookies for advertising or follow you across websites. The legal basis is our legitimate interest in protecting the website against abuse.`,
       ],
     });
   if (f.analytics)
@@ -128,11 +140,12 @@ function sv(f: PrivacyFacts): PolicySection[] {
         `Vi raderar en bokning ${RETENTION_DAYS} dagar efter besöket, och en förfrågan eller bokning som aldrig bekräftades efter ${EXPIRED_RETENTION_DAYS} dagar.`,
       ],
     });
-  if (f.turnstile)
+  const svTurnstile = turnstileUsers(f.turnstile, 'sv');
+  if (svTurnstile)
     sections.push({
       heading: 'Skydd mot skräppost',
       paragraphs: [
-        'För att stoppa automatisk skräppost använder våra formulär Cloudflare Turnstile, som kontrollerar uppgifter om din webbläsare och anslutning för att skilja människor från robotar. Den använder inga kakor för reklam och följer dig inte mellan webbplatser. Den rättsliga grunden är vårt berättigade intresse av att skydda webbplatsen mot missbruk.',
+        `För att stoppa automatisk skräppost använder ${svTurnstile} Cloudflare Turnstile, som kontrollerar uppgifter om din webbläsare och anslutning för att skilja människor från robotar. Den använder inga kakor för reklam och följer dig inte mellan webbplatser. Den rättsliga grunden är vårt berättigade intresse av att skydda webbplatsen mot missbruk.`,
       ],
     });
   if (f.analytics)

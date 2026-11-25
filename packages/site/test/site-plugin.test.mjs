@@ -60,7 +60,13 @@ test('the business info has what is known, and a valid type', () => {
   assert.equal(businessJsonLd({ name: ' ', url: 'https://x.se', details: {}, social: [] }), null);
 });
 
-const base = { name: 'Firma AB', forms: false, booking: false, turnstile: false, analytics: false };
+const base = {
+  name: 'Firma AB',
+  forms: false,
+  booking: false,
+  turnstile: { booking: false, forms: false },
+  analytics: false,
+};
 const headings = (facts, locale) => privacyPolicy(facts, locale).map((s) => s.heading);
 
 test('the privacy policy has only the parts the site uses, in its language', () => {
@@ -70,7 +76,13 @@ test('the privacy policy has only the parts the site uses, in its language', () 
     'Vilka som hjälper oss',
     'Dina rättigheter',
   ]);
-  const all = { ...base, forms: true, booking: true, turnstile: true, analytics: true };
+  const all = {
+    ...base,
+    forms: true,
+    booking: true,
+    turnstile: { booking: true, forms: true },
+    analytics: true,
+  };
   assert.equal(headings(all, 'sv-SE').length, 8);
   assert.equal(headings(all, 'en').length, 8);
   assert.ok(headings(all, 'en').includes('When you book'));
@@ -104,4 +116,17 @@ test('the privacy policy states the forms retention only when every form deletes
   assert.doesNotMatch(contact({}, 'sv'), /för det,/);
   const cookies = privacyPolicy(base, 'sv').find((s) => s.heading === 'Kakor (cookies)');
   assert.doesNotMatch(cookies.paragraphs[0], /ljust eller mörkt/);
+});
+
+test('the spam protection paragraph names what uses Turnstile', () => {
+  const spam = (turnstile, locale) =>
+    privacyPolicy({ ...base, booking: true, forms: true, turnstile }, locale).find((s) =>
+      /spam|skräppost/i.test(s.heading)
+    )?.paragraphs[0];
+  assert.equal(spam({ booking: false, forms: false }, 'sv'), undefined);
+  assert.match(spam({ booking: true, forms: false }, 'sv'), /använder bokningen Cloudflare/);
+  assert.match(spam({ booking: false, forms: true }, 'sv'), /använder våra formulär Cloudflare/);
+  assert.match(spam({ booking: true, forms: true }, 'sv'), /bokningen och våra formulär/);
+  assert.match(spam({ booking: true, forms: false }, 'en'), /booking uses Cloudflare/);
+  assert.match(spam({ booking: true, forms: true }, 'en'), /booking and our forms use/);
 });
