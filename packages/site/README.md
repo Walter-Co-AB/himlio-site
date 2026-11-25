@@ -88,7 +88,8 @@ plugin with `.ec-form` classes for the site to style (the starter does it in
 `src/styles/forms.css`). Outside rich text: `import { Form } from '@himlio/site/forms'`, then
 `<Form id="contact" />` (the form's slug or id).
 
-- Spam protection is a honeypot by default. Turnstile needs a key pair per site; ask Walter & Co.
+- Spam protection is a honeypot by default. A form set to Turnstile uses the Forms plugin's own
+  key pair (its settings in the admin), not the platform's booking keys; ask Walter & Co.
 - Notifications go to the form's addresses through the platform's email, with Reply-To set to the
   sender's address. In `astro dev` they are written to the log instead.
 - **Recipients come from the platform config** (`himlio.json` `forms.notify`, set by Walter & Co)

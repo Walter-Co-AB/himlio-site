@@ -38,7 +38,7 @@ async function exists(sql: string): Promise<boolean> {
 }
 
 export async function privacyFacts(): Promise<PrivacyFacts> {
-  const [settings, details, forms, booking, retention] = await Promise.all([
+  const [settings, details, forms, booking, retention, turnstileForms] = await Promise.all([
     getSiteSettings(),
     contactDetails(),
     exists(
@@ -48,7 +48,12 @@ export async function privacyFacts(): Promise<PrivacyFacts> {
       "SELECT 1 FROM _plugin_storage WHERE plugin_id = 'himlio-booking' AND collection = 'services' AND json_extract(data, '$.active') = 1 LIMIT 1"
     ),
     formsRetentionDays(),
+    exists(
+      "SELECT 1 FROM _plugin_storage WHERE plugin_id = 'emdash-forms' AND collection = 'forms' AND json_extract(data, '$.status') = 'active' AND json_extract(data, '$.settings.spamProtection') = 'turnstile' LIMIT 1"
+    ),
   ]);
+  // Booking checks with Turnstile when the platform has given the site both keys (plugin.ts).
+  const turnstileSecret = !!(env as unknown as { TURNSTILE_SECRET?: string }).TURNSTILE_SECRET;
   return {
     name: settings.title?.trim() || facts.name,
     ...(details.org_number ? { orgNumber: details.org_number } : {}),
@@ -58,7 +63,7 @@ export async function privacyFacts(): Promise<PrivacyFacts> {
     forms,
     ...(forms && retention ? { formsRetentionDays: retention } : {}),
     booking,
-    turnstile: !!facts.turnstile,
+    turnstile: { booking: booking && !!facts.turnstile && turnstileSecret, forms: turnstileForms },
     analytics: !!facts.analytics,
   };
 }
