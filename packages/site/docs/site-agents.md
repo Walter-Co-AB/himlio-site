@@ -106,6 +106,8 @@ The design guide, `node_modules/@himlio/site/docs/design.md`, says how. In short
     the site to change it; ask for an extension point or a fix in `Walter-Co-AB/himlio-site`.
     The same goes for these rules: a rule every site should follow belongs here, not in one
     site's `AGENTS.md`.
+12. **Import `@himlio/site` only through its entry points** (the "Entry points" table in its
+    README). The other paths it exports are for the platform and change without notice.
 
 ## Updating `@himlio/site`
 

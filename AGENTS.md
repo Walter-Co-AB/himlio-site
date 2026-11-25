@@ -23,8 +23,10 @@ Rules for AI coding tools and people working on the Himlio platform repo.
 ## Rules
 
 1. **`npm run verify` must pass** before you commit.
-2. **The extension-point table in `packages/site/README.md` is the public API.** A breaking
-   change to it, to the runtime helpers or to the build is a major version.
+2. **The public API is what `packages/site/README.md` documents for sites:** the entry points,
+   the runtime helpers, the extension-point table and the build, plus the `himlio.json` format
+   (`packages/site/docs/himlio-json.md`). A breaking change to any of it is a major version. A
+   new export is internal or public by its place in the "Entry points" section (a test checks).
 3. **Migrations are append-only**, D1 (`packages/site/migrations/00NN_*.sql`) and content model
    (`packages/site/model-migrations/NNNN_*.json`) alike.
 4. **No secrets in git.** The repo is public.

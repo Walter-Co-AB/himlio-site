@@ -48,6 +48,23 @@ const details = await contactDetails(Astro.cache);
 
 EmDash is pinned by this package, so a site can't drift to another EmDash version.
 
+## Entry points
+
+A site imports only these; they follow semver (a breaking change is a major version):
+
+| Import                                                                                         | For                                                          |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `@himlio/site`                                                                                 | `defineHimlioConfig()` in `astro.config.mjs`                 |
+| `@himlio/site/runtime`                                                                         | The runtime helpers below                                    |
+| `@himlio/site/emdash`, `@himlio/site/emdash/ui`, `@himlio/site/emdash/page`, `.../runtime`     | EmDash itself, at the version this package pins              |
+| `@himlio/site/forms`, `@himlio/site/booking`, `@himlio/site/booking/text`, `@himlio/site/site` | Forms, booking and the privacy policy outside content        |
+| `@himlio/site/worker`                                                                          | Re-exporting the platform Worker next to own Durable Objects |
+
+The package exports more (`/middleware`, `/session-driver`, `/forms/plugin`, `/booking/plugin`,
+`/booking/astro`, `/booking/client`, `/booking/admin`, `/site/astro`, `/site/plugin`), but only
+for the platform and EmDash to load: they are internal and change without notice. What
+`himlio.json` holds is its own contract: [docs/himlio-json.md](docs/himlio-json.md).
+
 ## Runtime helpers (`@himlio/site/runtime`)
 
 | Export                                                         | What                                                                                                                            |
