@@ -9,6 +9,17 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.19.0
+
+- Form validation messages in the site's language: forms and booking used the browser's own
+  messages, in the visitor's browser language ("Please fill out this field." on a Swedish
+  site). The site plugin now sets them from `locale` (English or Swedish) when a field is
+  invalid, and clears them when the visitor changes it.
+
+### Sites
+
+Nothing.
+
 ## 1.18.1
 
 - Privacy policy: the spam protection paragraph names what uses Cloudflare Turnstile, booking

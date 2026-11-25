@@ -130,3 +130,37 @@ test('the spam protection paragraph names what uses Turnstile', () => {
   assert.match(spam({ booking: true, forms: false }, 'en'), /booking uses Cloudflare/);
   assert.match(spam({ booking: true, forms: true }, 'en'), /booking and our forms use/);
 });
+
+test('validation messages follow the site language and the field', async () => {
+  const { validationMessage, validationText, validationScript } =
+    await import('../dist/site/validation.js');
+  const sv = validationText('sv-SE');
+  const msg = (field) => validationMessage(field, sv);
+  assert.equal(msg({ type: 'text', validity: { valueMissing: true } }), 'Fyll i det här fältet.');
+  assert.equal(
+    msg({ type: 'checkbox', validity: { valueMissing: true } }),
+    'Kryssa i den här rutan.'
+  );
+  assert.equal(msg({ type: 'radio', validity: { valueMissing: true } }), 'Välj ett alternativ.');
+  assert.equal(
+    msg({ type: 'select-one', validity: { valueMissing: true } }),
+    'Välj ett alternativ.'
+  );
+  assert.equal(
+    msg({ type: 'email', validity: { typeMismatch: true } }),
+    'Ange en giltig e-postadress.'
+  );
+  assert.equal(
+    msg({ type: 'text', minLength: 3, validity: { tooShort: true } }),
+    'Använd minst 3 tecken.'
+  );
+  assert.equal(msg({ type: 'text', validity: {} }), '');
+  assert.equal(
+    validationMessage({ type: 'text', validity: { valueMissing: true } }, validationText('de')),
+    'Please fill in this field.'
+  );
+  // The page script is valid JavaScript with the texts in it.
+  const script = validationScript('sv');
+  new Function(script);
+  assert.match(script, /Fyll i det här fältet/);
+});
