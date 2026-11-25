@@ -196,7 +196,9 @@ The platform's site plugin (`himlio-site`) adds these to every site, with no cod
 
 - **Form validation in the site's language.** Forms and booking use the browser's validation,
   whose messages follow the visitor's browser. A small script on every page replaces them with
-  the site's language ("Fyll i det här fältet.", "Ange en giltig e-postadress.").
+  the site's language ("Fyll i det här fältet.", "Ange en giltig e-postadress."), and on a site
+  that isn't English also the Forms plugin's own English texts (sending, errors, steps, the
+  server's field errors).
 - **News.** The `posts` collection (title, excerpt, image, text), with URLs in the site's
   language: `newsPath()`, `postPath(slug)` (`/news/<slug>`, `/nyheter/<slug>`) and the RSS feed
   at `feedPath()`, which the platform serves. The site shows posts in its own design: a News

@@ -16,4 +16,4 @@ permissions:
 
 jobs:
   himlio:
-    uses: Walter-Co-AB/himlio-site/.github/workflows/build.yml@v1.19.0
+    uses: Walter-Co-AB/himlio-site/.github/workflows/build.yml@v1.19.1
