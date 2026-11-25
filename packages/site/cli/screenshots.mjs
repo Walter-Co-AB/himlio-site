@@ -9,6 +9,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
 import { devPort, readHimlio } from '../dist/config.js';
+import { newsPathFor } from '../dist/news.js';
 import { privacyPage } from '../dist/site/privacy.js';
 import { samples } from './samples.mjs';
 
@@ -26,6 +27,8 @@ if (pages.length === 0) {
     `/${sample.about}`,
     `/${sample.contact}`,
     `/${privacyPage(himlio.locale).slug}`,
+    `/${newsPathFor(himlio.locale)}`,
+    `/${newsPathFor(himlio.locale)}/sample-post-1`,
     '/block-gallery'
   );
   // The block gallery's further pages, as many as fixtures made.

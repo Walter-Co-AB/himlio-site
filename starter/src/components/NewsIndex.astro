@@ -1,0 +1,30 @@
+---
+// The News listing at /news (/nyheter on a Swedish site) when the site has no page with that
+// slug: every post, newest first, with the feed link. A page the customer makes at that slug
+// (a News section set to "All") replaces it.
+import Posts from "./blocks/Posts.astro";
+import { t } from "../utils/strings";
+---
+
+<header class="container page-header">
+	<h1 class="display page-header__title">{t.news}</h1>
+</header>
+<div class="page-blocks">
+	<Posts
+		value={{ _type: "marketing_posts", _version: 1, _key: "news", mode: "all", count: 12 }}
+		index={0}
+		blockKey="news"
+	/>
+</div>
+
+<style>
+	.page-header {
+		padding-block-start: clamp(56px, 7vw, 104px);
+	}
+
+	.page-header__title {
+		max-width: 20ch;
+		font-size: var(--font-size-h2);
+		line-height: var(--leading-snug);
+	}
+</style>

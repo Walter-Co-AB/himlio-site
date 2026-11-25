@@ -9,6 +9,21 @@ up; they never reach a site by themselves.
 Format, which tools parse (the platform's upgrade pull requests): one `## X.Y.Z` heading per
 version, newest first, each with a `### Sites` subsection.
 
+## 1.20.0
+
+- News has a listing before anyone makes one: in the starter, `/news` (`/nyheter`) shows every
+  post, newest first, with the feed link, when no page has that slug. A page the customer makes
+  at that slug (a News section set to "All") replaces it. The post page's "News" eyebrow links
+  to it. Found on the platform's test site, where `/nyheter` was 404 while the feed worked.
+- `himlio-site screenshots` includes the News listing and a post.
+
+### Sites
+
+- **Optional** (starter change): the built-in News listing. Sites that show News without a
+  page at `/news` (`/nyheter`) should pick it up: add `src/components/NewsIndex.astro`, and in
+  `src/pages/[slug].astro` render it when no page is found and the slug is `newsPath()`; link
+  the post page's eyebrow to it. See "Picking up starter changes" in `docs/site-agents.md`.
+
 ## 1.19.2
 
 - The public API is written down: the README's "Entry points" lists what a site may import from
